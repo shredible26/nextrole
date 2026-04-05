@@ -26,9 +26,9 @@ export default function UpgradeModal({ open, onClose }: Props) {
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">You've hit today's limit</DialogTitle>
+          <DialogTitle className="text-xl">You've seen your 20 jobs for today</DialogTitle>
           <DialogDescription>
-            Free users can view 20 jobs per day. Upgrade to Pro for unlimited access.
+            Upgrade to Pro for unlimited access.
           </DialogDescription>
         </DialogHeader>
 

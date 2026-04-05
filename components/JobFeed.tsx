@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import FilterSidebar from './FilterSidebar';
 import JobCard from './JobCard';
-import QuotaBanner from './QuotaBanner';
 import UpgradeModal from './UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Job, JobFilters } from '@/lib/types';
@@ -24,7 +23,6 @@ interface FeedResponse {
   total: number;
   page: number;
   perPage: number;
-  remaining: number | null;
   error?: string;
   upgrade?: boolean;
 }
@@ -33,7 +31,6 @@ export default function JobFeed() {
   const [filters, setFilters] = useState<JobFilters>(DEFAULT_FILTERS);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
-  const [remaining, setRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
@@ -60,6 +57,7 @@ export default function JobFeed() {
 
       if (data.upgrade) {
         setShowUpgrade(true);
+        // Keep existing jobs visible — do not replace the list
         return;
       }
       if (data.error) {
@@ -73,7 +71,6 @@ export default function JobFeed() {
         setJobs(data.jobs ?? []);
       }
       setTotal(data.total ?? 0);
-      setRemaining(data.remaining);
       setHasMore((data.jobs?.length ?? 0) === data.perPage && data.total > f.page * data.perPage);
     } catch {
       toast.error('Failed to load jobs. Please try again.');
@@ -83,7 +80,7 @@ export default function JobFeed() {
     }
   }, [buildQuery]);
 
-  // On filter change reset to page 1
+  // On filter change, always reset to page 1 and fetch fresh results
   useEffect(() => {
     if (isFirstLoad.current) {
       isFirstLoad.current = false;
@@ -101,10 +98,8 @@ export default function JobFeed() {
   }, []);
 
   async function handleApply(job: Job) {
-    // Optimistic update
     setAppliedIds(prev => new Set([...prev, job.id]));
 
-    // Fire-and-forget
     fetch('/api/apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -124,9 +119,6 @@ export default function JobFeed() {
     setFilters(f);
   }
 
-  const FREE_LIMIT = 20;
-  const viewedToday = remaining !== null ? FREE_LIMIT - remaining : null;
-
   return (
     <>
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
@@ -141,10 +133,6 @@ export default function JobFeed() {
 
         {/* Feed */}
         <div className="flex flex-1 flex-col min-w-0">
-          {viewedToday !== null && (
-            <QuotaBanner viewed={viewedToday} limit={FREE_LIMIT} />
-          )}
-
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">
               {loading ? 'Loading…' : `${total.toLocaleString()} jobs found`}
