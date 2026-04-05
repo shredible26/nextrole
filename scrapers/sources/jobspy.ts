@@ -1,6 +1,6 @@
 import { scrapeJobs } from 'ts-jobspy';
 import { generateHash } from '../utils/dedup';
-import { inferRoles, inferRemote, NormalizedJob } from '../utils/normalize';
+import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
 const SEARCH_TERMS = [
   'software engineer new grad',
@@ -47,18 +47,8 @@ export async function scrapeJobSpy(): Promise<NormalizedJob[]> {
         const isRemote = job.isRemote ?? inferRemote(location);
         const roles = inferRoles(job.title);
 
-        const titleLower = job.title.toLowerCase();
-        let experienceLevel: 'new_grad' | 'entry_level' | 'internship' = 'entry_level';
-        if (titleLower.includes('intern')) {
-          experienceLevel = 'internship';
-        } else if (
-          titleLower.includes('new grad') ||
-          titleLower.includes('new graduate') ||
-          titleLower.includes('2026') ||
-          titleLower.includes('2025')
-        ) {
-          experienceLevel = 'new_grad';
-        }
+        const experienceLevel = inferExperienceLevel(job.title, job.description ?? '');
+        if (experienceLevel === null) continue;
 
         results.push({
           source: `jobspy_${job.site ?? 'indeed'}`,

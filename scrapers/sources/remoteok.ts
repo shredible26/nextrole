@@ -3,7 +3,7 @@
 // Docs: https://remoteok.com/api
 
 import { generateHash } from '../utils/dedup';
-import { inferRoles, NormalizedJob } from '../utils/normalize';
+import { inferRoles, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
 const TECH_KEYWORDS = [
   'engineer', 'developer', 'scientist', 'analyst',
@@ -19,16 +19,19 @@ export async function scrapeRemoteOK(): Promise<NormalizedJob[]> {
   });
   const data = await res.json();
 
-  return data
-    .filter((job: any) => job.slug) // first element is metadata, skip it
-    .filter((job: any) => {
-      const title = (job.position ?? '').toLowerCase();
-      return TECH_KEYWORDS.some(k => title.includes(k));
-    })
-    .map((job: any): NormalizedJob => ({
+  const normalized: NormalizedJob[] = [];
+  for (const job of data) {
+    if (!job.slug) continue; // first element is metadata, skip it
+    const title = job.position ?? '';
+    if (!TECH_KEYWORDS.some(k => title.toLowerCase().includes(k))) continue;
+
+    const level = inferExperienceLevel(title, job.description ?? '');
+    if (level === null) continue;
+
+    normalized.push({
       source: 'remoteok',
       source_id: String(job.id),
-      title: job.position,
+      title,
       company: job.company,
       location: 'Remote',
       remote: true,
@@ -36,9 +39,11 @@ export async function scrapeRemoteOK(): Promise<NormalizedJob[]> {
       description: job.description,
       salary_min: job.salary_min ? Number(job.salary_min) : undefined,
       salary_max: job.salary_max ? Number(job.salary_max) : undefined,
-      experience_level: 'entry_level',
-      roles: inferRoles(job.position),
+      experience_level: level,
+      roles: inferRoles(title),
       posted_at: new Date(job.epoch * 1000).toISOString(),
-      dedup_hash: generateHash(job.company, job.position, 'Remote'),
-    }));
+      dedup_hash: generateHash(job.company, title, 'Remote'),
+    });
+  }
+  return normalized;
 }

@@ -154,16 +154,15 @@ export default function JobFeed() {
     <>
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
 
-      <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 sm:px-6 py-8">
-        {/* Sidebar */}
-        <div className="hidden md:block">
-          <div className="sticky top-20">
-            <FilterSidebar filters={filters} onChange={handleFilterChange} />
-          </div>
-        </div>
+      {/* h-14 = 56px navbar height; both columns scroll independently */}
+      <div className="flex h-[calc(100vh-56px)] overflow-hidden mx-auto w-full max-w-7xl">
+        {/* Sidebar — independent scroll */}
+        <aside className="hidden md:block w-64 shrink-0 overflow-y-auto border-r px-6 py-6">
+          <FilterSidebar filters={filters} onChange={handleFilterChange} />
+        </aside>
 
-        {/* Feed */}
-        <div className="flex flex-1 flex-col min-w-0">
+        {/* Feed — independent scroll */}
+        <div className="flex flex-1 flex-col min-w-0 overflow-y-auto px-6 py-6 sm:px-8">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">
               {loading ? 'Loading…' : `${total.toLocaleString()} jobs found`}

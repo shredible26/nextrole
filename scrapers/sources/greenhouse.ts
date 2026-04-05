@@ -3,7 +3,7 @@
 // Strategy: fire all company fetches concurrently; silently skip 404/500s.
 
 import { generateHash } from '../utils/dedup';
-import { inferRoles, inferRemote, NormalizedJob } from '../utils/normalize';
+import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
 const COMPANIES = [
   'google', 'meta', 'stripe', 'airbnb', 'notion', 'linear', 'figma',
@@ -43,27 +43,31 @@ async function fetchCompany(company: string): Promise<NormalizedJob[]> {
     const data = await res.json();
     const jobs: any[] = data.jobs ?? [];
 
-    return jobs
-      .filter((job: any) => isTechRole(job.title ?? ''))
-      .map((job: any): NormalizedJob => {
-        const location: string = job.location?.name ?? '';
-        // Greenhouse stores company name in the board metadata; fall back to slug
-        const companyName: string = data.company?.name ?? company;
-        return {
-          source: 'greenhouse',
-          source_id: String(job.id),
-          title: job.title,
-          company: companyName,
-          location,
-          remote: inferRemote(location),
-          url: job.absolute_url ?? '',
-          description: job.content ?? undefined,
-          experience_level: 'entry_level',
-          roles: inferRoles(job.title),
-          posted_at: job.updated_at ?? undefined,
-          dedup_hash: generateHash(companyName, job.title, location),
-        };
+    const normalized: NormalizedJob[] = [];
+    for (const job of jobs) {
+      if (!isTechRole(job.title ?? '')) continue;
+      const level = inferExperienceLevel(job.title ?? '', job.content ?? '');
+      if (level === null) continue;
+
+      const location: string = job.location?.name ?? '';
+      // Greenhouse stores company name in the board metadata; fall back to slug
+      const companyName: string = data.company?.name ?? company;
+      normalized.push({
+        source: 'greenhouse',
+        source_id: String(job.id),
+        title: job.title,
+        company: companyName,
+        location,
+        remote: inferRemote(location),
+        url: job.absolute_url ?? '',
+        description: job.content ?? undefined,
+        experience_level: level,
+        roles: inferRoles(job.title),
+        posted_at: job.updated_at ?? undefined,
+        dedup_hash: generateHash(companyName, job.title, location),
       });
+    }
+    return normalized;
   } catch {
     return []; // timeout or network error — skip silently
   }

@@ -3,7 +3,7 @@
 // Docs: https://documenter.getpostman.com/view/18545278/UVJbJdKh
 
 import { generateHash } from '../utils/dedup';
-import { inferRoles, NormalizedJob } from '../utils/normalize';
+import { inferRoles, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
 const TECH_TAGS = [
   'software-engineer', 'developer', 'data', 'machine-learning',
@@ -44,6 +44,9 @@ export async function scrapeArbeitnow(): Promise<NormalizedJob[]> {
 
       if (!isTech) continue;
 
+      const level = inferExperienceLevel(job.title ?? '', job.description ?? '');
+      if (level === null) continue;
+
       results.push({
         source: 'arbeitnow',
         source_id: job.slug,
@@ -53,7 +56,7 @@ export async function scrapeArbeitnow(): Promise<NormalizedJob[]> {
         remote: job.remote ?? false,
         url: job.url,
         description: job.description,
-        experience_level: 'entry_level',
+        experience_level: level,
         roles: inferRoles(job.title),
         posted_at: new Date(job.created_at * 1000).toISOString(),
         dedup_hash: generateHash(job.company_name, job.title, job.location ?? ''),

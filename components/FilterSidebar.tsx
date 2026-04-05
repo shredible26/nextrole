@@ -27,8 +27,6 @@ const SOURCES = [
   { value: 'arbeitnow', label: 'Arbeitnow' },
   { value: 'themuse', label: 'The Muse' },
   { value: 'jobspy_indeed', label: 'Indeed' },
-  { value: 'jobspy_zip_recruiter', label: 'ZipRecruiter' },
-  { value: 'jobspy_google', label: 'Google Jobs' },
   { value: 'greenhouse', label: 'Greenhouse' },
   { value: 'lever', label: 'Lever' },
 ];
