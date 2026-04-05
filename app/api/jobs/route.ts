@@ -61,9 +61,17 @@ export async function GET(req: NextRequest) {
   if (sources.length > 0) query = query.in('source', sources);
 
   if (postedWithin) {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - Number(postedWithin));
-    query = query.gte('posted_at', cutoff.toISOString());
+    const MS_MAP: Record<string, number> = {
+      '1': 24 * 60 * 60 * 1000,
+      '3': 3 * 24 * 60 * 60 * 1000,
+      '7': 7 * 24 * 60 * 60 * 1000,
+    };
+    const ms = MS_MAP[postedWithin];
+    if (ms) {
+      const cutoff = new Date(Date.now() - ms).toISOString();
+      console.log(`[jobs/route] postedWithin="${postedWithin}" → cutoff=${cutoff}`);
+      query = query.gte('posted_at', cutoff);
+    }
   }
 
   const { data: jobs, count, error } = await query;

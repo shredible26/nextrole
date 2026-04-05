@@ -8,6 +8,9 @@ import { inferRoles, NormalizedJob } from '../utils/normalize';
 const TECH_KEYWORDS = [
   'engineer', 'developer', 'scientist', 'analyst',
   'ml', 'ai', 'data', 'backend', 'frontend', 'fullstack',
+  'product', 'design', 'manager', 'devops', 'cloud', 'security',
+  'mobile', 'ios', 'android', 'python', 'javascript', 'typescript',
+  'react', 'node', 'java', 'golang', 'rust',
 ];
 
 export async function scrapeRemoteOK(): Promise<NormalizedJob[]> {

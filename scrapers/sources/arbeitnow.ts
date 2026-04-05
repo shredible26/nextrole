@@ -8,12 +8,19 @@ import { inferRoles, NormalizedJob } from '../utils/normalize';
 const TECH_TAGS = [
   'software-engineer', 'developer', 'data', 'machine-learning',
   'backend', 'frontend', 'fullstack', 'analyst', 'engineering',
+  'javascript', 'python', 'react', 'node', 'java', 'typescript',
+  'cloud', 'devops', 'mobile', 'product',
+];
+
+const TITLE_KEYWORDS = [
+  'engineer', 'developer', 'analyst', 'scientist',
+  'manager', 'designer', 'devops', 'cloud', 'security',
 ];
 
 export async function scrapeArbeitnow(): Promise<NormalizedJob[]> {
   const results: NormalizedJob[] = [];
   let page = 1;
-  const MAX_PAGES = 5;
+  const MAX_PAGES = 10;
 
   while (page <= MAX_PAGES) {
     const res = await fetch(
@@ -25,9 +32,15 @@ export async function scrapeArbeitnow(): Promise<NormalizedJob[]> {
 
     for (const job of jobs) {
       const tags: string[] = job.tags ?? [];
-      const isTech = tags.some((t: string) =>
+      const titleLower = (job.title ?? '').toLowerCase();
+
+      const hasMatchingTag = tags.some((t: string) =>
         TECH_TAGS.some(k => t.toLowerCase().includes(k))
-      ) || TECH_TAGS.some(k => job.title?.toLowerCase().includes(k));
+      );
+      const hasMatchingTagInTitle = TECH_TAGS.some(k => titleLower.includes(k));
+      const hasMatchingTitleKeyword = TITLE_KEYWORDS.some(k => titleLower.includes(k));
+
+      const isTech = hasMatchingTag || hasMatchingTagInTitle || hasMatchingTitleKeyword;
 
       if (!isTech) continue;
 
