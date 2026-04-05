@@ -6,14 +6,20 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY! // service key — bypasses RLS
 );
 
+const UPSERT_CHUNK_SIZE = 500;
+
 export async function uploadJobs(jobs: NormalizedJob[]): Promise<void> {
   if (jobs.length === 0) return;
 
-  const { error } = await supabase
-    .from('jobs')
-    .upsert(jobs, { onConflict: 'dedup_hash', ignoreDuplicates: true });
+  for (let i = 0; i < jobs.length; i += UPSERT_CHUNK_SIZE) {
+    const chunk = jobs.slice(i, i + UPSERT_CHUNK_SIZE);
+    const { error } = await supabase
+      .from('jobs')
+      .upsert(chunk, { onConflict: 'dedup_hash', ignoreDuplicates: true });
 
-  if (error) throw new Error(`Supabase upsert failed: ${error.message}`);
+    if (error) throw new Error(`Supabase upsert failed: ${error.message}`);
+  }
+
   console.log(`  ✓ Uploaded ${jobs.length} jobs`);
 }
 
