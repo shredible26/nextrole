@@ -4,6 +4,7 @@ import { scrapeAdzuna }              from './sources/adzuna';
 import { scrapeRemoteOK }            from './sources/remoteok';
 import { scrapeArbeitnow }           from './sources/arbeitnow';
 import { scrapeTheMuse }             from './sources/themuse';
+import { scrapeJobSpy }              from './sources/jobspy';
 import { uploadJobs, deactivateStaleJobs } from './utils/upload';
 import { NormalizedJob } from './utils/normalize';
 
@@ -15,6 +16,7 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   { name: 'remoteok',             fn: scrapeRemoteOK },
   { name: 'arbeitnow',            fn: scrapeArbeitnow },
   { name: 'themuse',              fn: scrapeTheMuse },
+  { name: 'jobspy',               fn: scrapeJobSpy },
   // Week 2 (uncomment when ready):
   // { name: 'jobright',          fn: scrapeJobright },
   // { name: 'otta',              fn: scrapeOtta },
@@ -37,7 +39,11 @@ async function runScraper(name: string, fn: () => Promise<NormalizedJob[]>) {
     console.log(`  [${name}] Fetched ${jobs.length} jobs`);
 
     await uploadJobs(jobs);
-    await deactivateStaleJobs(name, jobs.map(j => j.dedup_hash));
+    // jobspy jobs carry per-site sources (e.g. jobspy_indeed) so we can't
+    // deactivate stale entries by the orchestrator-level name 'jobspy'.
+    if (name !== 'jobspy') {
+      await deactivateStaleJobs(name, jobs.map(j => j.dedup_hash));
+    }
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.log(`  [${name}] ✓ Done in ${elapsed}s`);

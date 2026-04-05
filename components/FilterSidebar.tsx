@@ -26,6 +26,9 @@ const SOURCES = [
   { value: 'remoteok', label: 'RemoteOK' },
   { value: 'arbeitnow', label: 'Arbeitnow' },
   { value: 'themuse', label: 'The Muse' },
+  { value: 'jobspy_indeed', label: 'Indeed' },
+  { value: 'jobspy_zip_recruiter', label: 'ZipRecruiter' },
+  { value: 'jobspy_google', label: 'Google Jobs' },
 ];
 
 interface Props {
