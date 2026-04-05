@@ -25,6 +25,7 @@ const SOURCES = [
   { value: 'adzuna', label: 'Adzuna' },
   { value: 'remoteok', label: 'RemoteOK' },
   { value: 'arbeitnow', label: 'Arbeitnow' },
+  { value: 'themuse', label: 'The Muse' },
 ];
 
 interface Props {
