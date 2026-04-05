@@ -10,11 +10,18 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const { status, notes } = await req.json();
+  const body = await req.json();
+
+  // Build partial update — only include fields that were sent
+  const updateData: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (body.status !== undefined) updateData.status = body.status;
+  if (body.notes !== undefined) updateData.notes = body.notes;
 
   const { error } = await supabase
     .from('applications')
-    .update({ status, notes, updated_at: new Date().toISOString() })
+    .update(updateData)
     .eq('id', id)
     .eq('user_id', user.id); // RLS double-check
 

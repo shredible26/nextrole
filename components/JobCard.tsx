@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Job, Role, ROLE_COLORS } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { MapPin, CheckCircle2, ExternalLink } from 'lucide-react';
+import { MapPin, CheckCircle2, ExternalLink, Plus } from 'lucide-react';
 
 const SOURCE_LABELS: Record<string, string> = {
   pittcsc: 'SimplifyJobs',
@@ -53,11 +53,11 @@ function CompanyLogo({ company }: { company: string }) {
 
 interface Props {
   job: Job;
-  applied: boolean;
-  onApply: (job: Job) => void;
+  tracked: boolean;
+  onTrack: (job: Job) => void;
 }
 
-export default function JobCard({ job, applied, onApply }: Props) {
+export default function JobCard({ job, tracked, onTrack }: Props) {
   const postedAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
@@ -116,22 +116,35 @@ export default function JobCard({ job, applied, onApply }: Props) {
           {postedAgo && <span>{postedAgo}</span>}
         </div>
 
-        {applied ? (
-          <div className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Applied
-          </div>
-        ) : (
+        <div className="flex items-center gap-1.5">
+          {/* Apply: opens the job URL, no tracking */}
           <Button
             size="sm"
-            variant="outline"
             className="h-7 text-xs gap-1"
-            onClick={() => onApply(job)}
+            onClick={() => window.open(job.url, '_blank', 'noopener,noreferrer')}
           >
             Apply
             <ExternalLink className="h-3 w-3" />
           </Button>
-        )}
+
+          {/* Track: logs application, separate from apply */}
+          {tracked ? (
+            <div className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 px-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Tracked
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1 text-muted-foreground"
+              onClick={() => onTrack(job)}
+            >
+              <Plus className="h-3 w-3" />
+              Track
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -3,16 +3,16 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Application, ApplicationStatus, STATUS_LABELS } from '@/lib/types';
+import { Application, ApplicationStatus, Role, STATUS_LABELS } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ExternalLink, Loader2, LayoutGrid, Table2, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const KANBAN_COLUMNS: ApplicationStatus[] = [
   'applied', 'phone_screen', 'oa', 'interview', 'offer',
@@ -30,13 +30,66 @@ const STATUS_COLORS: Record<ApplicationStatus, string> = {
   withdrawn:     'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
 };
 
-async function patchApplication(id: string, status: ApplicationStatus, notes?: string) {
+const SOURCE_LABELS: Record<string, string> = {
+  pittcsc: 'SimplifyJobs',
+  simplify_internships: 'Simplify Internships',
+  remoteok: 'RemoteOK',
+  arbeitnow: 'Arbeitnow',
+  adzuna: 'Adzuna',
+  themuse: 'The Muse',
+};
+
+const ROLE_OPTIONS: Role[] = ['SWE', 'DS', 'ML', 'AI', 'Analyst', 'PM'];
+
+const ROLE_CHIP_COLORS: Record<Role, string> = {
+  SWE:     'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+  DS:      'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+  ML:      'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+  AI:      'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
+  Analyst: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+  PM:      'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border-pink-200 dark:border-pink-800',
+};
+
+async function patchApplication(id: string, status?: ApplicationStatus, notes?: string) {
+  const body: Record<string, unknown> = {};
+  if (status !== undefined) body.status = status;
+  if (notes !== undefined) body.notes = notes;
+
   const res = await fetch(`/api/applications/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status, notes }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error('Update failed');
+}
+
+function NotesCell({
+  appId,
+  initialNotes,
+  onSave,
+}: {
+  appId: string;
+  initialNotes: string;
+  onSave: (id: string, notes: string) => void;
+}) {
+  const [value, setValue] = useState(initialNotes);
+
+  function handleBlur() {
+    if (value !== initialNotes) {
+      onSave(appId, value);
+    }
+  }
+
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={e => setValue(e.target.value)}
+      onBlur={handleBlur}
+      placeholder="Add notes…"
+      className="w-full min-w-[140px] h-7 text-xs bg-transparent border border-transparent rounded-md px-2 hover:border-border focus:border-border focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+    />
+  );
 }
 
 function KanbanCard({
@@ -52,7 +105,7 @@ function KanbanCard({
       className="w-full text-left rounded-lg border border-border/70 bg-card p-3 shadow-sm hover:shadow-md transition-shadow space-y-1.5"
     >
       <p className="font-medium text-sm leading-snug">{app.job?.company ?? '—'}</p>
-      <p className="text-xs text-muted-foreground truncate">{app.job?.title ?? '—'}</p>
+      <p className="text-xs text-muted-foreground line-clamp-2">{app.job?.title ?? '—'}</p>
       <p className="text-xs text-muted-foreground">
         {formatDistanceToNow(new Date(app.applied_at), { addSuffix: true })}
       </p>
@@ -71,6 +124,14 @@ export default function ApplicationTracker() {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // View toggle — default to table
+  const [view, setView] = useState<'table' | 'kanban'>('table');
+
+  // Filters
+  const [filterRoles, setFilterRoles] = useState<Role[]>([]);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterDate, setFilterDate] = useState('any');
+
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -86,17 +147,59 @@ export default function ApplicationTracker() {
       else setApps((data ?? []) as Application[]);
       setLoading(false);
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Client-side filtering
+  const filteredApps = apps.filter(app => {
+    if (filterRoles.length > 0) {
+      const jobRoles = (app.job?.roles ?? []) as string[];
+      if (!filterRoles.some(r => jobRoles.includes(r))) return false;
+    }
+    if (filterStatus !== 'all' && app.status !== filterStatus) return false;
+    if (filterDate !== 'any') {
+      const hoursMap: Record<string, number> = { '1': 24, '3': 72, '7': 168, '30': 720 };
+      const maxHours = hoursMap[filterDate];
+      if (maxHours) {
+        const diffHours = (Date.now() - new Date(app.applied_at).getTime()) / 3600000;
+        if (diffHours > maxHours) return false;
+      }
+    }
+    return true;
+  });
+
+  const hasActiveFilters = filterRoles.length > 0 || filterStatus !== 'all' || filterDate !== 'any';
+
+  function clearFilters() {
+    setFilterRoles([]);
+    setFilterStatus('all');
+    setFilterDate('any');
+  }
+
+  function toggleRole(role: Role) {
+    setFilterRoles(prev =>
+      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+    );
+  }
 
   async function handleStatusChange(app: Application, status: ApplicationStatus) {
     const prev = apps;
     setApps(apps.map(a => a.id === app.id ? { ...a, status } : a));
     try {
-      await patchApplication(app.id, status, app.notes);
+      await patchApplication(app.id, status);
       toast.success(`Moved to ${STATUS_LABELS[status]}`);
     } catch {
       setApps(prev);
       toast.error('Failed to update status');
+    }
+  }
+
+  async function handleNoteSave(appId: string, newNotes: string) {
+    setApps(prev => prev.map(a => a.id === appId ? { ...a, notes: newNotes } : a));
+    try {
+      await patchApplication(appId, undefined, newNotes);
+    } catch {
+      toast.error('Failed to save notes');
     }
   }
 
@@ -132,7 +235,7 @@ export default function ApplicationTracker() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
         <p className="text-lg font-medium">No applications yet</p>
-        <p className="text-sm">Click Apply on any job card and it'll appear here automatically.</p>
+        <p className="text-sm">Click &quot;+ Track&quot; on any job card and it&apos;ll appear here.</p>
       </div>
     );
   }
@@ -149,7 +252,6 @@ export default function ApplicationTracker() {
                 <p className="text-sm text-muted-foreground">{selected.job?.company}</p>
               </SheetHeader>
               <div className="mt-6 space-y-5">
-                {/* Status */}
                 <div className="space-y-1.5">
                   <Label>Status</Label>
                   <Select
@@ -170,7 +272,6 @@ export default function ApplicationTracker() {
                   </Select>
                 </div>
 
-                {/* Notes */}
                 <div className="space-y-1.5">
                   <Label>Notes</Label>
                   <Textarea
@@ -181,7 +282,6 @@ export default function ApplicationTracker() {
                   />
                 </div>
 
-                {/* Job link */}
                 {selected.job?.url && (
                   <a
                     href={selected.job.url}
@@ -209,20 +309,159 @@ export default function ApplicationTracker() {
         </SheetContent>
       </Sheet>
 
-      <Tabs defaultValue="kanban" className="flex flex-col flex-1">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col flex-1 gap-5">
+        {/* Header row */}
+        <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Application Tracker</h1>
-          <TabsList>
-            <TabsTrigger value="kanban">Kanban</TabsTrigger>
-            <TabsTrigger value="table">Table</TabsTrigger>
-          </TabsList>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 text-sm"
+            onClick={() => setView(v => v === 'table' ? 'kanban' : 'table')}
+          >
+            {view === 'table' ? (
+              <><LayoutGrid className="h-4 w-4" />Switch to Kanban view</>
+            ) : (
+              <><Table2 className="h-4 w-4" />Switch to Table view</>
+            )}
+          </Button>
         </div>
 
-        {/* ── KANBAN ── */}
-        <TabsContent value="kanban" className="flex-1">
+        {/* Filter bar */}
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
+          {/* Role chips */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {ROLE_OPTIONS.map(role => (
+              <button
+                key={role}
+                onClick={() => toggleRole(role)}
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
+                  filterRoles.includes(role)
+                    ? ROLE_CHIP_COLORS[role]
+                    : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                )}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-4 w-px bg-border hidden sm:block" />
+
+          {/* Status dropdown */}
+          <Select value={filterStatus} onValueChange={v => setFilterStatus(v ?? 'all')}>
+            <SelectTrigger className="h-7 w-36 text-xs">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">All statuses</SelectItem>
+              {ALL_STATUSES.map(s => (
+                <SelectItem key={s} value={s} className="text-xs">{STATUS_LABELS[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Date applied dropdown */}
+          <Select value={filterDate} onValueChange={v => setFilterDate(v ?? 'any')}>
+            <SelectTrigger className="h-7 w-36 text-xs">
+              <SelectValue placeholder="Date applied" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any" className="text-xs">Any time</SelectItem>
+              <SelectItem value="1" className="text-xs">Last 24h</SelectItem>
+              <SelectItem value="3" className="text-xs">Last 3 days</SelectItem>
+              <SelectItem value="7" className="text-xs">Last week</SelectItem>
+              <SelectItem value="30" className="text-xs">Last month</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3 w-3" />
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Application count */}
+        <p className="text-sm text-muted-foreground -mt-2">
+          {filteredApps.length} application{filteredApps.length !== 1 ? 's' : ''}
+        </p>
+
+        {/* No results */}
+        {filteredApps.length === 0 && hasActiveFilters ? (
+          <div className="flex flex-1 flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+            <p className="font-medium">No applications match your filters</p>
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          </div>
+        ) : view === 'table' ? (
+          /* ── TABLE ── */
+          <div className="overflow-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase tracking-wider">
+                  <th className="pb-3 pr-4 font-medium">Company</th>
+                  <th className="pb-3 pr-4 font-medium">Role</th>
+                  <th className="pb-3 pr-4 font-medium">Status</th>
+                  <th className="pb-3 pr-4 font-medium">Applied</th>
+                  <th className="pb-3 pr-4 font-medium">Source</th>
+                  <th className="pb-3 font-medium">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filteredApps.map(app => (
+                  <tr key={app.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="py-3 pr-4 font-medium whitespace-nowrap">{app.job?.company ?? '—'}</td>
+                    <td className="py-3 pr-4 text-muted-foreground max-w-[240px]">
+                      {app.job?.title ?? '—'}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Select
+                        value={app.status}
+                        onValueChange={val => handleStatusChange(app, val as ApplicationStatus)}
+                      >
+                        <SelectTrigger className="h-7 w-36 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_STATUSES.map(s => (
+                            <SelectItem key={s} value={s} className="text-xs">
+                              {STATUS_LABELS[s]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="py-3 pr-4 text-muted-foreground text-xs whitespace-nowrap">
+                      {formatDistanceToNow(new Date(app.applied_at), { addSuffix: true })}
+                    </td>
+                    <td className="py-3 pr-4 text-xs text-muted-foreground whitespace-nowrap">
+                      {SOURCE_LABELS[app.job?.source ?? ''] ?? app.job?.source ?? '—'}
+                    </td>
+                    <td className="py-3">
+                      <NotesCell
+                        key={app.id}
+                        appId={app.id}
+                        initialNotes={app.notes ?? ''}
+                        onSave={handleNoteSave}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* ── KANBAN ── */
           <div className="flex gap-4 overflow-x-auto pb-4">
             {KANBAN_COLUMNS.map(col => {
-              const colApps = apps.filter(a => a.status === col);
+              const colApps = filteredApps.filter(a => a.status === col);
               return (
                 <div key={col} className="flex flex-col gap-3 min-w-[200px] w-[200px]">
                   <div className="flex items-center justify-between">
@@ -254,11 +493,11 @@ export default function ApplicationTracker() {
                   Closed
                 </span>
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                  {apps.filter(a => TERMINAL_STATUSES.includes(a.status)).length}
+                  {filteredApps.filter(a => TERMINAL_STATUSES.includes(a.status)).length}
                 </span>
               </div>
               <div className="flex flex-col gap-2">
-                {apps
+                {filteredApps
                   .filter(a => TERMINAL_STATUSES.includes(a.status))
                   .map(app => (
                     <KanbanCard key={app.id} app={app} onClick={() => openSlideOver(app)} />
@@ -266,56 +505,8 @@ export default function ApplicationTracker() {
               </div>
             </div>
           </div>
-        </TabsContent>
-
-        {/* ── TABLE ── */}
-        <TabsContent value="table" className="flex-1 overflow-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase tracking-wider">
-                <th className="pb-3 pr-4 font-medium">Company</th>
-                <th className="pb-3 pr-4 font-medium">Role</th>
-                <th className="pb-3 pr-4 font-medium">Status</th>
-                <th className="pb-3 pr-4 font-medium">Applied</th>
-                <th className="pb-3 font-medium">Source</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {apps.map(app => (
-                <tr key={app.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="py-3 pr-4 font-medium">{app.job?.company ?? '—'}</td>
-                  <td className="py-3 pr-4 max-w-[200px] truncate text-muted-foreground">
-                    {app.job?.title ?? '—'}
-                  </td>
-                  <td className="py-3 pr-4">
-                    <Select
-                      value={app.status}
-                      onValueChange={val => handleStatusChange(app, val as ApplicationStatus)}
-                    >
-                      <SelectTrigger className="h-7 w-36 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ALL_STATUSES.map(s => (
-                          <SelectItem key={s} value={s} className="text-xs">
-                            {STATUS_LABELS[s]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="py-3 pr-4 text-muted-foreground text-xs">
-                    {formatDistanceToNow(new Date(app.applied_at), { addSuffix: true })}
-                  </td>
-                  <td className="py-3 text-xs text-muted-foreground">
-                    {app.job?.source ?? '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </>
   );
 }

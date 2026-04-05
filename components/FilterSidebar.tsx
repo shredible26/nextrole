@@ -35,16 +35,14 @@ interface Props {
 
 export default function FilterSidebar({ filters, onChange }: Props) {
   function toggleRole(role: Role) {
-    const roles = filters.roles.includes(role)
-      ? filters.roles.filter(r => r !== role)
-      : [...filters.roles, role];
+    // Single-select: clicking the active chip deselects; clicking another switches to it
+    const roles = filters.roles[0] === role ? [] : [role];
     onChange({ ...filters, roles, page: 1 });
   }
 
   function toggleSource(source: string) {
-    const sources = filters.sources.includes(source)
-      ? filters.sources.filter(s => s !== source)
-      : [...filters.sources, source];
+    // Single-select: selecting '' means no filter; selecting the active source deselects it
+    const sources = source === '' || filters.sources[0] === source ? [] : [source];
     onChange({ ...filters, sources, page: 1 });
   }
 
@@ -143,13 +141,26 @@ export default function FilterSidebar({ filters, onChange }: Props) {
           Source
         </p>
         <div className="space-y-2">
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="radio"
+              name="source"
+              value=""
+              checked={filters.sources.length === 0}
+              onChange={() => toggleSource('')}
+              className="accent-primary"
+            />
+            All
+          </label>
           {SOURCES.map(({ value, label }) => (
             <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
               <input
-                type="checkbox"
-                checked={filters.sources.includes(value)}
+                type="radio"
+                name="source"
+                value={value}
+                checked={filters.sources[0] === value}
                 onChange={() => toggleSource(value)}
-                className="accent-primary rounded"
+                className="accent-primary"
               />
               {label}
             </label>

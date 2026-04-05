@@ -7,6 +7,7 @@ import JobCard from './JobCard';
 import UpgradeModal from './UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Job, JobFilters } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 import { Loader2 } from 'lucide-react';
 
 const DEFAULT_FILTERS: JobFilters = {
@@ -28,15 +29,32 @@ interface FeedResponse {
 }
 
 export default function JobFeed() {
+  const supabase = createClient();
   const [filters, setFilters] = useState<JobFilters>(DEFAULT_FILTERS);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
+  const [trackedIds, setTrackedIds] = useState<Set<string>>(new Set());
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const isFirstLoad = useRef(true);
+
+  // Pre-populate tracked IDs from the user's existing applications
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('applications')
+        .select('job_id')
+        .eq('user_id', user.id);
+      if (data) {
+        setTrackedIds(new Set(data.map((a: { job_id: string }) => a.job_id)));
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const buildQuery = useCallback((f: JobFilters) => {
     const params = new URLSearchParams();
@@ -57,7 +75,6 @@ export default function JobFeed() {
 
       if (data.upgrade) {
         setShowUpgrade(true);
-        // Keep existing jobs visible — do not replace the list
         return;
       }
       if (data.error) {
@@ -80,7 +97,7 @@ export default function JobFeed() {
     }
   }, [buildQuery]);
 
-  // On filter change, always reset to page 1 and fetch fresh results
+  // On filter change, reset to page 1 and fetch fresh results
   useEffect(() => {
     if (isFirstLoad.current) {
       isFirstLoad.current = false;
@@ -97,16 +114,23 @@ export default function JobFeed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleApply(job: Job) {
-    setAppliedIds(prev => new Set([...prev, job.id]));
+  async function handleTrack(job: Job) {
+    // Optimistic update
+    setTrackedIds(prev => new Set([...prev, job.id]));
 
     fetch('/api/apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ job_id: job.id }),
-    }).catch(() => {});
-
-    window.open(job.url, '_blank', 'noopener,noreferrer');
+    }).catch(() => {
+      // Revert on failure
+      setTrackedIds(prev => {
+        const next = new Set(prev);
+        next.delete(job.id);
+        return next;
+      });
+      toast.error('Failed to track application');
+    });
   }
 
   function handleLoadMore() {
@@ -154,8 +178,8 @@ export default function JobFeed() {
                 <JobCard
                   key={job.id}
                   job={job}
-                  applied={appliedIds.has(job.id)}
-                  onApply={handleApply}
+                  tracked={trackedIds.has(job.id)}
+                  onTrack={handleTrack}
                 />
               ))}
             </div>
