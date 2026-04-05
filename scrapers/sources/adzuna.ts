@@ -15,18 +15,19 @@ const SEARCH_TERMS = [
   'data analyst entry level',
 ];
 
-
 export async function scrapeAdzuna(): Promise<NormalizedJob[]> {
-  const results: NormalizedJob[] = [];
   if (!process.env.ADZUNA_APP_ID || !process.env.ADZUNA_APP_KEY) {
-    console.warn('  ⚠ Adzuna: no API keys set, skipping');
+    console.warn('  ⚠ Adzuna: no API keys configured, skipping');
     return [];
   }
+
+  const results: NormalizedJob[] = [];
+
   for (const term of SEARCH_TERMS) {
     try {
       const url = new URL(`${BASE}/1`);
-      url.searchParams.set('app_id', process.env.ADZUNA_APP_ID!);
-      url.searchParams.set('app_key', process.env.ADZUNA_APP_KEY!);
+      url.searchParams.set('app_id', process.env.ADZUNA_APP_ID);
+      url.searchParams.set('app_key', process.env.ADZUNA_APP_KEY);
       url.searchParams.set('what', term);
       url.searchParams.set('results_per_page', '50');
       url.searchParams.set('max_days_old', '7');

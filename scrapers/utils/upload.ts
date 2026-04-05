@@ -23,12 +23,36 @@ export async function deactivateStaleJobs(
 ): Promise<void> {
   if (activeHashes.length === 0) return;
 
-  // Mark any jobs from this source NOT in the current scrape as inactive
-  const { error } = await supabase
+  // Fetch all currently-active jobs for this source
+  const { data: existingJobs, error: fetchError } = await supabase
     .from('jobs')
-    .update({ is_active: false })
+    .select('id, dedup_hash')
     .eq('source', sourceName)
-    .not('dedup_hash', 'in', `(${activeHashes.map(h => `'${h}'`).join(',')})`);
+    .eq('is_active', true);
 
-  if (error) console.warn(`  ⚠ Stale job cleanup failed for ${sourceName}:`, error.message);
+  if (fetchError) {
+    console.warn(`  ⚠ Stale job fetch failed for ${sourceName}:`, fetchError.message);
+    return;
+  }
+
+  const activeHashSet = new Set(activeHashes);
+  const staleIds = (existingJobs ?? [])
+    .filter(job => !activeHashSet.has(job.dedup_hash))
+    .map(job => job.id);
+
+  if (staleIds.length === 0) return;
+
+  // Chunk to avoid hitting Supabase's IN-clause limits
+  const CHUNK_SIZE = 500;
+  for (let i = 0; i < staleIds.length; i += CHUNK_SIZE) {
+    const chunk = staleIds.slice(i, i + CHUNK_SIZE);
+    const { error } = await supabase
+      .from('jobs')
+      .update({ is_active: false })
+      .in('id', chunk);
+
+    if (error) console.warn(`  ⚠ Stale cleanup chunk failed for ${sourceName}:`, error.message);
+  }
+
+  console.log(`  ↩ Deactivated ${staleIds.length} stale jobs for ${sourceName}`);
 }

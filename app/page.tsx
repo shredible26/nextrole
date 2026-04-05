@@ -1,65 +1,121 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+const STATS = [
+  { value: '33,000+', label: 'Jobs aggregated' },
+  { value: '10+', label: 'Sources' },
+  { value: '100%', label: 'Auto-tracked' },
+];
+
+const SOURCES = [
+  'SimplifyJobs', 'RemoteOK', 'Adzuna', 'Arbeitnow',
+  'The Muse', 'Jobright', 'Levels.fyi', 'LinkedIn*',
+];
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex flex-col flex-1">
+      {/* Hero */}
+      <section className="flex flex-col items-center justify-center px-4 pt-24 pb-20 text-center">
+        <Badge variant="secondary" className="mb-6 text-xs font-medium">
+          Now in beta · Week 1 sources live
+        </Badge>
+
+        <h1 className="max-w-3xl text-5xl font-bold tracking-tight leading-[1.1] sm:text-6xl">
+          Every new grad tech job.{' '}
+          <span className="text-primary">One feed.</span>
+        </h1>
+
+        <p className="mt-6 max-w-xl text-lg text-muted-foreground leading-relaxed">
+          NexTRole aggregates SWE, DS, ML, and AI roles from 10+ sources and
+          auto-tracks every application — so you can focus on applying, not searching.
+        </p>
+
+        <div className="mt-10 flex flex-col sm:flex-row items-center gap-3">
+          <Link
+            href="/jobs"
+            className={cn(buttonVariants({ size: 'lg' }), 'px-8')}
+          >
+            Browse Jobs →
+          </Link>
+          <Link
+            href="/pricing"
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+          >
+            See Pricing
+          </Link>
+        </div>
+      </section>
+
+      {/* Stats row */}
+      <section className="border-y border-border/60 bg-muted/30">
+        <div className="mx-auto max-w-4xl px-4 py-10 grid grid-cols-3 gap-6 text-center">
+          {STATS.map(({ value, label }) => (
+            <div key={label}>
+              <p className="text-3xl font-bold tracking-tight">{value}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="mx-auto max-w-4xl px-4 py-20">
+        <h2 className="text-center text-2xl font-semibold tracking-tight mb-12">
+          How it works
+        </h2>
+        <div className="grid gap-8 sm:grid-cols-3">
+          {[
+            {
+              step: '01',
+              title: 'We scrape daily',
+              body: 'Scrapers run every morning at 3 AM EST pulling fresh listings from all sources.',
+            },
+            {
+              step: '02',
+              title: 'You apply once',
+              body: 'Click Apply on any card. The application is auto-logged in your tracker — no manual entry.',
+            },
+            {
+              step: '03',
+              title: 'Track your pipeline',
+              body: 'Kanban or table view. Move cards through Applied → Interview → Offer with one click.',
+            },
+          ].map(({ step, title, body }) => (
+            <div key={step} className="flex flex-col gap-3">
+              <span className="text-xs font-mono font-semibold text-muted-foreground">{step}</span>
+              <h3 className="font-semibold text-base">{title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Sources */}
+      <section className="border-t border-border/60 bg-muted/20 px-4 py-16">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="text-sm font-medium text-muted-foreground mb-6">
+            Pulling from these sources and more
           </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {SOURCES.map(s => (
+              <Badge key={s} variant="outline" className="text-xs">
+                {s}
+              </Badge>
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">* LinkedIn coming Week 3</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border/60 px-4 py-6 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} NexTRole · Built for new grads
+      </footer>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // Source: https://www.themuse.com/api/public/jobs
 // Public API — optional key for higher rate limits. Entry-level focused.
-// Filter by level=Entry Level and category=Engineering etc.
+// Filters by category only (level filter was causing 0 results).
 
 import { generateHash } from '../utils/dedup';
 import { inferRoles, inferRemote, NormalizedJob } from '../utils/normalize';
@@ -15,14 +15,20 @@ export async function scrapeTheMuse(): Promise<NormalizedJob[]> {
     try {
       const url = new URL(BASE);
       url.searchParams.set('category', category);
-      url.searchParams.set('level', 'Entry Level');
       url.searchParams.set('page', '0');
       if (process.env.MUSE_API_KEY) {
         url.searchParams.set('api_key', process.env.MUSE_API_KEY);
       }
 
       const res = await fetch(url.toString());
+      if (!res.ok) {
+        console.warn(`  ⚠ TheMuse category "${category}" returned HTTP ${res.status}`);
+        continue;
+      }
+
       const data = await res.json();
+      const rawCount = data.results?.length ?? 0;
+      console.log(`  → TheMuse [${category}]: ${rawCount} raw results`);
 
       for (const job of data.results ?? []) {
         const location = job.locations?.[0]?.name ?? '';
