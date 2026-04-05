@@ -41,31 +41,83 @@ export function inferRemote(location?: string): boolean {
     .some(k => location.toLowerCase().includes(k));
 }
 
-// Keywords that indicate a role is too senior — exclude entirely.
-const SENIOR_KEYWORDS = [
-  'senior', 'sr.', 'sr ', 'staff', 'principal', 'director',
-  'vp ', 'vice president', 'head of', 'manager', 'lead ', ' lead',
-  'architect', 'distinguished', 'fellow',
-];
-
-// Exception: tech lead / team lead can pass if they also carry new_grad signals.
-const LEAD_EXCEPTIONS = ['tech lead', 'team lead'];
-
-const INTERNSHIP_KEYWORDS = ['intern', 'internship', 'co-op', 'coop', 'co op'];
+const INTERNSHIP_KEYWORDS = ['intern', 'internship', 'co-op', 'coop'];
 
 const NEW_GRAD_KEYWORDS = [
-  'new grad', 'new graduate', 'early career', 'entry',
-  '2025', '2026', 'university grad', 'campus', 'junior', 'graduate',
+  'new grad', 'new graduate', 'early career', '2025', '2026',
+  'university grad', 'campus hire', 'junior',
+  'associate engineer', 'associate developer', 'associate analyst', 'associate scientist',
+  'software engineer 1', 'engineer 1', 'swe 1', 'sde 1', 'software developer 1',
 ];
 
 const ENTRY_LEVEL_KEYWORDS = [
   'entry level', 'entry-level', '0-2 years', '0-3 years',
   '1-2 years', '1-3 years', 'no experience required',
+  'recent graduate', 'recent grad',
 ];
 
 /**
+ * Test whether a word/phrase appears as a standalone token (word boundary) in a string.
+ * Handles multi-word phrases by anchoring to word boundaries on each side.
+ */
+function hasWord(text: string, phrase: string): boolean {
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![a-z])${escaped}(?![a-z])`, 'i').test(text);
+}
+
+/**
+ * Returns true when the title clearly belongs to a senior/leadership role
+ * that should be excluded from the entry-level feed.
+ *
+ * Rules:
+ *  - "senior" or "sr." anywhere as standalone words
+ *  - "staff engineer", "staff software" as phrases
+ *  - "principal engineer", "principal software", "principal data" as phrases
+ *  - "director", "vp of", "vice president", "head of" as standalone/phrases
+ *  - "engineering manager" as a phrase
+ *  - "product manager" ONLY when NOT accompanied by "associate" or "junior"
+ *  - "distinguished", "fellow" as standalone words
+ *
+ * NOT excluded: "lead" alone, "manager" alone, "architect" alone.
+ */
+function isSeniorTitle(title: string): boolean {
+  const t = title.toLowerCase();
+
+  if (hasWord(t, 'senior')) return true;
+  if (hasWord(t, 'sr\\.') || /\bsr\b/.test(t)) return true;
+
+  if (t.includes('staff engineer') || t.includes('staff software')) return true;
+  if (
+    t.includes('principal engineer') ||
+    t.includes('principal software') ||
+    t.includes('principal data')
+  ) return true;
+
+  if (hasWord(t, 'director')) return true;
+  if (t.includes('vp of') || hasWord(t, 'vp')) return true;
+  if (t.includes('vice president')) return true;
+  if (t.includes('head of')) return true;
+
+  if (t.includes('engineering manager')) return true;
+
+  if (t.includes('product manager')) {
+    const hasJuniorSignal = t.includes('associate') || t.includes('junior');
+    if (!hasJuniorSignal) return true;
+  }
+
+  if (hasWord(t, 'distinguished')) return true;
+  if (hasWord(t, 'fellow')) return true;
+
+  return false;
+}
+
+/**
  * Infer the experience level from a job title (and optional description).
- * Returns null when the role is clearly mid/senior-level — callers should skip those jobs.
+ * Returns null when the role is clearly senior — callers should skip those jobs.
+ *
+ * Default behaviour (Step 2): when no explicit seniority signal is found,
+ * returns 'entry_level' instead of null so that Greenhouse/Lever postings
+ * without explicit level markers are still included.
  */
 export function inferExperienceLevel(
   title: string,
@@ -74,36 +126,22 @@ export function inferExperienceLevel(
   const t = title.toLowerCase();
   const c = (content ?? '').toLowerCase();
 
-  // Internship signals take top priority.
+  // Step 1 — Internship takes top priority (before senior check).
   if (INTERNSHIP_KEYWORDS.some(k => t.includes(k))) return 'internship';
 
-  // Senior exclusion check.
-  const isSenior = SENIOR_KEYWORDS.some(k => t.includes(k));
-  if (isSenior) {
-    // tech lead / team lead exception: only pass through with new_grad signals.
-    const isLeadException = LEAD_EXCEPTIONS.some(e => t.includes(e));
-    if (!isLeadException) return null;
+  // Step 1 — Senior exclusion.
+  if (isSeniorTitle(t)) return null;
 
-    const isAssociate =
-      t.includes('associate') &&
-      ['engineer', 'developer', 'analyst'].some(r => t.includes(r));
-    if (!isAssociate && !NEW_GRAD_KEYWORDS.some(k => t.includes(k))) return null;
-    return 'new_grad';
-  }
+  // Step 2 — New grad signals in title.
+  if (NEW_GRAD_KEYWORDS.some(k => t.includes(k))) return 'new_grad';
 
-  // New grad signals in title.
-  const isAssociate =
-    t.includes('associate') &&
-    ['engineer', 'developer', 'analyst'].some(r => t.includes(r));
-  if (isAssociate || NEW_GRAD_KEYWORDS.some(k => t.includes(k))) {
-    return 'new_grad';
-  }
-
-  // Entry-level signals in title or description.
+  // Step 2 — Entry-level signals in title or description.
   if (ENTRY_LEVEL_KEYWORDS.some(k => t.includes(k) || c.includes(k))) {
     return 'entry_level';
   }
 
-  // No signal found — likely mid/senior, exclude.
-  return null;
+  // Step 2 — Default: keep the job as entry_level.
+  // Greenhouse/Lever boards are curated and typically don't carry explicit
+  // seniority signals on legitimate junior postings.
+  return 'entry_level';
 }
