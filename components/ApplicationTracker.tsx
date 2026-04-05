@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Application, ApplicationStatus, Role, STATUS_LABELS } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
-import { ExternalLink, Loader2, LayoutGrid, Table2, X } from 'lucide-react';
+import { ExternalLink, Loader2, LayoutGrid, Table2, X, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { removeTrackedId } from '@/lib/trackedStorage';
 
 const KANBAN_COLUMNS: ApplicationStatus[] = [
   'applied', 'phone_screen', 'oa', 'interview', 'offer',
@@ -127,6 +128,9 @@ export default function ApplicationTracker() {
   // View toggle — default to table
   const [view, setView] = useState<'table' | 'kanban'>('table');
 
+  // Row pending inline confirm before delete
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
   // Filters
   const [filterRoles, setFilterRoles] = useState<Role[]>([]);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -200,6 +204,21 @@ export default function ApplicationTracker() {
       await patchApplication(appId, undefined, newNotes);
     } catch {
       toast.error('Failed to save notes');
+    }
+  }
+
+  async function handleDeleteApp(appId: string, jobId: string | undefined) {
+    // Optimistic: remove from local state and localStorage immediately
+    setApps(prev => prev.filter(a => a.id !== appId));
+    setConfirmingDeleteId(null);
+    if (jobId) removeTrackedId(jobId);
+
+    try {
+      const res = await fetch(`/api/applications/${appId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+    } catch {
+      toast.error('Failed to remove application');
+      // Re-fetch would be ideal here; for now the user can reload
     }
   }
 
@@ -411,7 +430,8 @@ export default function ApplicationTracker() {
                   <th className="pb-3 pr-4 font-medium">Status</th>
                   <th className="pb-3 pr-4 font-medium">Applied</th>
                   <th className="pb-3 pr-4 font-medium">Source</th>
-                  <th className="pb-3 font-medium">Notes</th>
+                  <th className="pb-3 pr-4 font-medium">Notes</th>
+                  <th className="pb-3 w-8" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -444,13 +464,40 @@ export default function ApplicationTracker() {
                     <td className="py-3 pr-4 text-xs text-muted-foreground whitespace-nowrap">
                       {SOURCE_LABELS[app.job?.source ?? ''] ?? app.job?.source ?? '—'}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 pr-4">
                       <NotesCell
                         key={app.id}
                         appId={app.id}
                         initialNotes={app.notes ?? ''}
                         onSave={handleNoteSave}
                       />
+                    </td>
+                    <td className="py-3 text-right">
+                      {confirmingDeleteId === app.id ? (
+                        <div className="flex items-center justify-end gap-2 text-xs">
+                          <span className="text-muted-foreground whitespace-nowrap">Remove?</span>
+                          <button
+                            onClick={() => handleDeleteApp(app.id, app.job_id)}
+                            className="font-medium text-red-500 hover:text-red-600 transition-colors"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setConfirmingDeleteId(null)}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmingDeleteId(app.id)}
+                          className="p-1 rounded text-muted-foreground/50 hover:text-red-500 transition-colors"
+                          aria-label="Remove application"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

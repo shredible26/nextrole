@@ -21,11 +21,10 @@ const POSTED_OPTIONS: { value: JobFilters['postedWithin']; label: string }[] = [
 ];
 const SOURCES = [
   { value: 'pittcsc', label: 'SimplifyJobs (New Grad)' },
-  { value: 'simplify_internships', label: 'SimplifyJobs (Intern)' },
+  { value: 'simplify_internships', label: 'Simplify Internships' },
   { value: 'adzuna', label: 'Adzuna' },
   { value: 'remoteok', label: 'RemoteOK' },
   { value: 'arbeitnow', label: 'Arbeitnow' },
-  { value: 'themuse', label: 'The Muse' },
 ];
 
 interface Props {

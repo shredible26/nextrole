@@ -8,6 +8,7 @@ import UpgradeModal from './UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Job, JobFilters } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
+import { getTrackedIds, addTrackedId, removeTrackedId, writeTrackedIds } from '@/lib/trackedStorage';
 import { Loader2 } from 'lucide-react';
 
 const DEFAULT_FILTERS: JobFilters = {
@@ -35,7 +36,8 @@ export default function JobFeed() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [trackedIds, setTrackedIds] = useState<Set<string>>(new Set());
+  // Seed from localStorage immediately so cards render correct state before Supabase resolves
+  const [trackedIds, setTrackedIds] = useState<Set<string>>(() => getTrackedIds());
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const isFirstLoad = useRef(true);
@@ -50,7 +52,10 @@ export default function JobFeed() {
         .select('job_id')
         .eq('user_id', user.id);
       if (data) {
-        setTrackedIds(new Set(data.map((a: { job_id: string }) => a.job_id)));
+        // Supabase is source of truth — overwrite localStorage with authoritative set
+        const ids = new Set(data.map((a: { job_id: string }) => a.job_id));
+        setTrackedIds(ids);
+        writeTrackedIds(ids);
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,20 +120,22 @@ export default function JobFeed() {
   }, []);
 
   async function handleTrack(job: Job) {
-    // Optimistic update
+    // Optimistic update — both React state and localStorage
     setTrackedIds(prev => new Set([...prev, job.id]));
+    addTrackedId(job.id);
 
     fetch('/api/apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ job_id: job.id }),
     }).catch(() => {
-      // Revert on failure
+      // Revert both on failure
       setTrackedIds(prev => {
         const next = new Set(prev);
         next.delete(job.id);
         return next;
       });
+      removeTrackedId(job.id);
       toast.error('Failed to track application');
     });
   }
