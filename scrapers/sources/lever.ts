@@ -1,169 +1,112 @@
-// Source: https://api.lever.co/v0/postings/{company}?mode=json
+// Source: https://api.lever.co/v0/postings/{company}?mode=json&limit=50
 // Fully public API — no auth, no key. Returns JSON postings for each company.
-// Strategy: fire all company fetches concurrently; silently skip 404/500s.
+// Strategy: fetch curated slugs in small batches and silently skip dead slugs/errors.
 
 import { generateHash } from '../utils/dedup';
 import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
-const COMPANIES: Record<string, string> = {
-  // Big Tech / Social
-  'netflix': 'Netflix',
-  'reddit': 'Reddit',
-  'pinterest': 'Pinterest',
-  'snap': 'Snap',
-  'discord': 'Discord',
-  'twitch': 'Twitch',
+// Live upstream-verified slugs from Simplify + ambicuity.
+const UPSTREAM_VERIFIED_LEVER_COMPANIES = [
+  '2os', 'agile-defense', 'agtonomy', 'AIFund', 'alertus',
+  'allegiantair', 'alltrails', 'analyticpartners', 'anomali', 'appen',
+  'appen-2', 'Aprio', 'arable', 'arcteryx.com', 'arrivelogistics',
+  'atlassian', 'attentive', 'beghouconsulting', 'belvederetrading', 'beta',
+  'bosonai', 'bumbleinc', 'canvasww', 'cascademgt', 'Catbird',
+  'cef', 'certik', 'CesiumAstro', 'cfsenergy', 'cgsfederal',
+  'cirrus', 'cleanspark', 'Clearer', 'cobaltrobotics', 'color',
+  'commercearchitects', 'commonlit', 'compassx', 'CordTechnologies', 'cority',
+  'crestoperations', 'cx2', 'datalabusa', 'deltasands', 'demiurgestudios',
+  'dexterity', 'diversified-automation', 'dnb', 'e2optics', 'eastern-communications',
+  'economicmodeling', 'elfbeauty', 'enable', 'entrata', 'eqbank',
+  'espace', 'esrtreit', 'ethena', 'exowatt', 'field-ai',
+  'finix', 'fiscalnote', 'fullscript', 'gauntlet', 'getwingapp',
+  'getzuma', 'glsllc', 'gmo', 'goodamerican', 'goodleap',
+  'gopuff', 'greenlight', 'Grid', 'gridmatic', 'hermeus',
+  'hhaexchange', 'hive', 'honkforhelp', 'inductiveautomation', 'infstones',
+  'intrafi', 'ion', 'ivo', 'jamcity', 'kddia',
+  'kitware', 'latitudeinc', 'leverdemo', 'leverdemo-8', 'life',
+  'lightedge', 'lightship', 'linkllc', 'lumafield', 'LuminDigital',
+  'luxurypresence', 'makpar', 'masterycharter', 'matchgroup', 'mcaconnect',
+  'mechanicalorchard', 'metergysolutions', 'modeln', 'moonpig', 'mti-inc',
+  'netflix', 'nevados', 'nextech', 'NimbleAI', 'nitra',
+  'nominal', 'oaknorth.ai', 'optionmetrics', 'palantir', 'parallelwireless',
+  'pditechnologies', 'penumbrainc', 'perforce', 'perrknight', 'pibenchmark',
+  'picklerobot', 'pingwind', 'pivotal', 'plaid', 'plusgrade',
+  'procept-biorobotics', 'prominentedge', 'q-ctrl', 'quantcast', 'quantinuum',
+  'RadicalAI', 'redsox', 'redwoodcu', 'regalvoice', 'reply',
+  'researchinnovations.com', 'revefi', 'rivosinc', 'robinpowered', 'rover',
+  'rws', 'saronic', 'saviynt', 'schmidt-entities', 'secureframe',
+  'SeiLabs', 'sensortower', 'sep', 'sfgiants', 'shieldai',
+  'shyftlabs', 'simulmedia', 'sonarsource', 'southwestwater', 'spotify',
+  'sprucesystems', 'sprypointservices', 'starcompliance', 'sunsrce', 'sunwatercapital',
+  'sylvera', 'sysdig', 'talentwerx.io', 'tangraminteriors', 'telesat',
+  'theinformationlab', 'theodo', 'thinkahead', 'topanga', 'tramgroup',
+  'Trend-Health-Partners', 'tri', 'truetandem', 'uncountable', 'unisoninfra',
+  'vailsys', 'valkyrietrading', 'veeva', 'voleon', 'voltus',
+  'wachter', 'webfx', 'welocalize', 'weride', 'whoop',
+  'windfalldata', 'windownation', 'wintermute-trading', 'wmg', 'wolve',
+  'wpromote', 'wyetechllc', 'xsolla', 'zoox', 'zopa',
+];
 
-  // Ride / Delivery
-  'lyft': 'Lyft',
+// Prompt-provided slugs that still return HTTP 200 from Lever as of April 6, 2026.
+const LIVE_MANUAL_VERIFIED_LEVER_COMPANIES = [
+  'cloudinary',
+  'jumpcloud',
+  'osaro',
+  'proof',
+  'tesorio',
+  'transcarent',
+];
+
+const LEVER_COMPANIES = [
+  ...new Set([
+    ...UPSTREAM_VERIFIED_LEVER_COMPANIES,
+    ...LIVE_MANUAL_VERIFIED_LEVER_COMPANIES,
+  ]),
+];
+
+// Lever's postings endpoint is slug-only and does not return company metadata.
+const COMPANY_NAME_OVERRIDES: Record<string, string> = {
   'doordash': 'DoorDash',
-  'instacart': 'Instacart',
-  'grubhub': 'Grubhub',
-
-  // Fintech
-  'affirm': 'Affirm',
-  'wise': 'Wise',
-  'remitly': 'Remitly',
-  'brex': 'Brex',
-  'mercury': 'Mercury',
-  'ramp': 'Ramp',
-  'gusto': 'Gusto',
-  'rippling': 'Rippling',
-  'zenefits': 'Zenefits',
-  'carta': 'Carta',
-  'capchase': 'Capchase',
-  'moonpay': 'MoonPay',
-  'fireblocks': 'Fireblocks',
-  'anchorage': 'Anchorage Digital',
-  'bitgo': 'BitGo',
-
-  // Gaming / Entertainment
-  'roblox': 'Roblox',
-  'unity': 'Unity',
-  'niantic': 'Niantic',
-  'scopely': 'Scopely',
-  'kabam': 'Kabam',
-  'zynga': 'Zynga',
-  'epicgames': 'Epic Games',
-
-  // EV / Auto
-  'rivian': 'Rivian',
-  'lucid': 'Lucid Motors',
-  'motional': 'Motional',
-
-  // SaaS / Productivity
-  'notion': 'Notion',
-  'airtable': 'Airtable',
-  'zapier': 'Zapier',
-  'loom': 'Loom',
-  'miro': 'Miro',
-  'algolia': 'Algolia',
-  'pipedrive': 'Pipedrive',
-  'freshworks': 'Freshworks',
-  'intercom': 'Intercom',
-  'zendesk': 'Zendesk',
-  'hubspot': 'HubSpot',
-  'salesloft': 'Salesloft',
-  'outreach': 'Outreach',
-  'gong': 'Gong',
-  'clari': 'Clari',
-  'front': 'Front',
-  'drift': 'Drift',
-
-  // Security
-  'lacework': 'Lacework',
-  'wiz': 'Wiz',
-  'axonius': 'Axonius',
-  'abnormalsecurity': 'Abnormal Security',
-  'hashicorp': 'HashiCorp',
-  'snyk': 'Snyk',
-  'detectify': 'Detectify',
-
-  // Data / Analytics
-  'fivetran': 'Fivetran',
-  'airbyte': 'Airbyte',
-  'dbtlabs': 'dbt Labs',
-  'hightouch': 'Hightouch',
-  'hex': 'Hex',
-  'lightdash': 'Lightdash',
-
-  // Healthcare
-  'headspace': 'Headspace',
-  'lyra': 'Lyra Health',
-  'brightline': 'Brightline',
-  'cityblock': 'Cityblock Health',
-  'carbon-health': 'Carbon Health',
-
-  // Climate
-  'watershed': 'Watershed',
-  'arcadia': 'Arcadia',
-  'pachama': 'Pachama',
-
-  // EdTech
-  'duolingo': 'Duolingo',
-  'quizlet': 'Quizlet',
-  'chegg': 'Chegg',
-  'brainly': 'Brainly',
-  'outschool': 'Outschool',
-
-  // Logistics
-  'flexport': 'Flexport',
-  'shipbob': 'ShipBob',
-  'stord': 'Stord',
-  'transfix': 'Transfix',
-  'loadsmart': 'Loadsmart',
-
-  // HR / Recruiting
-  'gem': 'Gem',
-  'checkr': 'Checkr',
-  'paradox': 'Paradox',
-  'beamery': 'Beamery',
-
-  // Legal
-  'clio': 'Clio',
-  'ironclad': 'Ironclad',
-  'filevine': 'Filevine',
-
-  // Real Estate
-  'opendoor': 'Opendoor',
-  'compass': 'Compass',
-  'crexi': 'CREXi',
-
-  // Insurance
-  'lemonade': 'Lemonade',
-  'root': 'Root Insurance',
-  'next-insurance': 'Next Insurance',
-  'coalition': 'Coalition',
-
-  // Other notable
-  'canva': 'Canva',
-  'grammarly': 'Grammarly',
-  'descript': 'Descript',
-  'superhuman': 'Superhuman',
-  'linear': 'Linear',
-  'raycast': 'Raycast',
-  'framer': 'Framer',
-  'webflow': 'Webflow',
-  'bubble': 'Bubble',
-  'retool': 'Retool',
-  'airplane': 'Airplane',
-  'posthog': 'PostHog',
+  'epic-games': 'Epic Games',
+  'gitlab': 'GitLab',
+  'github': 'GitHub',
+  'grafana-labs': 'Grafana Labs',
+  'hims-hers': 'Hims & Hers',
+  'honeycomb-io': 'Honeycomb.io',
+  'jfrog': 'JFrog',
+  'jumpcloud': 'JumpCloud',
+  'khan-academy': 'Khan Academy',
   'launchdarkly': 'LaunchDarkly',
-  'statsig': 'Statsig',
-  'vanta': 'Vanta',
-  'drata': 'Drata',
-  'secureframe': 'Secureframe',
-  'faire': 'Faire',
-  'ankorstore': 'Ankorstore',
-  'sendbird': 'Sendbird',
-  'twilio-segment': 'Segment',
-  'amplitude': 'Amplitude',
-  'mixpanel': 'Mixpanel',
-  'pendo': 'Pendo',
-  'fullstory': 'FullStory',
-  'heap': 'Heap',
-  'appcues': 'Appcues',
+  'modern-treasury': 'Modern Treasury',
+  'mongodb': 'MongoDB',
+  'o3-world': 'O3 World',
+  'openai': 'OpenAI',
+  'opengov': 'OpenGov',
+  'pagerduty': 'PagerDuty',
+  'readme': 'ReadMe',
+  'scale-ai': 'Scale AI',
+  'scout-rx': 'Scout RX',
+  'strongdm': 'StrongDM',
+  'telemetry2u': 'Telemetry2U',
+  'tiktok': 'TikTok',
+  'usertesting': 'UserTesting',
 };
+
+function formatCompanyName(slug: string): string {
+  const override = COMPANY_NAME_OVERRIDES[slug];
+  if (override) return override;
+
+  return slug
+    .split('-')
+    .map(part => {
+      if (!part) return part;
+      if (part === 'ai' || part === 'io' || part === 'rx') return part.toUpperCase();
+      if (/^[a-z]\d+$/i.test(part)) return part[0].toUpperCase() + part.slice(1);
+      return part[0].toUpperCase() + part.slice(1);
+    })
+    .join(' ');
+}
 
 const TECH_KEYWORDS = [
   'engineer', 'developer', 'scientist', 'analyst', 'ml', 'ai', 'data',
@@ -175,10 +118,10 @@ function isTechRole(title: string): boolean {
   return TECH_KEYWORDS.some(k => lower.includes(k));
 }
 
-async function fetchCompany(slug: string, companyName: string): Promise<NormalizedJob[]> {
+async function fetchCompany(slug: string): Promise<NormalizedJob[]> {
   try {
     const res = await fetch(
-      `https://api.lever.co/v0/postings/${slug}?mode=json`,
+      `https://api.lever.co/v0/postings/${slug}?mode=json&limit=50`,
       { signal: AbortSignal.timeout(10_000) }
     );
     if (!res.ok) return []; // company not on Lever — skip silently
@@ -186,6 +129,7 @@ async function fetchCompany(slug: string, companyName: string): Promise<Normaliz
     const jobs: any[] = await res.json();
     if (!Array.isArray(jobs)) return [];
 
+    const companyName = formatCompanyName(slug);
     const normalized: NormalizedJob[] = [];
     for (const job of jobs) {
       if (!isTechRole(job.text ?? '')) continue;
@@ -223,10 +167,9 @@ export async function scrapeLever(): Promise<NormalizedJob[]> {
   const DELAY_MS = 200;
   const all: NormalizedJob[] = [];
 
-  const entries = Object.entries(COMPANIES);
-  for (let i = 0; i < entries.length; i += BATCH_SIZE) {
-    const batch = entries.slice(i, i + BATCH_SIZE);
-    const results = await Promise.allSettled(batch.map(([slug, name]) => fetchCompany(slug, name)));
+  for (let i = 0; i < LEVER_COMPANIES.length; i += BATCH_SIZE) {
+    const batch = LEVER_COMPANIES.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(batch.map(fetchCompany));
 
     for (const result of results) {
       if (result.status === 'fulfilled') {
@@ -234,7 +177,7 @@ export async function scrapeLever(): Promise<NormalizedJob[]> {
       }
     }
 
-    if (i + BATCH_SIZE < entries.length) {
+    if (i + BATCH_SIZE < LEVER_COMPANIES.length) {
       await sleep(DELAY_MS);
     }
   }
