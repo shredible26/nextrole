@@ -84,9 +84,13 @@ function isNonUsLocation(location: string): boolean {
 
 /**
  * Construct a full Workday apply URL from the job object.
- * Prefers explicit full URLs from the API response, then falls back to
- * constructing from externalPath (which already includes /en-US/{careerSite}/job/...).
- * Do NOT prepend /en-US/{careerSite} again — it is already in externalPath.
+ *
+ * Correct public-facing format (confirmed from CrowdStrike, Nvidia, etc.):
+ *   https://{company}.{wdVersion}.myworkdayjobs.com/{careerSite}{externalPath}
+ *
+ * externalPath from the API looks like: /job/USA---Remote/Title-Slug_R12345
+ * There is NO /en-US/ in the public-facing URL — /en-US/ only appears in
+ * some internal API paths, not in the actual job page URLs.
  */
 function buildWorkdayUrl(
   company: string,
@@ -94,30 +98,45 @@ function buildWorkdayUrl(
   careerSite: string,
   job: WorkdayJob,
 ): string {
-  // Prefer explicit full URLs from the API response
-  if (job.jobPostingUrl && job.jobPostingUrl.startsWith('http')) {
-    return job.jobPostingUrl;
-  }
-  if (job.externalUrl && job.externalUrl.startsWith('http')) {
+  // Prefer explicit full URLs from API if available
+  if (job.externalUrl && job.externalUrl.startsWith('http') && !job.externalUrl.includes('invalid-url')) {
     return job.externalUrl;
   }
-
-  // Use externalPath to construct URL.
-  // externalPath already contains the full path including /en-US/{careerSite}/job/Title_ID
-  const path = job.externalPath ?? '';
-  if (path.startsWith('/')) {
-    return `https://${company}.${wdVersion}.myworkdayjobs.com${path}`;
+  if (job.jobPostingUrl && job.jobPostingUrl.startsWith('http') && !job.jobPostingUrl.includes('invalid-url')) {
+    return job.jobPostingUrl;
   }
 
-  // Last resort — link to the company's Workday career page
+  const path = job.externalPath ?? '';
+
+  // externalPath from Workday API looks like: /job/Location/Title_ID
+  // Full URL = https://{company}.{wdVersion}.myworkdayjobs.com/{careerSite}{externalPath}
+  // NOTE: NO /en-US/ prefix in the public URL
+  if (path.startsWith('/job/')) {
+    return `https://${company}.${wdVersion}.myworkdayjobs.com/${careerSite}${path}`;
+  }
+
+  // If externalPath includes /en-US/ already, strip it
+  if (path.includes('/en-US/')) {
+    const withoutLocale = path.replace('/en-US/', '/');
+    return `https://${company}.${wdVersion}.myworkdayjobs.com/${careerSite}${withoutLocale}`;
+  }
+
+  // If path starts with / but isn't /job/, still try it
+  if (path.startsWith('/')) {
+    return `https://${company}.${wdVersion}.myworkdayjobs.com/${careerSite}${path}`;
+  }
+
+  // Last resort — link to company career page
   return `https://${company}.${wdVersion}.myworkdayjobs.com/en-US/${careerSite}`;
 }
 
 function isValidWorkdayUrl(url: string): boolean {
-  return url.includes('myworkdayjobs.com') &&
-         url.includes('/job/') &&
-         !url.includes('invalid-url') &&
-         !url.includes('community.workday.com');
+  return (
+    url.includes('myworkdayjobs.com') &&
+    url.includes('/job/') &&
+    !url.includes('invalid-url') &&
+    !url.includes('community.workday.com')
+  );
 }
 
 const NON_TECH_PATTERNS = [

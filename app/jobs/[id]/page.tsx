@@ -1,7 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import Navbar from '@/components/Navbar'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -60,9 +59,7 @@ export default async function JobPage({ params }: Props) {
   const applyLabel = job.source === 'adzuna' ? 'Apply on Adzuna ↗' : 'Apply Now ↗'
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="max-w-3xl mx-auto px-4 py-8">
+    <main className="max-w-3xl mx-auto px-4 py-8">
         <a
           href="/jobs"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
@@ -172,7 +169,6 @@ export default async function JobPage({ params }: Props) {
             }),
           }}
         />
-      </main>
-    </div>
+    </main>
   )
 }
