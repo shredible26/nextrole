@@ -5,21 +5,174 @@
 import { generateHash } from '../utils/dedup';
 import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
+const stripHtml = (html: string): string => html.replace(/<[^>]*>/g, ' ');
+
 const COMPANIES = [
-  'google', 'meta', 'stripe', 'airbnb', 'notion', 'linear', 'figma',
-  'discord', 'coinbase', 'robinhood', 'plaid', 'brex', 'ramp', 'scale',
-  'openai', 'anthropic', 'databricks', 'snowflake', 'hashicorp', 'vercel',
-  'planetscale', 'supabase', 'retool', 'airtable', 'asana', 'hubspot',
-  'zendesk', 'twilio', 'sendgrid', 'segment', 'amplitude', 'mixpanel',
-  'datadog', 'pagerduty', 'elastic', 'mongodb', 'redis', 'confluent',
-  'dbt', 'fivetran', 'hightouch', 'census', 'rudderstack', 'posthog',
-  'sentry', 'loom', 'miro', 'coda', 'roamresearch',
-  'benchling', 'relativity', 'palantir', 'anduril', 'shield',
-  'waymo', 'cruise', 'zoox', 'nuro', 'aurora', 'comma',
-  'jane', 'hims', 'tempus', 'flatiron', 'cityblock',
-  'chime', 'sofi', 'dave', 'current', 'mercury', 'relay',
-  'faire', 'toast', 'squarespace', 'wix', 'webflow',
-  'duolingo', 'chegg', 'coursera', 'udemy', 'masterclass',
+  // Big Tech & FAANG-adjacent
+  'google', 'meta', 'apple', 'netflix', 'spotify', 'twitter',
+  'pinterest', 'snap', 'reddit', 'quora', 'medium',
+
+  // Fintech
+  'stripe', 'brex', 'ramp', 'plaid', 'robinhood', 'coinbase',
+  'chime', 'affirm', 'marqeta', 'carta', 'mercury', 'deel',
+  'rippling', 'gusto', 'justworks', 'lattice', 'remote',
+  'adyen', 'navan', 'airbase', 'modern-treasury', 'column',
+  'unit', 'treasury-prime', 'rho',
+  'melio', 'tipalti', 'bill', 'expensify', 'divvy',
+  'jeeves', 'parafin', 'capchase', 'clearco', 'pipe',
+  'stytch', 'socure', 'alloy', 'sardine', 'unit21',
+  'persona', 'middesk', 'onfido', 'jumio', 'idemia',
+
+  // AI / ML Companies
+  'openai', 'anthropic', 'cohere', 'scale-ai', 'weights-biases',
+  'together', 'modal', 'replicate', 'runway', 'stability-ai',
+  'perplexity', 'character', 'inflection', 'adept', 'imbue',
+  'gradient', 'huggingface', 'labelbox', 'scale',
+  'snorkel', 'aquarium', 'humanloop', 'brainlox',
+  'dust', 'fixie', 'langchain', 'llamaindex',
+  'vectara', 'weaviate', 'pinecone', 'chroma',
+  'anyscale', 'ray', 'dstack', 'beam',
+  'banana', 'cerebrium', 'baseten', 'modelbit',
+
+  // Dev Tools / Infrastructure
+  'vercel', 'netlify', 'render', 'railway',
+  'hashicorp', 'pulumi', 'ansible', 'chef',
+  'datadog', 'newrelic', 'honeycomb', 'observe',
+  'pagerduty', 'incident-io', 'firehydrant', 'blameless',
+  'sentry', 'rollbar', 'bugsnag', 'logrocket', 'highlight',
+  'retool', 'airplane', 'internal', 'tooljet', 'appsmith',
+  'postman', 'apigee', 'kong', 'tyk',
+  'github', 'gitlab', 'linear', 'shortcut', 'height', 'plane',
+  'figma', 'framer', 'webflow', 'bubble', 'adalo',
+  'dbt', 'fivetran', 'airbyte', 'hightouch', 'census',
+  'amplitude', 'mixpanel', 'segment', 'heap', 'fullstory',
+  'posthog', 'june', 'koala', 'pendo', 'appcues',
+  'launchdarkly', 'flagsmith', 'growthbook', 'statsig',
+  'percy', 'chromatic', 'lost-pixel',
+  'clerk', 'auth0', 'okta', 'jumpcloud',
+  'doppler', 'infisical', 'vault',
+  'grafana', 'influxdata', 'timescale',
+  'mongodb', 'redis', 'cockroachdb', 'yugabyte',
+  'planetscale', 'neon', 'xata', 'turso',
+  'upstash', 'convex', 'fauna',
+
+  // SaaS / Productivity
+  'notion', 'coda', 'airtable', 'smartsheet', 'monday',
+  'asana', 'clickup', 'todoist', 'ticktick',
+  'slack', 'discord', 'loom', 'miro', 'mural', 'excalidraw',
+  'zoom', 'calendly', 'doodle', 'reclaim', 'clockwise',
+  'hubspot', 'salesloft', 'outreach', 'apollo', 'clay',
+  'gong', 'chorus', 'wingman', 'clari',
+  'zendesk', 'intercom', 'freshdesk', 'front', 'helpscout',
+  'drift', 'qualified', 'chili-piper',
+  'twilio', 'sendgrid', 'mailchimp', 'klaviyo', 'iterable',
+  'braze', 'onesignal', 'airship', 'pushwoosh',
+  'contentful', 'sanity', 'strapi', 'directus',
+  'cloudinary', 'imgix', 'uploadcare',
+
+  // Security / Compliance
+  'crowdstrike', 'sentinelone', 'lacework', 'orca', 'wiz',
+  'snyk', 'veracode', 'checkmarx', 'sonarqube', 'semgrep',
+  'vanta', 'drata', 'secureframe', 'thoropass', 'laika',
+  'zscaler', 'netskope', 'cato-networks', 'palo-alto-networks',
+  'abnormal', 'proofpoint', 'mimecast', 'cofense',
+  'cobalt', 'synack', 'bugcrowd', 'hackerone',
+
+  // Data / Analytics / BI
+  'snowflake', 'databricks', 'confluent', 'starburst', 'dremio',
+  'immuta', 'privacera', 'alation', 'atlan', 'data-catalog',
+  'looker', 'metabase', 'mode', 'sigma', 'lightdash',
+  'hex', 'deepnote', 'observable', 'evidence',
+  'monte-carlo', 'great-expectations', 'soda', 'acceldata',
+  'mozart-data', 'y42', 'portable',
+
+  // Cloud / Networking
+  'cloudflare', 'fastly', 'akamai', 'bunny', 'section',
+  'wasabi', 'backblaze', 'storj',
+  'tailscale', 'twingate', 'ngrok', 'bore',
+
+  // E-commerce / Retail / Logistics
+  'shopify', 'bigcommerce', 'nacelle', 'elasticpath',
+  'faire', 'ankorstore', 'orderchamp',
+  'toast', 'lightspeed', 'revel',
+  'doordash', 'instacart', 'gopuff', 'getir',
+  'airbnb', 'vrbo', 'vacasa', 'evolve', 'owner',
+  'flexport', 'stord', 'shipbob', 'shiphero',
+  'project44', 'fourkites', 'samsara', 'motive',
+  'transfix', 'loadsmart', 'convoy', 'uber-freight',
+
+  // HealthTech / BioTech
+  'oscar', 'devoted', 'cityblock', 'alignment',
+  'hims', 'ro', 'keeps', 'hers', 'nurx', 'wheel',
+  'tempus', 'flatiron', 'veeva', 'medidata', 'iqvia',
+  'headspace', 'calm', 'betterhelp', 'talkspace', 'brightline',
+  'zocdoc', 'doximity', 'athenahealth',
+  'color', 'invitae', 'guardant', 'grail',
+  'benchling', 'labguru', 'dotmatics',
+  'recursion', 'insitro',
+
+  // EdTech
+  'duolingo', 'coursera', 'udemy', 'masterclass',
+  'chegg', 'brilliant', 'outschool', 'synthesis',
+  'instructure', 'powerschool', 'd2l',
+  'codeacademy', 'scrimba', 'frontendmasters',
+
+  // Climate / Energy / Sustainability
+  'watershed', 'patch', 'persefoni', 'normative',
+  'arcadia', 'voltus', 'leap', 'recurve', 'autogrid',
+  'sunrun', 'sunnova', 'palmetto', 'solar-landscape',
+  'redwood-materials', 'ascend-elements',
+  'form-energy', 'ambri', 'eos-energy',
+  'pachama', 'terrasos', 'vibrant-planet',
+  'climateai', 'salient-predictions', 'tomorrow',
+
+  // Defense / Aerospace / Robotics
+  'anduril', 'palantir', 'shield-ai',
+  'relativity-space', 'rocket-lab', 'astra', 'planet',
+  'joby', 'wisk', 'archer', 'lilium', 'vertical',
+  'boston-dynamics', 'agility', 'figure', 'apptronik',
+  'locus-robotics', '6river', 'berkshire-grey',
+  'pickle-robot', 'covariant', 'machina-labs',
+
+  // Autonomous Vehicles
+  'waymo', 'cruise', 'zoox', 'aurora', 'motional',
+  'nuro', 'gatik', 'torc', 'embark', 'kodiak',
+  'mobileye', 'aeye', 'innoviz', 'ouster',
+
+  // Gaming / Entertainment / Media
+  'roblox', 'unity', 'niantic', 'scopely', 'jam-city',
+  'kabam', 'glu', 'zynga', 'playtika', 'king',
+  'epic-games', 'riot-games', 'bungie', '2k',
+  'twitch', 'mixer', 'streamlabs',
+
+  // HR Tech / People Ops
+  'leapsome', 'culture-amp', '15five', 'betterworks', 'reflektive',
+  'greenhouse-software', 'lever-co', 'workable', 'ashby',
+  'gem', 'fetcher', 'beamery', 'eightfold',
+  'checkr', 'sterling', 'hireright',
+
+  // Legal / RegTech
+  'clio', 'mycase', 'filevine', 'litify',
+  'lawmatics', 'smokeball', 'practicepanther',
+  'ironclad', 'contractpodai', 'icertis', 'agiloft',
+
+  // Real Estate / PropTech
+  'opendoor', 'offerpad', 'homeward', 'orchard', 'flyhomes',
+  'compass', 'side', 'real', 'fathom',
+  'buildium', 'appfolio', 'yardi', 'mri',
+  'costar', 'crexi', 'vts', 'hqo',
+
+  // Insurance / Risk
+  'lemonade', 'root', 'hippo', 'branch', 'clearcover',
+  'next-insurance', 'coalition', 'at-bay',
+  'pie-insurance', 'coterie', 'employers',
+
+  // Marketing Tech / AdTech
+  'the-trade-desk', 'magnite', 'pubmatic', 'criteo',
+  'digitalocean', 'linode', 'vultr',
+  'sprinklr', 'hootsuite', 'buffer', 'later',
+  'semrush', 'ahrefs', 'moz', 'brightedge',
+  'conductor', 'botify', 'searchmetrics',
 ];
 
 const TECH_KEYWORDS = [
@@ -46,7 +199,8 @@ async function fetchCompany(company: string): Promise<NormalizedJob[]> {
     const normalized: NormalizedJob[] = [];
     for (const job of jobs) {
       if (!isTechRole(job.title ?? '')) continue;
-      const level = inferExperienceLevel(job.title ?? '', job.content ?? '');
+      const plainContent = stripHtml(job.content ?? '');
+      const level = inferExperienceLevel(job.title ?? '', plainContent);
       if (level === null) continue;
 
       const location: string = job.location?.name ?? '';
@@ -60,7 +214,7 @@ async function fetchCompany(company: string): Promise<NormalizedJob[]> {
         location,
         remote: inferRemote(location),
         url: job.absolute_url ?? '',
-        description: job.content ?? undefined,
+        description: plainContent || undefined,
         experience_level: level,
         roles: inferRoles(job.title),
         posted_at: job.updated_at ?? undefined,

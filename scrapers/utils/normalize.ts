@@ -61,8 +61,15 @@ const EXCLUSION_KEYWORDS = [
   // Senior individual contributors
   'tech lead', 'technical lead', 'senior technical',
   // Other senior patterns
-  'solutions architect', 'enterprise architect',
-  'senior product manager', 'senior pm',
+  'senior solutions architect', 'enterprise architect',
+  'senior product manager', 'senior pm', 'senior product manager', 'senior pm',
+  'senior data scientist', 'senior data science', 'senior data analyst', 'senior data analyst',
+  'senior machine learning engineer', 'senior machine learning', 'senior machine learning engineer', 'senior machine learning',
+  'senior software engineer', 'senior software developer', 'senior software developer', 'senior software developer',
+  'senior backend engineer', 'senior backend developer', 'senior backend developer', 'senior backend developer',
+  'senior frontend engineer', 'senior frontend developer', 'senior frontend developer', 'senior frontend developer',
+  'senior full stack engineer', 'senior full stack developer', 'senior full stack developer', 'senior full stack developer',
+  'senior devops engineer', 'senior devops developer', 'senior devops developer', 'senior devops developer',
 ];
 
 const INTERNSHIP_KEYWORDS = [
@@ -168,6 +175,30 @@ const ENTRY_LEVEL_KEYWORDS = [
   'bachelor\'s degree required', 'bachelor degree required',
 ];
 
+// Signals found in job *descriptions* (not titles) that strongly indicate a new grad role.
+// When any of these appear in the description, we upgrade the classification to new_grad,
+// unless the title already triggered an exclusion (seniority check comes first).
+const NEW_GRAD_DESC_KEYWORDS = [
+  // Graduation year signals
+  'graduating in 2025', 'graduating in 2026', 'graduating in 2027',
+  'graduate of 2025', 'graduate of 2026',
+  'class of 2025', 'class of 2026',
+  // Education signals
+  'bachelor', 'bs/ms', 'b.s./m.s.',
+  // Experience range signals (0–2 years maps to new grad in context)
+  '0-1 year', '0-2 year', '0 to 1', '0 to 2',
+  // Explicit new grad language
+  'recent graduate', 'recent grad', 'new graduate', 'new grad',
+  // No-experience signals
+  'no prior experience', 'no experience required',
+  // Recruiting program signals
+  'campus recruit', 'university recruit', 'college recruit',
+  // Start-year signals
+  '2025 start', '2026 start',
+  // Program / career stage signals
+  'early career', 'rotational program', 'graduate program',
+];
+
 /**
  * Returns true when the title matches any exclusion keyword (senior/leadership roles).
  * Keywords that contain `\b` are treated as regex patterns; all others are matched
@@ -209,6 +240,10 @@ export function inferExperienceLevel(
 
   // 3. New grad signals in title.
   if (NEW_GRAD_KEYWORDS.some(k => t.includes(k))) return 'new_grad';
+
+  // 3b. New grad signals in description — upgrade to new_grad.
+  //     Exclusion (step 1) already prevents senior titles from reaching this point.
+  if (c && NEW_GRAD_DESC_KEYWORDS.some(k => c.includes(k))) return 'new_grad';
 
   // 4. Entry-level signals in title or description.
   if (ENTRY_LEVEL_KEYWORDS.some(k => t.includes(k) || c.includes(k))) {

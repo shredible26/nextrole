@@ -6,17 +6,101 @@ import { generateHash } from '../utils/dedup';
 import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
 const COMPANIES = [
-  'netflix', 'lyft', 'doordash', 'instacart', 'grubhub', 'gopuff',
-  'rivian', 'lucid', 'canoo', 'fisker',
-  'twitter', 'reddit', 'pinterest', 'snap', 'spotify', 'soundcloud',
-  'twitch', 'unity', 'epicgames', 'roblox', 'niantic',
-  'shopify', 'squareup', 'affirm', 'afterpay', 'klarna', 'marqeta',
-  'carta', 'angellist', 'lattice', 'rippling', 'gusto', 'justworks',
-  'greenhouse', 'lever', 'workday', 'servicenow', 'salesforce',
-  'okta', 'crowdstrike', 'zscaler', 'sentinelone', 'lacework',
-  'cloudflare', 'fastly', 'akamai', 'netlify', 'heroku',
-  'digitalocean', 'linode', 'vultr', 'fly', 'render',
-  'neon', 'turso', 'upstash', 'convex', 'xata',
+  // Social / Consumer
+  'netflix', 'reddit', 'pinterest', 'snap',
+  'tiktok', 'bytedance', 'discord',
+
+  // Music / Media / Entertainment
+  'spotify', 'soundcloud', 'deezer',
+  'twitch', 'streamlabs', 'restream',
+  'vimeo', 'wistia', 'vidyard',
+
+  // Gaming
+  'epicgames', 'roblox', 'unity', 'niantic', 'scopely',
+  'kabam', 'jam-city', 'glu', 'zynga', 'plarium',
+
+  // Ride / Delivery / Food
+  'lyft', 'doordash', 'grubhub', 'gopuff', 'instacart',
+  'rappi', 'getir', 'deliveroo', 'gorillas',
+
+  // Fintech / Payments
+  'shopify', 'affirm', 'klarna', 'zip', 'sezzle',
+  'wise', 'remitly', 'sendbird', 'paysend',
+  'capchase', 'pipe', 'clearco', 'lighter-capital',
+  'rippling', 'gusto', 'zenefits', 'bamboohr',
+  'wyre', 'moonpay', 'bitpay',
+  'fireblocks', 'anchorage', 'bitgo',
+
+  // Auto / EV / Mobility
+  'rivian', 'lucid', 'canoo', 'fisker', 'arrival',
+  'motional', 'mobileye', 'comma', 'ghost',
+  'lime', 'bird', 'spin', 'superpedestrian',
+
+  // SaaS / Productivity Tools
+  'notion', 'coda', 'roamresearch',
+  'loom', 'mmhmm',
+  'airtable', 'smartsheet', 'quickbase',
+  'zapier', 'make', 'n8n', 'pipedream', 'workato',
+  'tines', 'torq', 'swimlane',
+  'algolia', 'typesense', 'meilisearch',
+
+  // Security
+  'lacework', 'orca-security', 'wiz', 'axonius',
+  'abnormal', 'proofpoint', 'mimecast', 'sublime',
+  'hashicorp', '1password', 'bitwarden', 'keeper',
+  'vulncheck', 'nuclei', 'detectify',
+
+  // Data / Analytics
+  'fivetran', 'airbyte', 'meltano',
+  'dbtlabs', 'paradime', 'lightdash', 'preset',
+  'hex', 'deepnote', 'observable', 'evidence',
+  'hightouch', 'census', 'polytomic', 'grouparoo',
+
+  // Healthcare / Mental Health
+  'oscar-health', 'devoted-health', 'cityblock',
+  'headspace', 'brightline', 'woebot', 'lyra',
+  'ro-health', 'hims-hers', 'nurx', 'done',
+  'wheel', 'carbon-health', 'dr-chrono',
+
+  // Climate / Sustainability
+  'watershed', 'plan-a', 'normative', 'sweep', 'emitwise',
+  'arcadia-power', 'octopus-energy', 'ovo-energy',
+  'pachama', 'terrasos', 'terrawatch',
+
+  // EdTech
+  'duolingo', 'quizlet', 'chegg', 'brainly',
+  'coursehero', 'studocu', 'khanmigo',
+  'synthesis', 'outschool', 'primer',
+
+  // Logistics / Supply Chain
+  'flexport', 'stord', 'shipbob', 'shiphero',
+  'project44', 'fourkites', 'elementum',
+  'transfix', 'loadsmart', 'convoy',
+
+  // HR / Recruiting
+  'greenhouse-software', 'lever-recruiting', 'ashby-hq',
+  'gem', 'fetcher', 'beamery', 'paradox',
+  'checkr', 'hireright', 'sterling',
+
+  // Legal / Compliance
+  'clio', 'mycase', 'filevine', 'litify',
+  'ironclad', 'contractpodai', 'evisort',
+
+  // Real Estate
+  'opendoor', 'offerpad', 'homeward', 'orchard',
+  'compass', 'side', 'real-brokerage',
+  'costar', 'crexi', 'vts',
+
+  // Insurance
+  'lemonade', 'root', 'hippo', 'branch',
+  'next-insurance', 'coalition', 'at-bay',
+
+  // Other Notable
+  'canva', 'grammarly', 'jasper', 'copy-ai',
+  'descript', 'otter', 'fireflies', 'fathom',
+  'superhuman', 'shortwave', 'mimestream',
+  'linear', 'height', 'plane', 'cycle',
+  'raycast', 'alfred', 'espanso',
 ];
 
 const TECH_KEYWORDS = [
