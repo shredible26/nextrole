@@ -19,8 +19,8 @@ const SEARCH_TERMS = [
 
 const HEADERS_WITH_KEY = {
   'Host': 'data.usajobs.gov',
-  'User-Agent': 'nextrole@example.com',
-  'Authorization-Key': '',
+  'User-Agent': process.env.USAJOBS_EMAIL ?? '',
+  'Authorization-Key': process.env.USAJOBS_API_KEY ?? '',
 };
 
 const HEADERS_WITHOUT_KEY = {
