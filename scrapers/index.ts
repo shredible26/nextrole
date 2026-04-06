@@ -15,6 +15,9 @@ import { scrapeWorkday }             from './sources/workday';
 import { scrapeWellfound }           from './sources/wellfound';
 import { scrapeDice }                from './sources/dice';
 import { scrapeHandshake }           from './sources/handshake';
+import { scrapeAshby }              from './sources/ashby';
+import { scrapeBambooHR }           from './sources/bamboohr';
+import { scrapeRippling }           from './sources/rippling';
 import { uploadJobs, deactivateStaleJobs } from './utils/upload';
 import { NormalizedJob } from './utils/normalize';
 
@@ -37,6 +40,9 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   { name: 'wellfound',            fn: scrapeWellfound },
   { name: 'dice',                 fn: scrapeDice },
   { name: 'handshake',            fn: scrapeHandshake },
+  { name: 'ashby',               fn: scrapeAshby },
+  { name: 'bamboohr',            fn: scrapeBambooHR },
+  { name: 'rippling',            fn: scrapeRippling },
   // Week 2 (uncomment when ready):
   // { name: 'jobright',          fn: scrapeJobright },
   // { name: 'otta',              fn: scrapeOtta },

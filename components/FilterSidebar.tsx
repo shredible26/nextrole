@@ -46,6 +46,9 @@ const SOURCES = [
   { value: 'wellfound',              label: 'Wellfound' },
   { value: 'dice',                   label: 'Dice' },
   { value: 'handshake',              label: 'Handshake' },
+  { value: 'ashby',                  label: 'Ashby' },
+  { value: 'bamboohr',               label: 'BambooHR' },
+  { value: 'rippling',               label: 'Rippling' },
 ];
 
 interface Props {
