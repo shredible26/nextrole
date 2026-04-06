@@ -5,6 +5,29 @@
 import { generateHash } from '../utils/dedup';
 import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
+// Non-US location signals — skip these to keep the feed US-focused
+const NON_US_LOCATION_SIGNALS = [
+  'india', 'bangalore', 'hyderabad', 'mumbai', 'chennai', 'pune',
+  'berlin', 'london', 'toronto', 'montreal', 'sydney', 'singapore',
+  'dublin', 'amsterdam', 'paris', 'tokyo', 'beijing', 'shanghai',
+  ' uk', ' uk,', 'united kingdom', 'canada', 'australia',
+  'germany', 'france', 'netherlands', 'ireland', 'mexico',
+  'brazil', 'argentina', 'colombia', 'chile',
+];
+
+/**
+ * Returns true if the location signals a non-US office.
+ * Keeps jobs that are US-based, remote, or have no clear location signal.
+ */
+function isNonUsLocation(location: string): boolean {
+  if (!location) return false;
+  const lower = location.toLowerCase();
+  if (lower.includes('remote') || lower.includes('united states') || lower.includes('usa')) {
+    return false;
+  }
+  return NON_US_LOCATION_SIGNALS.some(signal => lower.includes(signal));
+}
+
 const COMPANIES: Record<string, string> = {
   // AI / ML
   'openai': 'OpenAI',
@@ -272,6 +295,9 @@ async function fetchCompany(slug: string, companyName: string): Promise<Normaliz
       if (level === null) continue;
 
       const location: string = job.location ?? 'Remote';
+
+      // Skip non-US locations
+      if (isNonUsLocation(location)) continue;
       const remote: boolean = job.isRemote === true || job.workplaceType === 'Remote' || inferRemote(location);
       const { min, max } = parseSalary(job.compensation?.scrapeableCompensationSalarySummary);
 

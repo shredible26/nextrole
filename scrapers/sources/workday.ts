@@ -7,6 +7,73 @@
 import { generateHash } from '../utils/dedup';
 import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
+// Workday-specific senior/sales title signals not caught by inferExperienceLevel
+const WORKDAY_TITLE_EXCLUSIONS = [
+  'lead ',
+  ' lead',
+  'principal',
+  'named account',
+  'account executive',
+  'account manager',
+  'vice president',
+  'vp ',
+  ' vp,',
+  'director',
+  'head of',
+  'chief',
+  'president',
+  'partner',
+  'managing director',
+  'solution architect',
+  'solutions architect',
+  'distinguished',
+  'fellow',
+];
+
+// Non-US location signals — skip these to keep the feed US-focused
+const NON_US_LOCATION_SIGNALS = [
+  'india', 'bangalore', 'hyderabad', 'mumbai', 'chennai', 'pune',
+  'berlin', 'london', 'toronto', 'montreal', 'sydney', 'singapore',
+  'dublin', 'amsterdam', 'paris', 'tokyo', 'beijing', 'shanghai',
+  ' uk', ' uk,', 'united kingdom', 'canada', 'australia',
+  'germany', 'france', 'netherlands', 'ireland', 'mexico',
+  'brazil', 'argentina', 'colombia', 'chile',
+];
+
+/**
+ * Returns true if the job title contains a Workday-specific senior/sales signal.
+ * Special case: 'consultant' is only excluded when NOT preceded by 'associate' or 'junior'.
+ */
+function isWorkdaySeniorTitle(title: string): boolean {
+  const lower = ' ' + title.toLowerCase() + ' ';
+
+  // Check the general exclusion list
+  if (WORKDAY_TITLE_EXCLUSIONS.some(k => lower.includes(k))) return true;
+
+  // Consultant check — skip unless prefixed with associate/junior
+  if (lower.includes('consultant')) {
+    const hasJuniorPrefix =
+      lower.includes('associate consultant') ||
+      lower.includes('junior consultant');
+    if (!hasJuniorPrefix) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Returns true if the location signals a non-US office.
+ * Keeps jobs that are US-based, remote, or have no clear location signal.
+ */
+function isNonUsLocation(location: string): boolean {
+  if (!location) return false;
+  const lower = location.toLowerCase();
+  if (lower.includes('remote') || lower.includes('united states') || lower.includes('usa')) {
+    return false;
+  }
+  return NON_US_LOCATION_SIGNALS.some(signal => lower.includes(signal));
+}
+
 const SEARCH_TERMS = [
   'software engineer',
   'data scientist',
@@ -339,6 +406,12 @@ async function scrapeCompany(
 
       const level = inferExperienceLevel(title);
       if (level === null) continue;
+
+      // Workday-specific: skip senior/sales titles not caught by inferExperienceLevel
+      if (isWorkdaySeniorTitle(title)) continue;
+
+      // Skip non-US locations
+      if (isNonUsLocation(location)) continue;
 
       const baseHost = `https://${company}.${wdVersion}.myworkdayjobs.com`;
       const url = externalPath

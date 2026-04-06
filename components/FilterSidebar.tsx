@@ -49,6 +49,8 @@ const SOURCES = [
   { value: 'ashby',                  label: 'Ashby' },
   { value: 'bamboohr',               label: 'BambooHR' },
   { value: 'rippling',               label: 'Rippling' },
+  { value: 'dice_rss',               label: 'Dice' },
+  { value: 'usajobs',                label: 'USAJobs' },
 ];
 
 interface Props {
