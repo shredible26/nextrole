@@ -7,6 +7,7 @@ import { scrapeTheMuse }             from './sources/themuse';
 import { scrapeJobSpy }              from './sources/jobspy';
 import { scrapeGreenhouse }          from './sources/greenhouse';
 import { scrapeLever }               from './sources/lever';
+import { scrapeWorkday }             from './sources/workday';
 import { uploadJobs, deactivateStaleJobs } from './utils/upload';
 import { NormalizedJob } from './utils/normalize';
 
@@ -21,6 +22,7 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   { name: 'jobspy',               fn: scrapeJobSpy },
   { name: 'greenhouse',           fn: scrapeGreenhouse },
   { name: 'lever',                fn: scrapeLever },
+  { name: 'workday',              fn: scrapeWorkday },
   // Week 2 (uncomment when ready):
   // { name: 'jobright',          fn: scrapeJobright },
   // { name: 'otta',              fn: scrapeOtta },

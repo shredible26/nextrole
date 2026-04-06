@@ -29,6 +29,7 @@ const SOURCES = [
   { value: 'jobspy_indeed', label: 'Indeed' },
   { value: 'greenhouse', label: 'Greenhouse' },
   { value: 'lever', label: 'Lever' },
+  { value: 'workday', label: 'Workday' },
 ];
 
 interface Props {
