@@ -32,6 +32,14 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install python-jobspy
+        run: pip install python-jobspy --quiet
+
       - name: Run scrapers
         run: pnpm run scrape
         env:
@@ -45,3 +53,4 @@ jobs:
           PROXY_SERVER:         ${{ secrets.PROXY_SERVER }}
           PROXY_USER:           ${{ secrets.PROXY_USER }}
           PROXY_PASS:           ${{ secrets.PROXY_PASS }}
+          CAREERJET_API_KEY:    ${{ secrets.CAREERJET_API_KEY }}

@@ -203,3 +203,9 @@ MUSE_API_KEY, USAJOBS_API_KEY, USAJOBS_EMAIL
 3. Fix Lever slug discovery (77 jobs from 115 companies — slugs not matching)
 4. Improve Workday coverage (more verified company/slug combos)
 5. Marketing: r/cscareerquestions, r/csMajors, CS Discord servers
+
+## TODO (build)
+1. Add python-jobspy for ZipRecruiter + Glassdoor — biggest volume unlock. ZipRecruiter alone has millions of listings, even with entry-level filtering you'd get 500-2000 new jobs. Requires Python installed in GitHub Actions (already available by default on ubuntu-latest).
+2. Careerjet API — free, instant, 5 min integration. Good supplementary source.
+3. More Indeed search terms via ts-jobspy — already working, just add more terms.
+4. BuiltIn.com scraper — tech-focused, good quality but needs HTML parsing.

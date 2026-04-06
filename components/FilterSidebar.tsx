@@ -44,6 +44,9 @@ const SOURCES = [
   { value: 'jobspy_indeed',          label: 'Indeed' },
   { value: 'usajobs',                label: 'USAJobs' },
   { value: 'dice_rss',               label: 'Dice' },
+  { value: 'ziprecruiter',           label: 'ZipRecruiter' },
+  { value: 'glassdoor',              label: 'Glassdoor' },
+  { value: 'careerjet',              label: 'Careerjet' },
 ];
 
 interface Props {
