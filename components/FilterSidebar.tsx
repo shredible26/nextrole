@@ -47,6 +47,7 @@ const SOURCES = [
   { value: 'ziprecruiter',           label: 'ZipRecruiter' },
   { value: 'glassdoor',              label: 'Glassdoor' },
   { value: 'careerjet',              label: 'Careerjet' },
+  { value: 'workatastartup',         label: 'Work at a Startup' },
 ];
 
 interface Props {
