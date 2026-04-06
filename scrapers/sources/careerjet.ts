@@ -67,7 +67,10 @@ export async function scrapeCareerjet(): Promise<NormalizedJob[]> {
           user_agent: userAgent,
         })
         const res = await fetch(`${CAREERJET_QUERY_URL}?${params}`, {
-          headers: { Authorization: careerjetBasicAuth(apiKey) },
+          headers: {
+            Authorization: careerjetBasicAuth(apiKey),
+            Referer: 'https://nextrole-phi.vercel.app',
+          },
         })
         if (!res.ok) {
           const body = await res.text()
