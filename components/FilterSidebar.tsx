@@ -6,7 +6,15 @@ import { Separator } from '@/components/ui/separator';
 import { JobFilters, Role, ExperienceLevel, ROLE_COLORS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-const ROLES: Role[] = ['SWE', 'DS', 'ML', 'AI', 'Analyst', 'PM'];
+const ROLES: { value: Role | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'SWE', label: 'SWE' },
+  { value: 'DS', label: 'DS' },
+  { value: 'ML', label: 'ML' },
+  { value: 'AI', label: 'AI' },
+  { value: 'Analyst', label: 'Analyst' },
+  { value: 'PM', label: 'PM' },
+];
 const LEVELS: { value: ExperienceLevel | ''; label: string }[] = [
   { value: '', label: 'All' },
   { value: 'new_grad', label: 'New Grad' },
@@ -20,19 +28,24 @@ const POSTED_OPTIONS: { value: JobFilters['postedWithin']; label: string }[] = [
   { value: '7', label: 'Last week' },
 ];
 const SOURCES = [
-  { value: 'pittcsc', label: 'SimplifyJobs (New Grad)' },
-  { value: 'simplify_internships', label: 'Simplify Internships' },
-  { value: 'adzuna', label: 'Adzuna' },
-  { value: 'remoteok', label: 'RemoteOK' },
-  { value: 'arbeitnow', label: 'Arbeitnow' },
-  { value: 'themuse', label: 'The Muse' },
-  { value: 'jobspy_indeed', label: 'Indeed' },
-  { value: 'greenhouse', label: 'Greenhouse' },
-  { value: 'lever', label: 'Lever' },
-  { value: 'workday', label: 'Workday' },
-  { value: 'wellfound', label: 'Wellfound' },
-  { value: 'dice', label: 'Dice' },
-  { value: 'handshake', label: 'Handshake' },
+  { value: 'github_repos',           label: 'GitHub Repos' },
+  { value: 'pittcsc',                label: 'Simplify (New Grad)' },
+  { value: 'simplify_internships',   label: 'Simplify (Internships)' },
+  { value: 'vanshb03_newgrad',       label: 'vanshb03 (New Grad)' },
+  { value: 'vanshb03_internships',   label: 'vanshb03 (Internships)' },
+  { value: 'speedyapply_swe',        label: 'SpeedyApply (SWE)' },
+  { value: 'speedyapply_ai',         label: 'SpeedyApply (AI)' },
+  { value: 'greenhouse',             label: 'Greenhouse' },
+  { value: 'lever',                  label: 'Lever' },
+  { value: 'workday',                label: 'Workday' },
+  { value: 'adzuna',                 label: 'Adzuna' },
+  { value: 'arbeitnow',              label: 'Arbeitnow' },
+  { value: 'remoteok',               label: 'RemoteOK' },
+  { value: 'themuse',                label: 'The Muse' },
+  { value: 'jobspy_indeed',          label: 'Indeed' },
+  { value: 'wellfound',              label: 'Wellfound' },
+  { value: 'dice',                   label: 'Dice' },
+  { value: 'handshake',              label: 'Handshake' },
 ];
 
 interface Props {
@@ -41,8 +54,12 @@ interface Props {
 }
 
 export default function FilterSidebar({ filters, onChange }: Props) {
-  function toggleRole(role: Role) {
-    // Single-select: clicking the active chip deselects; clicking another switches to it
+  function toggleRole(role: Role | 'all') {
+    if (role === 'all') {
+      onChange({ ...filters, roles: [], page: 1 });
+      return;
+    }
+    // Clicking the active role deselects it (back to 'all'); clicking another switches to it
     const roles = filters.roles[0] === role ? [] : [role];
     onChange({ ...filters, roles, page: 1 });
   }
@@ -61,20 +78,30 @@ export default function FilterSidebar({ filters, onChange }: Props) {
           Role
         </p>
         <div className="flex flex-wrap gap-2">
-          {ROLES.map(role => (
-            <button
-              key={role}
-              onClick={() => toggleRole(role)}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-medium transition-all border',
-                filters.roles.includes(role)
-                  ? ROLE_COLORS[role] + ' border-transparent'
-                  : 'border-border text-muted-foreground hover:border-foreground/30'
-              )}
-            >
-              {role}
-            </button>
-          ))}
+          {ROLES.map(({ value, label }) => {
+            const isSelected =
+              value === 'all'
+                ? filters.roles.length === 0
+                : filters.roles.includes(value as Role);
+            const colorClass =
+              isSelected && value !== 'all'
+                ? ROLE_COLORS[value as Role] + ' border-transparent'
+                : isSelected
+                ? 'bg-foreground text-background border-transparent'
+                : 'border-border text-muted-foreground hover:border-foreground/30';
+            return (
+              <button
+                key={value}
+                onClick={() => toggleRole(value)}
+                className={cn(
+                  'rounded-full px-3 py-1 text-xs font-medium transition-all border',
+                  colorClass
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

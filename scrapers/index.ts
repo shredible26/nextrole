@@ -1,5 +1,9 @@
 import { scrapePittCSC }             from './sources/pittcsc';
 import { scrapeSimplifyInternships } from './sources/simplify-internships';
+import { scrapeVanshb03Newgrad }     from './sources/vanshb03-newgrad';
+import { scrapeVanshb03Internships } from './sources/vanshb03-internships';
+import { scrapeSpeedyapplySwe }      from './sources/speedyapply-swe';
+import { scrapeSpeedyapplyAi }       from './sources/speedyapply-ai';
 import { scrapeAdzuna }              from './sources/adzuna';
 import { scrapeRemoteOK }            from './sources/remoteok';
 import { scrapeArbeitnow }           from './sources/arbeitnow';
@@ -16,9 +20,13 @@ import { NormalizedJob } from './utils/normalize';
 
 const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   // Week 1 — active
-  { name: 'pittcsc',              fn: scrapePittCSC },
-  { name: 'simplify_internships', fn: scrapeSimplifyInternships },
-  { name: 'adzuna',               fn: scrapeAdzuna },
+  { name: 'pittcsc',               fn: scrapePittCSC },
+  { name: 'simplify_internships',  fn: scrapeSimplifyInternships },
+  { name: 'vanshb03_newgrad',      fn: scrapeVanshb03Newgrad },
+  { name: 'vanshb03_internships',  fn: scrapeVanshb03Internships },
+  { name: 'speedyapply_swe',       fn: scrapeSpeedyapplySwe },
+  { name: 'speedyapply_ai',        fn: scrapeSpeedyapplyAi },
+  { name: 'adzuna',                fn: scrapeAdzuna },
   { name: 'remoteok',             fn: scrapeRemoteOK },
   { name: 'arbeitnow',            fn: scrapeArbeitnow },
   { name: 'themuse',              fn: scrapeTheMuse },

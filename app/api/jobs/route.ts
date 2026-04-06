@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
   // Parse query params
   const params      = req.nextUrl.searchParams;
   const rolesParam  = params.get('roles');
-  const roles       = rolesParam ? rolesParam.split(',').filter(Boolean) : [];
+  // Strip 'all' — it means no filter
+  const roles       = rolesParam ? rolesParam.split(',').filter(r => r && r !== 'all') : [];
   const remote      = params.get('remote') === 'true';
   const level       = params.get('level');
   const sourcesParam = params.get('source');
@@ -58,7 +59,24 @@ export async function GET(req: NextRequest) {
   if (roles.length > 0)   query = query.overlaps('roles', roles);
   if (remote)             query = query.eq('remote', true);
   if (level)              query = query.eq('experience_level', level);
-  if (sources.length > 0) query = query.in('source', sources);
+
+  if (sources.length > 0) {
+    const GITHUB_REPO_SOURCES = [
+      'pittcsc', 'simplify_internships',
+      'vanshb03_newgrad', 'vanshb03_internships',
+      'speedyapply_swe', 'speedyapply_ai',
+    ];
+    if (sources.includes('github_repos')) {
+      // Expand 'github_repos' group to all individual GitHub-backed sources
+      const expanded = [
+        ...GITHUB_REPO_SOURCES,
+        ...sources.filter(s => s !== 'github_repos'),
+      ];
+      query = query.in('source', [...new Set(expanded)]);
+    } else {
+      query = query.in('source', sources);
+    }
+  }
 
   if (postedWithin) {
     const MS_MAP: Record<string, number> = {
