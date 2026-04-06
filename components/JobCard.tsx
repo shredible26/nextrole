@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Job, Role, ROLE_COLORS } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { MapPin, CheckCircle2, ExternalLink, Plus } from 'lucide-react';
+import { MapPin, CheckCircle2, Plus } from 'lucide-react';
 
 const SOURCE_LABELS: Record<string, string> = {
   pittcsc: 'SimplifyJobs',
@@ -129,8 +129,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
             className="h-7 text-xs gap-1"
             onClick={() => window.open(job.url, '_blank', 'noopener,noreferrer')}
           >
-            {job.source === 'adzuna' ? 'Apply on Adzuna' : 'Apply'}
-            <ExternalLink className="h-3 w-3" />
+            Apply ↗
           </Button>
 
           {/* Track: logs application, separate from apply */}

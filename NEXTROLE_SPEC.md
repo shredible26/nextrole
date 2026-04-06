@@ -152,7 +152,7 @@ Order of checks in `inferExperienceLevel(title, description)`:
 - **Workday URL bug:** API returns relative `externalPath` values. If path starts with `/en-US/`, use directly. Otherwise prepend `/en-US/{careerSite}/`. Also check `externalUrl` and `jobPostingUrl` fields first.
 - **Workday filter pipeline order:** `inferExperienceLevel` → `isWorkdaySeniorTitle` → `isNonUsLocation` → `hasNonLatinCharacters` → `isNonTechRole`
 - Greenhouse/Lever/Ashby: all free public APIs, no auth
-- **Adzuna:** only provides `redirect_url` (their landing page), no direct apply URL. UTM param `&utm_source=nextrole` is appended. Apply button labeled "View on Adzuna" (honest UX).
+- **Adzuna:** only provides `redirect_url` (their landing page), no direct apply URL. UTM param `&utm_source=nextrole` is appended. Apply button is uniform "Apply ↗" for all sources.
 - Stripe webhook: must use `req.text()` not `req.json()` for raw body
 
 ---
@@ -193,11 +193,11 @@ MUSE_API_KEY, USAJOBS_API_KEY, USAJOBS_EMAIL
 - Navbar: Pro badge for pro users, Google avatar
 - Role chips: All / SWE / DS / ML / AI / Analyst / PM (wraps to 2 rows — no `whitespace-nowrap`, sidebar is `overflow-x-hidden`)
 - Source filter: GitHub Repos (grouped) + individual sources
-- Adzuna Apply button labeled "View on Adzuna" (honest UX)
+- Apply button is uniform "Apply ↗" for all sources (no source-specific labels)
 
 ---
 
-## What To Build Next (Priority Order)
+## TODO (Priority Order)
 1. Switch Stripe to live mode (awaiting Stripe account review, ~2–3 days)
 2. Individual job pages `/jobs/[id]` for SEO
 3. Fix Lever slug discovery (77 jobs from 115 companies — slugs not matching)

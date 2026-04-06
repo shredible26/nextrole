@@ -56,7 +56,7 @@ export default async function JobPage({ params }: Props) {
       })
     : null
 
-  const applyLabel = job.source === 'adzuna' ? 'Apply on Adzuna ↗' : 'Apply Now ↗'
+  const applyLabel = 'Apply Now ↗'
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
