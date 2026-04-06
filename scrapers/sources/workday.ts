@@ -83,23 +83,41 @@ function isNonUsLocation(location: string): boolean {
 }
 
 /**
- * Construct a full Workday apply URL from a relative externalPath.
- * If the path already starts with /en-US/, it is used directly.
- * Otherwise the /en-US/{careerSite}/ prefix is prepended.
+ * Construct a full Workday apply URL from the job object.
+ * Prefers explicit full URLs from the API response, then falls back to
+ * constructing from externalPath (which already includes /en-US/{careerSite}/job/...).
+ * Do NOT prepend /en-US/{careerSite} again — it is already in externalPath.
  */
 function buildWorkdayUrl(
   company: string,
   wdVersion: string,
   careerSite: string,
-  relativeUrl: string,
+  job: WorkdayJob,
 ): string {
-  if (relativeUrl.startsWith('http')) return relativeUrl;
-  const baseHost = `https://${company}.${wdVersion}.myworkdayjobs.com`;
-  if (relativeUrl.startsWith('/en-US/') || relativeUrl.startsWith('/en-us/')) {
-    return `${baseHost}${relativeUrl}`;
+  // Prefer explicit full URLs from the API response
+  if (job.jobPostingUrl && job.jobPostingUrl.startsWith('http')) {
+    return job.jobPostingUrl;
   }
-  const path = relativeUrl.startsWith('/') ? relativeUrl.slice(1) : relativeUrl;
-  return `${baseHost}/en-US/${careerSite}/${path}`;
+  if (job.externalUrl && job.externalUrl.startsWith('http')) {
+    return job.externalUrl;
+  }
+
+  // Use externalPath to construct URL.
+  // externalPath already contains the full path including /en-US/{careerSite}/job/Title_ID
+  const path = job.externalPath ?? '';
+  if (path.startsWith('/')) {
+    return `https://${company}.${wdVersion}.myworkdayjobs.com${path}`;
+  }
+
+  // Last resort — link to the company's Workday career page
+  return `https://${company}.${wdVersion}.myworkdayjobs.com/en-US/${careerSite}`;
+}
+
+function isValidWorkdayUrl(url: string): boolean {
+  return url.includes('myworkdayjobs.com') &&
+         url.includes('/job/') &&
+         !url.includes('invalid-url') &&
+         !url.includes('community.workday.com');
 }
 
 const NON_TECH_PATTERNS = [
@@ -681,11 +699,11 @@ async function scrapeCompany(
       // Skip non-tech roles that slip through (banking, nursing, retail, etc.)
       if (isNonTechRole(title)) continue;
 
-      // Build full URL: prefer externalUrl > jobPostingUrl > constructed from externalPath
-      const url =
-        posting.externalUrl ??
-        posting.jobPostingUrl ??
-        buildWorkdayUrl(company, wdVersion, slug, externalPath || `/en-US/${slug}/jobs`);
+      // Build full URL from the posting object
+      const url = buildWorkdayUrl(company, wdVersion, slug, posting);
+
+      // Skip jobs with invalid/unresolvable Workday URLs
+      if (!isValidWorkdayUrl(url)) continue;
 
       const hash = generateHash(company, title, location);
       if (seen.has(hash)) continue;

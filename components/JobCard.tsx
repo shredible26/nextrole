@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -75,7 +76,12 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
       <div className="flex items-start gap-3">
         <CompanyLogo company={job.company} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-sm leading-snug">{job.title}</p>
+          <Link
+            href={`/jobs/${job.id}`}
+            className="truncate font-semibold text-sm leading-snug hover:underline"
+          >
+            {job.title}
+          </Link>
           <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
             <span>{job.company}</span>
             {job.location && (
@@ -123,7 +129,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
             className="h-7 text-xs gap-1"
             onClick={() => window.open(job.url, '_blank', 'noopener,noreferrer')}
           >
-            {job.source === 'adzuna' ? 'View on Adzuna' : 'Apply'}
+            {job.source === 'adzuna' ? 'Apply on Adzuna' : 'Apply'}
             <ExternalLink className="h-3 w-3" />
           </Button>
 
