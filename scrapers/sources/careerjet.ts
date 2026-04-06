@@ -2,6 +2,8 @@ import { inferExperienceLevel, inferRoles, inferRemote } from '../utils/normaliz
 import { generateHash } from '../utils/dedup'
 import type { NormalizedJob } from '../utils/normalize'
 
+const CAREERJET_QUERY_URL = 'https://search.api.careerjet.net/v4/query'
+
 const SEARCH_TERMS = [
   'software engineer entry level',
   'software engineer new grad 2026',
@@ -27,8 +29,14 @@ interface CareerjetJob {
 
 interface CareerjetResponse {
   type: string
-  hits: number
-  jobs: CareerjetJob[]
+  hits?: number
+  jobs?: CareerjetJob[]
+  message?: string
+  error?: string
+}
+
+function careerjetBasicAuth(apiKey: string): string {
+  return `Basic ${Buffer.from(`${apiKey}:`, 'utf8').toString('base64')}`
 }
 
 export async function scrapeCareerjet(): Promise<NormalizedJob[]> {
@@ -38,6 +46,10 @@ export async function scrapeCareerjet(): Promise<NormalizedJob[]> {
     return []
   }
 
+  const userIp = process.env.CAREERJET_USER_IP ?? '127.0.0.1'
+  const userAgent =
+    process.env.CAREERJET_USER_AGENT ?? 'NextRole/1.0 (job aggregator; +https://nextrole.dev)'
+
   const allJobs: NormalizedJob[] = []
   const seen = new Set<string>()
 
@@ -45,19 +57,46 @@ export async function scrapeCareerjet(): Promise<NormalizedJob[]> {
     for (let page = 1; page <= 3; page++) {
       try {
         const params = new URLSearchParams({
-          apikey: apiKey,
-          affid: apiKey,
           keywords: term,
           location: 'United States',
           locale_code: 'en_US',
-          pagesize: '99',
+          page_size: '99',
           page: String(page),
           sort: 'date',
+          user_ip: userIp,
+          user_agent: userAgent,
         })
-        const res = await fetch(`https://public.api.careerjet.net/search?${params}`)
-        if (!res.ok) break
+        const res = await fetch(`${CAREERJET_QUERY_URL}?${params}`, {
+          headers: { Authorization: careerjetBasicAuth(apiKey) },
+        })
+        if (!res.ok) {
+          const body = await res.text()
+          const hint =
+            res.status === 403 && body.includes('Unauthorized access from IP')
+              ? ' (allow this server IP in your Careerjet publisher account if required)'
+              : ''
+          console.warn(
+            `  [careerjet] HTTP ${res.status} for "${term}" page ${page}${hint}:`,
+            body.slice(0, 200),
+          )
+          break
+        }
         const data: CareerjetResponse = await res.json()
-        if (!data.jobs?.length) break
+        if (data.type === 'ERROR') {
+          console.warn(
+            `  [careerjet] API error for "${term}" page ${page}:`,
+            data.error ?? data.message ?? JSON.stringify(data).slice(0, 200),
+          )
+          break
+        }
+        if (data.type === 'LOCATIONS') {
+          console.warn(
+            `  [careerjet] location issue for "${term}" page ${page}:`,
+            data.message ?? 'unknown',
+          )
+          break
+        }
+        if (data.type !== 'JOBS' || !data.jobs?.length) break
 
         for (const job of data.jobs) {
           const url = job.url ?? ''
@@ -87,7 +126,12 @@ export async function scrapeCareerjet(): Promise<NormalizedJob[]> {
         if (data.jobs.length < 99) break
         await new Promise(r => setTimeout(r, 500))
       } catch (err) {
-        console.warn(`  [careerjet] failed for "${term}" page ${page}:`, String(err).slice(0, 100))
+        const cause = err instanceof Error && err.cause ? String(err.cause) : ''
+        console.warn(
+          `  [careerjet] failed for "${term}" page ${page}:`,
+          String(err).slice(0, 120),
+          cause ? `cause: ${cause.slice(0, 80)}` : '',
+        )
         break
       }
     }
