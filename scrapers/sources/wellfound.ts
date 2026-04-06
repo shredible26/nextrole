@@ -14,7 +14,7 @@ const SEARCH_TERMS = [
 
 const HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
-  'User-Agent': 'Mozilla/5.0 (compatible; NexTRole job aggregator)',
+  'User-Agent': 'Mozilla/5.0 (compatible; NextRole job aggregator)',
 };
 
 function parseCompensation(comp?: string): { salary_min?: number; salary_max?: number } {

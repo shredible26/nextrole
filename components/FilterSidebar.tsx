@@ -33,24 +33,17 @@ const SOURCES = [
   { value: 'simplify_internships',   label: 'Simplify (Internships)' },
   { value: 'vanshb03_newgrad',       label: 'vanshb03 (New Grad)' },
   { value: 'vanshb03_internships',   label: 'vanshb03 (Internships)' },
-  { value: 'speedyapply_swe',        label: 'SpeedyApply (SWE)' },
-  { value: 'speedyapply_ai',         label: 'SpeedyApply (AI)' },
   { value: 'greenhouse',             label: 'Greenhouse' },
   { value: 'lever',                  label: 'Lever' },
+  { value: 'ashby',                  label: 'Ashby' },
   { value: 'workday',                label: 'Workday' },
   { value: 'adzuna',                 label: 'Adzuna' },
   { value: 'arbeitnow',              label: 'Arbeitnow' },
   { value: 'remoteok',               label: 'RemoteOK' },
   { value: 'themuse',                label: 'The Muse' },
   { value: 'jobspy_indeed',          label: 'Indeed' },
-  { value: 'wellfound',              label: 'Wellfound' },
-  { value: 'dice',                   label: 'Dice' },
-  { value: 'handshake',              label: 'Handshake' },
-  { value: 'ashby',                  label: 'Ashby' },
-  { value: 'bamboohr',               label: 'BambooHR' },
-  { value: 'rippling',               label: 'Rippling' },
-  { value: 'dice_rss',               label: 'Dice' },
   { value: 'usajobs',                label: 'USAJobs' },
+  { value: 'dice_rss',               label: 'Dice' },
 ];
 
 interface Props {
@@ -76,7 +69,7 @@ export default function FilterSidebar({ filters, onChange }: Props) {
   }
 
   return (
-    <aside className="w-64 shrink-0 space-y-6">
+    <aside className="w-64 shrink-0 space-y-6 overflow-x-hidden">
       {/* Roles */}
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

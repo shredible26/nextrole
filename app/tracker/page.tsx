@@ -1,7 +1,7 @@
 import ApplicationTracker from '@/components/ApplicationTracker';
 
 export const metadata = {
-  title: 'Tracker — NexTRole',
+  title: 'Tracker — NextRole',
   description: 'Track every job application in one place.',
 };
 

@@ -3,7 +3,7 @@ import JobFeed from '@/components/JobFeed';
 import UpgradedBanner from '@/components/UpgradedBanner';
 
 export const metadata = {
-  title: 'Jobs — NexTRole',
+  title: 'Jobs — NextRole',
   description: 'Browse new grad and entry-level tech jobs from 10+ sources.',
 };
 

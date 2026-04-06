@@ -10,7 +10,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: 'NexTRole — New Grad Tech Jobs',
+  title: 'NextRole — New Grad Tech Jobs',
   description:
     'Every new grad SWE, DS, ML, and AI job. One feed. Auto-tracked applications.',
 };

@@ -31,7 +31,7 @@ export default function HomePage() {
         </h1>
 
         <p className="mt-6 max-w-xl text-lg text-muted-foreground leading-relaxed">
-          NexTRole aggregates SWE, DS, ML, and AI roles from 10+ sources and
+          NextRole aggregates SWE, DS, ML, and AI roles from 10+ sources and
           auto-tracks every application — so you can focus on applying, not searching.
         </p>
 
@@ -114,7 +114,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-border/60 px-4 py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} NexTRole · Built for new grads
+        © {new Date().getFullYear()} NextRole · Built for new grads
       </footer>
     </div>
   );

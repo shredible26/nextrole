@@ -1,4 +1,4 @@
-export const metadata = { title: 'Job — NexTRole' };
+export const metadata = { title: 'Job — NextRole' };
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   return (

@@ -15,7 +15,7 @@ const TECH_KEYWORDS = [
 
 export async function scrapeRemoteOK(): Promise<NormalizedJob[]> {
   const res = await fetch('https://remoteok.com/api', {
-    headers: { 'User-Agent': 'NexTRole Job Aggregator (nextrole.io)' },
+    headers: { 'User-Agent': 'NextRole Job Aggregator (nextrole.io)' },
   });
   const data = await res.json();
 

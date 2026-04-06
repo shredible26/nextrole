@@ -1,4 +1,4 @@
-# NexTRole — Product Specification
+# NextRole — Product Specification
 
 > AI-powered new grad job aggregator with automatic application tracking.
 > Stack: Next.js 14 (App Router) + Supabase + Stripe + Playwright scrapers via GitHub Actions
@@ -26,7 +26,7 @@
 
 ## 1. Product Overview
 
-**NexTRole** aggregates new grad and entry-level tech job postings from multiple sources into one clean, filterable feed. Users get automatic application tracking whenever they click Apply. Free users see 20 jobs/day; Pro users ($15/mo or $99/yr) get unlimited access, email alerts, AI match scoring, and CSV export.
+**NextRole** aggregates new grad and entry-level tech job postings from multiple sources into one clean, filterable feed. Users get automatic application tracking whenever they click Apply. Free users see 20 jobs/day; Pro users ($15/mo or $99/yr) get unlimited access, email alerts, AI match scoring, and CSV export.
 
 ### Target User
 - Current CS/DS/ML undergrads looking for new grad roles
@@ -574,7 +574,7 @@ const TECH_KEYWORDS = [
 
 export async function scrapeRemoteOK(): Promise<NormalizedJob[]> {
   const res = await fetch('https://remoteok.com/api', {
-    headers: { 'User-Agent': 'NexTRole Job Aggregator (nextrole.io)' },
+    headers: { 'User-Agent': 'NextRole Job Aggregator (nextrole.io)' },
   });
   const data = await res.json();
 
@@ -876,7 +876,7 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
 ];
 
 async function run() {
-  console.log(`\n🚀 NexTRole scrape run — ${new Date().toISOString()}\n`);
+  console.log(`\n🚀 NextRole scrape run — ${new Date().toISOString()}\n`);
   let totalUploaded = 0;
 
   for (const scraper of SCRAPERS) {
@@ -1110,8 +1110,8 @@ async function handleApply(job: Job) {
 ## 10. Stripe Integration
 
 ### Products to create in Stripe Dashboard
-- **NexTRole Pro Monthly** — $15.00 / month, recurring
-- **NexTRole Pro Annual** — $99.00 / year, recurring
+- **NextRole Pro Monthly** — $15.00 / month, recurring
+- **NextRole Pro Annual** — $99.00 / year, recurring
 
 ### Checkout (`app/api/stripe/checkout/route.ts`)
 
@@ -1277,7 +1277,7 @@ Open Cursor, switch to **Agent mode** (`Cmd+I` → select "Agent"), then paste t
 ---
 
 ```
-I'm building NexTRole — a new grad tech job aggregator. I have a full product spec at NEXTROLE_SPEC.md in the root of this folder. Please read it fully before doing anything.
+I'm building NextRole — a new grad tech job aggregator. I have a full product spec at NEXTROLE_SPEC.md in the root of this folder. Please read it fully before doing anything.
 
 Do the following steps in order. Do not skip ahead. After each major step, confirm it's done before moving to the next.
 
@@ -1393,4 +1393,4 @@ Do NOT build any frontend pages yet. Data pipeline only.
 ---
 
 *Document version: 2.0 — April 2026*
-*Project: NexTRole*
+*Project: NextRole*

@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import PricingClient from '@/components/PricingClient';
 
 export const metadata = {
-  title: 'Pricing — NexTRole',
+  title: 'Pricing — NextRole',
   description: 'Simple, transparent pricing. Start free, upgrade when you need more.',
 };
 

@@ -64,7 +64,7 @@ async function fetchPage(searchTerm: string, page: number): Promise<NormalizedJo
     try {
       res = await fetch(url, {
         headers: {
-          'User-Agent': 'NexTRole Job Aggregator (nextrole.io)',
+          'User-Agent': 'NextRole Job Aggregator (nextrole.io)',
           'Accept': 'application/rss+xml, application/xml, text/xml',
         },
         signal: controller.signal,

@@ -76,7 +76,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="mr-8 flex items-center gap-1.5">
           <span className="text-lg font-bold tracking-tight">
-            Nex<span className="text-primary">T</span>Role
+            Next<span className="text-primary">R</span>ole
           </span>
         </Link>
 

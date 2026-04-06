@@ -86,7 +86,7 @@ async function runScraper(name: string, fn: () => Promise<NormalizedJob[]>) {
 }
 
 async function run() {
-  console.log(`\n🚀 NexTRole scrape run — ${new Date().toISOString()}`);
+  console.log(`\n🚀 NextRole scrape run — ${new Date().toISOString()}`);
   console.log(`   Running ${SCRAPERS.length} scrapers concurrently...\n`);
 
   const globalStart = Date.now();

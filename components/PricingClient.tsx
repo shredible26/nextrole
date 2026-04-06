@@ -49,7 +49,7 @@ export default function PricingClient() {
 
   useEffect(() => {
     if (searchParams.get('upgraded') === 'true') {
-      toast.success('Welcome to NexTRole Pro! 🎉');
+      toast.success('Welcome to NextRole Pro! 🎉');
     }
   }, [searchParams]);
 
@@ -236,31 +236,6 @@ export default function PricingClient() {
         </Card>
       </section>
 
-      {/* FAQ */}
-      <section className="border-t border-border/60 bg-muted/20 px-4 py-16">
-        <div className="mx-auto max-w-2xl space-y-8">
-          <h2 className="text-xl font-semibold text-center">FAQ</h2>
-          {[
-            {
-              q: 'What counts as a "job viewed"?',
-              a: 'Each unique job card loaded in your feed counts as one view. Refreshing the page or applying does not double-count.',
-            },
-            {
-              q: 'How often is the job feed updated?',
-              a: 'Scrapers run every morning at 7 AM UTC (3 AM EST), so you always wake up to fresh listings.',
-            },
-            {
-              q: 'Can I cancel anytime?',
-              a: 'Yes — cancel anytime from your account settings. You keep Pro access until the end of your billing period.',
-            },
-          ].map(({ q, a }) => (
-            <div key={q}>
-              <p className="font-medium text-sm">{q}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{a}</p>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

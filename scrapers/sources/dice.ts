@@ -18,7 +18,7 @@ const SEARCH_TERMS = [
 ];
 
 const HEADERS: Record<string, string> = {
-  'User-Agent': 'Mozilla/5.0 (compatible; NexTRole job aggregator)',
+  'User-Agent': 'Mozilla/5.0 (compatible; NextRole job aggregator)',
   Accept: 'application/json',
 };
 

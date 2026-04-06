@@ -1,4 +1,4 @@
-export const metadata = { title: 'Settings — NexTRole' };
+export const metadata = { title: 'Settings — NextRole' };
 
 export default function SettingsPage() {
   return (

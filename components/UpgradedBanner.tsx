@@ -9,7 +9,7 @@ export default function UpgradedBanner() {
 
   useEffect(() => {
     if (searchParams.get('upgraded') === 'true') {
-      toast.success("You're now on NexTRole Pro! Enjoy unlimited job access. 🎉", {
+      toast.success("You're now on NextRole Pro! Enjoy unlimited job access. 🎉", {
         duration: 5000,
       });
     }
