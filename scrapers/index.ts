@@ -8,6 +8,8 @@ import { scrapeJobSpy }              from './sources/jobspy';
 import { scrapeGreenhouse }          from './sources/greenhouse';
 import { scrapeLever }               from './sources/lever';
 import { scrapeWorkday }             from './sources/workday';
+import { scrapeWellfound }           from './sources/wellfound';
+import { scrapeDice }                from './sources/dice';
 import { uploadJobs, deactivateStaleJobs } from './utils/upload';
 import { NormalizedJob } from './utils/normalize';
 
@@ -23,6 +25,8 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   { name: 'greenhouse',           fn: scrapeGreenhouse },
   { name: 'lever',                fn: scrapeLever },
   { name: 'workday',              fn: scrapeWorkday },
+  { name: 'wellfound',            fn: scrapeWellfound },
+  { name: 'dice',                 fn: scrapeDice },
   // Week 2 (uncomment when ready):
   // { name: 'jobright',          fn: scrapeJobright },
   // { name: 'otta',              fn: scrapeOtta },
@@ -31,8 +35,7 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   // { name: 'linkedin',          fn: scrapeLinkedIn },
   // { name: 'indeed',            fn: scrapeIndeed },
   // { name: 'handshake',         fn: scrapeHandshake },
-  // { name: 'wellfound',         fn: scrapeWellfound },
-  // { name: 'dice',              fn: scrapeDice },
+  // (wellfound + dice are now active above)
 ];
 
 // Runs a single scraper end-to-end: fetch → upload → deactivate stale
