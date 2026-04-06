@@ -16,6 +16,7 @@ import { scrapeZipRecruiter }        from './sources/ziprecruiter';
 import { scrapeGlassdoor }           from './sources/glassdoor';
 import { scrapeCareerjet }           from './sources/careerjet';
 import { scrapeWorkAtAStartup }      from './sources/workatastartup';
+import { scrapeBuiltIn }             from './sources/builtin';
 import { scrapeWellfound }           from './sources/wellfound';
 import { scrapeDice }                from './sources/dice';
 import { scrapeHandshake }           from './sources/handshake';
@@ -47,6 +48,7 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   { name: 'glassdoor',            fn: scrapeGlassdoor },
   { name: 'careerjet',            fn: scrapeCareerjet },
   { name: 'workatastartup',       fn: scrapeWorkAtAStartup },
+  { name: 'builtin',              fn: scrapeBuiltIn },
   { name: 'wellfound',            fn: scrapeWellfound },
   { name: 'dice',                 fn: scrapeDice },
   { name: 'handshake',            fn: scrapeHandshake },

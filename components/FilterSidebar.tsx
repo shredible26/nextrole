@@ -48,6 +48,7 @@ const SOURCES = [
   { value: 'glassdoor',              label: 'Glassdoor' },
   { value: 'careerjet',              label: 'Careerjet' },
   { value: 'workatastartup',         label: 'Work at a Startup' },
+  { value: 'builtin',                label: 'BuiltIn' },
 ];
 
 interface Props {
