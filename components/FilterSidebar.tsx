@@ -32,6 +32,7 @@ const SOURCES = [
   { value: 'workday', label: 'Workday' },
   { value: 'wellfound', label: 'Wellfound' },
   { value: 'dice', label: 'Dice' },
+  { value: 'handshake', label: 'Handshake' },
 ];
 
 interface Props {
