@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import JobFeed from '@/components/JobFeed';
+import UpgradedBanner from '@/components/UpgradedBanner';
 
 export const metadata = {
   title: 'Jobs — NexTRole',
@@ -6,5 +8,12 @@ export const metadata = {
 };
 
 export default function JobsPage() {
-  return <JobFeed />;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <UpgradedBanner />
+      </Suspense>
+      <JobFeed />
+    </>
+  );
 }

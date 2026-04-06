@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import type { User } from '@supabase/supabase-js';
 
 const NAV_LINKS = [
@@ -26,13 +27,28 @@ export default function Navbar() {
   const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
+  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('tier')
+          .eq('id', user.id)
+          .single();
+        setIsPro(data?.tier === 'pro');
+      }
+    }
+    loadUser();
     const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
+      if (!session?.user) setIsPro(false);
     });
     return () => listener.subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleLogin() {
@@ -83,6 +99,11 @@ export default function Navbar() {
 
         {/* Auth */}
         <div className="ml-auto flex items-center gap-3">
+          {user && isPro && (
+            <Badge className="hidden sm:inline-flex bg-emerald-600 hover:bg-emerald-600 text-white text-xs px-2 py-0.5">
+              Pro
+            </Badge>
+          )}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger
