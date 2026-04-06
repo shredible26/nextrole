@@ -5,103 +5,165 @@
 import { generateHash } from '../utils/dedup';
 import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
-const COMPANIES = [
-  // Social / Consumer
-  'netflix', 'reddit', 'pinterest', 'snap',
-  'tiktok', 'bytedance', 'discord',
+const COMPANIES: Record<string, string> = {
+  // Big Tech / Social
+  'netflix': 'Netflix',
+  'reddit': 'Reddit',
+  'pinterest': 'Pinterest',
+  'snap': 'Snap',
+  'discord': 'Discord',
+  'twitch': 'Twitch',
 
-  // Music / Media / Entertainment
-  'spotify', 'soundcloud', 'deezer',
-  'twitch', 'streamlabs', 'restream',
-  'vimeo', 'wistia', 'vidyard',
+  // Ride / Delivery
+  'lyft': 'Lyft',
+  'doordash': 'DoorDash',
+  'instacart': 'Instacart',
+  'grubhub': 'Grubhub',
 
-  // Gaming
-  'epicgames', 'roblox', 'unity', 'niantic', 'scopely',
-  'kabam', 'jam-city', 'glu', 'zynga', 'plarium',
+  // Fintech
+  'affirm': 'Affirm',
+  'wise': 'Wise',
+  'remitly': 'Remitly',
+  'brex': 'Brex',
+  'mercury': 'Mercury',
+  'ramp': 'Ramp',
+  'gusto': 'Gusto',
+  'rippling': 'Rippling',
+  'zenefits': 'Zenefits',
+  'carta': 'Carta',
+  'capchase': 'Capchase',
+  'moonpay': 'MoonPay',
+  'fireblocks': 'Fireblocks',
+  'anchorage': 'Anchorage Digital',
+  'bitgo': 'BitGo',
 
-  // Ride / Delivery / Food
-  'lyft', 'doordash', 'grubhub', 'gopuff', 'instacart',
-  'rappi', 'getir', 'deliveroo', 'gorillas',
+  // Gaming / Entertainment
+  'roblox': 'Roblox',
+  'unity': 'Unity',
+  'niantic': 'Niantic',
+  'scopely': 'Scopely',
+  'kabam': 'Kabam',
+  'zynga': 'Zynga',
+  'epicgames': 'Epic Games',
 
-  // Fintech / Payments
-  'shopify', 'affirm', 'klarna', 'zip', 'sezzle',
-  'wise', 'remitly', 'sendbird', 'paysend',
-  'capchase', 'pipe', 'clearco', 'lighter-capital',
-  'rippling', 'gusto', 'zenefits', 'bamboohr',
-  'wyre', 'moonpay', 'bitpay',
-  'fireblocks', 'anchorage', 'bitgo',
+  // EV / Auto
+  'rivian': 'Rivian',
+  'lucid': 'Lucid Motors',
+  'motional': 'Motional',
 
-  // Auto / EV / Mobility
-  'rivian', 'lucid', 'canoo', 'fisker', 'arrival',
-  'motional', 'mobileye', 'comma', 'ghost',
-  'lime', 'bird', 'spin', 'superpedestrian',
-
-  // SaaS / Productivity Tools
-  'notion', 'coda', 'roamresearch',
-  'loom', 'mmhmm',
-  'airtable', 'smartsheet', 'quickbase',
-  'zapier', 'make', 'n8n', 'pipedream', 'workato',
-  'tines', 'torq', 'swimlane',
-  'algolia', 'typesense', 'meilisearch',
+  // SaaS / Productivity
+  'notion': 'Notion',
+  'airtable': 'Airtable',
+  'zapier': 'Zapier',
+  'loom': 'Loom',
+  'miro': 'Miro',
+  'algolia': 'Algolia',
+  'pipedrive': 'Pipedrive',
+  'freshworks': 'Freshworks',
+  'intercom': 'Intercom',
+  'zendesk': 'Zendesk',
+  'hubspot': 'HubSpot',
+  'salesloft': 'Salesloft',
+  'outreach': 'Outreach',
+  'gong': 'Gong',
+  'clari': 'Clari',
+  'front': 'Front',
+  'drift': 'Drift',
 
   // Security
-  'lacework', 'orca-security', 'wiz', 'axonius',
-  'abnormal', 'proofpoint', 'mimecast', 'sublime',
-  'hashicorp', '1password', 'bitwarden', 'keeper',
-  'vulncheck', 'nuclei', 'detectify',
+  'lacework': 'Lacework',
+  'wiz': 'Wiz',
+  'axonius': 'Axonius',
+  'abnormalsecurity': 'Abnormal Security',
+  'hashicorp': 'HashiCorp',
+  'snyk': 'Snyk',
+  'detectify': 'Detectify',
 
   // Data / Analytics
-  'fivetran', 'airbyte', 'meltano',
-  'dbtlabs', 'paradime', 'lightdash', 'preset',
-  'hex', 'deepnote', 'observable', 'evidence',
-  'hightouch', 'census', 'polytomic', 'grouparoo',
+  'fivetran': 'Fivetran',
+  'airbyte': 'Airbyte',
+  'dbtlabs': 'dbt Labs',
+  'hightouch': 'Hightouch',
+  'hex': 'Hex',
+  'lightdash': 'Lightdash',
 
-  // Healthcare / Mental Health
-  'oscar-health', 'devoted-health', 'cityblock',
-  'headspace', 'brightline', 'woebot', 'lyra',
-  'ro-health', 'hims-hers', 'nurx', 'done',
-  'wheel', 'carbon-health', 'dr-chrono',
+  // Healthcare
+  'headspace': 'Headspace',
+  'lyra': 'Lyra Health',
+  'brightline': 'Brightline',
+  'cityblock': 'Cityblock Health',
+  'carbon-health': 'Carbon Health',
 
-  // Climate / Sustainability
-  'watershed', 'plan-a', 'normative', 'sweep', 'emitwise',
-  'arcadia-power', 'octopus-energy', 'ovo-energy',
-  'pachama', 'terrasos', 'terrawatch',
+  // Climate
+  'watershed': 'Watershed',
+  'arcadia': 'Arcadia',
+  'pachama': 'Pachama',
 
   // EdTech
-  'duolingo', 'quizlet', 'chegg', 'brainly',
-  'coursehero', 'studocu', 'khanmigo',
-  'synthesis', 'outschool', 'primer',
+  'duolingo': 'Duolingo',
+  'quizlet': 'Quizlet',
+  'chegg': 'Chegg',
+  'brainly': 'Brainly',
+  'outschool': 'Outschool',
 
-  // Logistics / Supply Chain
-  'flexport', 'stord', 'shipbob', 'shiphero',
-  'project44', 'fourkites', 'elementum',
-  'transfix', 'loadsmart', 'convoy',
+  // Logistics
+  'flexport': 'Flexport',
+  'shipbob': 'ShipBob',
+  'stord': 'Stord',
+  'transfix': 'Transfix',
+  'loadsmart': 'Loadsmart',
 
   // HR / Recruiting
-  'greenhouse-software', 'lever-recruiting', 'ashby-hq',
-  'gem', 'fetcher', 'beamery', 'paradox',
-  'checkr', 'hireright', 'sterling',
+  'gem': 'Gem',
+  'checkr': 'Checkr',
+  'paradox': 'Paradox',
+  'beamery': 'Beamery',
 
-  // Legal / Compliance
-  'clio', 'mycase', 'filevine', 'litify',
-  'ironclad', 'contractpodai', 'evisort',
+  // Legal
+  'clio': 'Clio',
+  'ironclad': 'Ironclad',
+  'filevine': 'Filevine',
 
   // Real Estate
-  'opendoor', 'offerpad', 'homeward', 'orchard',
-  'compass', 'side', 'real-brokerage',
-  'costar', 'crexi', 'vts',
+  'opendoor': 'Opendoor',
+  'compass': 'Compass',
+  'crexi': 'CREXi',
 
   // Insurance
-  'lemonade', 'root', 'hippo', 'branch',
-  'next-insurance', 'coalition', 'at-bay',
+  'lemonade': 'Lemonade',
+  'root': 'Root Insurance',
+  'next-insurance': 'Next Insurance',
+  'coalition': 'Coalition',
 
-  // Other Notable
-  'canva', 'grammarly', 'jasper', 'copy-ai',
-  'descript', 'otter', 'fireflies', 'fathom',
-  'superhuman', 'shortwave', 'mimestream',
-  'linear', 'height', 'plane', 'cycle',
-  'raycast', 'alfred', 'espanso',
-];
+  // Other notable
+  'canva': 'Canva',
+  'grammarly': 'Grammarly',
+  'descript': 'Descript',
+  'superhuman': 'Superhuman',
+  'linear': 'Linear',
+  'raycast': 'Raycast',
+  'framer': 'Framer',
+  'webflow': 'Webflow',
+  'bubble': 'Bubble',
+  'retool': 'Retool',
+  'airplane': 'Airplane',
+  'posthog': 'PostHog',
+  'launchdarkly': 'LaunchDarkly',
+  'statsig': 'Statsig',
+  'vanta': 'Vanta',
+  'drata': 'Drata',
+  'secureframe': 'Secureframe',
+  'faire': 'Faire',
+  'ankorstore': 'Ankorstore',
+  'sendbird': 'Sendbird',
+  'twilio-segment': 'Segment',
+  'amplitude': 'Amplitude',
+  'mixpanel': 'Mixpanel',
+  'pendo': 'Pendo',
+  'fullstory': 'FullStory',
+  'heap': 'Heap',
+  'appcues': 'Appcues',
+};
 
 const TECH_KEYWORDS = [
   'engineer', 'developer', 'scientist', 'analyst', 'ml', 'ai', 'data',
@@ -113,10 +175,10 @@ function isTechRole(title: string): boolean {
   return TECH_KEYWORDS.some(k => lower.includes(k));
 }
 
-async function fetchCompany(company: string): Promise<NormalizedJob[]> {
+async function fetchCompany(slug: string, companyName: string): Promise<NormalizedJob[]> {
   try {
     const res = await fetch(
-      `https://api.lever.co/v0/postings/${company}?mode=json`,
+      `https://api.lever.co/v0/postings/${slug}?mode=json`,
       { signal: AbortSignal.timeout(10_000) }
     );
     if (!res.ok) return []; // company not on Lever — skip silently
@@ -132,8 +194,6 @@ async function fetchCompany(company: string): Promise<NormalizedJob[]> {
       if (level === null) continue;
 
       const location: string = job.categories?.location ?? job.categories?.allLocations?.[0] ?? '';
-      // Lever doesn't return company name in the posting — derive from slug
-      const companyName = company.charAt(0).toUpperCase() + company.slice(1);
       normalized.push({
         source: 'lever',
         source_id: job.id ?? '',
@@ -163,9 +223,10 @@ export async function scrapeLever(): Promise<NormalizedJob[]> {
   const DELAY_MS = 200;
   const all: NormalizedJob[] = [];
 
-  for (let i = 0; i < COMPANIES.length; i += BATCH_SIZE) {
-    const batch = COMPANIES.slice(i, i + BATCH_SIZE);
-    const results = await Promise.allSettled(batch.map(fetchCompany));
+  const entries = Object.entries(COMPANIES);
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+    const batch = entries.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(batch.map(([slug, name]) => fetchCompany(slug, name)));
 
     for (const result of results) {
       if (result.status === 'fulfilled') {
@@ -173,7 +234,7 @@ export async function scrapeLever(): Promise<NormalizedJob[]> {
       }
     }
 
-    if (i + BATCH_SIZE < COMPANIES.length) {
+    if (i + BATCH_SIZE < entries.length) {
       await sleep(DELAY_MS);
     }
   }

@@ -390,6 +390,50 @@ const WORKDAY_COMPANIES: [string, string][] = [
   ['sempra', 'sempra'],
   ['centerpoint', 'centerpointenergy'],
   ['atmos', 'atmosenergy'],
+
+  // Additional verified companies
+  ['mars', 'mars'],
+  ['jll', 'jll'],
+  ['philips', 'philips'],
+  ['mastercard', 'CorporateCareers'],
+  ['hyvee', 'hyvee'],
+  ['symantec', 'careers'],
+
+  // Pharma / Biotech
+  ['regeneron', 'careers'],
+  ['biogen', 'careers'],
+  ['gilead', 'careers'],
+  ['amgen', 'careers'],
+  ['celgene', 'careers'],
+  ['vertex', 'careers'],
+  ['alexion', 'careers'],
+  ['shire', 'careers'],
+  ['takeda', 'takeda'],
+  ['boehringer', 'careers'],
+  ['ucb', 'careers'],
+  ['astellas', 'careers'],
+  ['daiichi', 'careers'],
+  ['eisai', 'careers'],
+
+  // Tech companies
+  ['tableau', 'careers'],
+  ['okta', 'okta'],
+  ['sumo-logic', 'careers'],
+  ['talend', 'careers'],
+  ['qlik', 'careers'],
+  ['microstrategy', 'careers'],
+
+  // Finance
+  ['tdameritrade', 'careers'],
+  ['etrade', 'careers'],
+
+  // Consulting
+  ['mckinsey', 'mckinsey'],
+  ['bcg', 'bcg'],
+  ['bain', 'bain'],
+
+  // Energy
+  ['eversource', 'eversource'],
 ];
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));

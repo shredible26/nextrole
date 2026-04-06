@@ -59,12 +59,14 @@ interface USAJobsItem {
 
 /**
  * Determine experience level from GS grade when title inference is ambiguous.
- * Returns null if grade indicates too-senior (grade 9+).
+ * Returns null if grade indicates too-senior (grade 12+).
+ * GS-9/10/11 are included: GS-9 is standard for new MS grads, GS-10/11 cover rotational programs.
  */
 function levelFromGsGrade(lowGrade: number): ExperienceLevel | null {
   if (lowGrade <= 7) return 'entry_level';
-  if (lowGrade === 8) return 'new_grad';
-  return null; // grade 9+ → too senior
+  if (lowGrade <= 9) return 'new_grad';
+  if (lowGrade <= 11) return 'entry_level'; // rotational / associate programs
+  return null; // grade 12+ → genuinely mid-level
 }
 
 async function fetchPage(
@@ -154,9 +156,9 @@ function processItems(items: USAJobsItem[], out: NormalizedJob[]): void {
     // Skip if title inference says null (senior role)
     if (level === null) continue;
 
-    // Additionally enforce GS grade ceiling — skip grade 9+ jobs
+    // Additionally enforce GS grade ceiling — skip grade 12+ jobs
     const lowGradeRaw = parseInt(details?.LowGrade ?? '0', 10);
-    if (lowGradeRaw >= 9) continue;
+    if (lowGradeRaw >= 12) continue;
 
     // If grade is present and title gave a generic entry_level result,
     // use the grade-based level for more precision
