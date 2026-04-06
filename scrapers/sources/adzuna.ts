@@ -66,7 +66,7 @@ export async function scrapeAdzuna(): Promise<NormalizedJob[]> {
             company: job.company?.display_name ?? 'Unknown',
             location,
             remote: inferRemote(location),
-            url: job.redirect_url,
+            url: job.redirect_url ? `${job.redirect_url}&utm_source=nextrole` : job.redirect_url,
             description: job.description,
             salary_min: job.salary_min ? Math.round(job.salary_min) : undefined,
             salary_max: job.salary_max ? Math.round(job.salary_max) : undefined,

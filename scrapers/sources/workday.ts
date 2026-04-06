@@ -38,6 +38,14 @@ const NON_US_LOCATION_SIGNALS = [
   ' uk', ' uk,', 'united kingdom', 'canada', 'australia',
   'germany', 'france', 'netherlands', 'ireland', 'mexico',
   'brazil', 'argentina', 'colombia', 'chile',
+  // Additional locations
+  'jakarta', 'manila', 'ho chi minh', 'kuala lumpur', 'bangkok',
+  'cairo', 'riyadh', 'dubai', 'abu dhabi', 'doha',
+  'johannesburg', 'cape town', 'lagos', 'nairobi',
+  'lima', 'bogota', 'santiago', 'buenos aires',
+  'warsaw', 'prague', 'budapest', 'bucharest', 'sofia',
+  'zagreb', 'belgrade', 'bratislava',
+  'karachi', 'lahore', 'dhaka', 'colombo',
 ];
 
 /**
@@ -72,6 +80,60 @@ function isNonUsLocation(location: string): boolean {
     return false;
   }
   return NON_US_LOCATION_SIGNALS.some(signal => lower.includes(signal));
+}
+
+/**
+ * Construct a full Workday apply URL from a relative externalPath.
+ * If the path already starts with /en-US/, it is used directly.
+ * Otherwise the /en-US/{careerSite}/ prefix is prepended.
+ */
+function buildWorkdayUrl(
+  company: string,
+  wdVersion: string,
+  careerSite: string,
+  relativeUrl: string,
+): string {
+  if (relativeUrl.startsWith('http')) return relativeUrl;
+  const baseHost = `https://${company}.${wdVersion}.myworkdayjobs.com`;
+  if (relativeUrl.startsWith('/en-US/') || relativeUrl.startsWith('/en-us/')) {
+    return `${baseHost}${relativeUrl}`;
+  }
+  const path = relativeUrl.startsWith('/') ? relativeUrl.slice(1) : relativeUrl;
+  return `${baseHost}/en-US/${careerSite}/${path}`;
+}
+
+const NON_TECH_PATTERNS = [
+  'relationship banker', 'retail banker', 'personal banker',
+  'associate banker', 'banker', 'bank teller', 'teller',
+  'loan officer', 'mortgage', 'financial advisor', 'wealth advisor',
+  'financial planner', 'insurance agent', 'insurance advisor',
+  'sales manager', 'sales director', 'sales executive',
+  'account executive', 'account manager', 'named account',
+  'retail associate', 'store associate', 'store manager',
+  'cashier', 'customer service representative',
+  'supply chain coordinator', 'logistics coordinator',
+  'warehouse associate', 'delivery driver', 'truck driver',
+  'registered nurse', 'nurse practitioner', 'nursing',
+  'physician', 'medical assistant', 'pharmacy technician',
+  'teacher', 'professor', 'adjunct instructor',
+  'bookkeeper', 'payroll specialist', 'hr generalist',
+  'hr coordinator', 'human resources coordinator',
+  'marketing coordinator', 'marketing specialist',
+  'graphic designer', 'visual designer',
+  'apprenticeship', 'apprentice',
+  'paralegal', 'legal assistant',
+  'real estate agent', 'property manager',
+  'facilities coordinator', 'maintenance technician',
+  'food service', 'chef', 'cook', 'barista',
+];
+
+function isNonTechRole(title: string): boolean {
+  const t = title.toLowerCase();
+  return NON_TECH_PATTERNS.some(p => t.includes(p));
+}
+
+function hasNonLatinCharacters(text: string): boolean {
+  return /[\u3000-\u9FFF\uAC00-\uD7AF\u0600-\u06FF\u0400-\u04FF]/.test(text);
 }
 
 const SEARCH_TERMS = [
@@ -460,6 +522,8 @@ function parseWorkdayDate(raw?: string): string | undefined {
 interface WorkdayJob {
   title: string;
   externalPath: string;
+  externalUrl?: string;
+  jobPostingUrl?: string;
   locationsText?: string;
   postedOn?: string;
   bulletFields?: string[];
@@ -611,10 +675,17 @@ async function scrapeCompany(
       // Skip non-US locations
       if (isNonUsLocation(location)) continue;
 
-      const baseHost = `https://${company}.${wdVersion}.myworkdayjobs.com`;
-      const url = externalPath
-        ? `${baseHost}${externalPath}`
-        : `${baseHost}/en-US/${slug}/jobs`;
+      // Skip non-Latin characters in title or location (international postings)
+      if (hasNonLatinCharacters(title) || hasNonLatinCharacters(location)) continue;
+
+      // Skip non-tech roles that slip through (banking, nursing, retail, etc.)
+      if (isNonTechRole(title)) continue;
+
+      // Build full URL: prefer externalUrl > jobPostingUrl > constructed from externalPath
+      const url =
+        posting.externalUrl ??
+        posting.jobPostingUrl ??
+        buildWorkdayUrl(company, wdVersion, slug, externalPath || `/en-US/${slug}/jobs`);
 
       const hash = generateHash(company, title, location);
       if (seen.has(hash)) continue;

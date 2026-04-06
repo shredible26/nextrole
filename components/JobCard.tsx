@@ -123,7 +123,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
             className="h-7 text-xs gap-1"
             onClick={() => window.open(job.url, '_blank', 'noopener,noreferrer')}
           >
-            Apply
+            {job.source === 'adzuna' ? 'View on Adzuna' : 'Apply'}
             <ExternalLink className="h-3 w-3" />
           </Button>
 

@@ -157,7 +157,7 @@ export default function JobFeed() {
       {/* h-14 = 56px navbar height; both columns scroll independently */}
       <div className="flex h-[calc(100vh-56px)] overflow-hidden mx-auto w-full max-w-7xl">
         {/* Sidebar — independent scroll */}
-        <aside className="hidden md:block w-64 shrink-0 overflow-y-auto border-r px-6 py-6">
+        <aside className="hidden md:block w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r px-6 py-6">
           <FilterSidebar filters={filters} onChange={handleFilterChange} />
         </aside>
 

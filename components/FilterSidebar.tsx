@@ -69,7 +69,7 @@ export default function FilterSidebar({ filters, onChange }: Props) {
   }
 
   return (
-    <aside className="w-64 shrink-0 space-y-6 overflow-x-hidden">
+    <aside className="w-full overflow-x-hidden space-y-6">
       {/* Roles */}
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
