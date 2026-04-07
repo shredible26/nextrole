@@ -1,47 +1,44 @@
 import { MetadataRoute } from 'next'
-import { createClient } from '@supabase/supabase-js'
+import {
+  BASE_URL,
+  ROOT_JOB_URL_LIMIT,
+  buildJobSitemapEntries,
+  fetchSitemapJobs,
+} from '@/lib/sitemap/jobs'
 
+export const runtime = 'nodejs'
 export const revalidate = 3600
+export const maxDuration = 60
+
+const staticUrls: MetadataRoute.Sitemap = [
+  {
+    url: BASE_URL,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 1,
+  },
+  {
+    url: `${BASE_URL}/jobs`,
+    lastModified: new Date(),
+    changeFrequency: 'hourly',
+    priority: 0.9,
+  },
+  {
+    url: `${BASE_URL}/pricing`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.5,
+  },
+]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
-  )
+  const jobs = await fetchSitemapJobs({
+    logLabel: 'sitemap',
+    offset: 0,
+    limit: ROOT_JOB_URL_LIMIT,
+  })
 
-  const { data: jobs } = await supabase
-    .from('jobs')
-    .select('id, updated_at, posted_at')
-    .eq('is_active', true)
-    .order('posted_at', { ascending: false })
-    .limit(49000)
+  const jobUrls = buildJobSitemapEntries(jobs)
 
-  const jobUrls: MetadataRoute.Sitemap = (jobs ?? []).map(job => ({
-    url: `https://nextrole-phi.vercel.app/jobs/${job.id}`,
-    lastModified: new Date(job.updated_at ?? job.posted_at ?? Date.now()),
-    changeFrequency: 'daily' as const,
-    priority: 0.7,
-  }))
-
-  return [
-    {
-      url: 'https://nextrole-phi.vercel.app',
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 1,
-    },
-    {
-      url: 'https://nextrole-phi.vercel.app/jobs',
-      lastModified: new Date(),
-      changeFrequency: 'hourly' as const,
-      priority: 0.9,
-    },
-    {
-      url: 'https://nextrole-phi.vercel.app/pricing',
-      lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
-      priority: 0.5,
-    },
-    ...jobUrls,
-  ]
+  return [...staticUrls, ...jobUrls]
 }
