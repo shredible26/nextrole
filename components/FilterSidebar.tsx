@@ -33,6 +33,7 @@ const SOURCES = [
   { value: 'simplify_internships',   label: 'Simplify (Internships)' },
   { value: 'vanshb03_newgrad',       label: 'vanshb03 (New Grad)' },
   { value: 'vanshb03_internships',   label: 'vanshb03 (Internships)' },
+  { value: 'ambicuity',              label: 'New Grad Jobs' },
   { value: 'greenhouse',             label: 'Greenhouse' },
   { value: 'lever',                  label: 'Lever' },
   { value: 'ashby',                  label: 'Ashby' },

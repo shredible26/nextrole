@@ -5,6 +5,7 @@
 // Different companies use different subdomain versions (wd1–wd12, wd100).
 
 import { generateHash } from '../utils/dedup';
+import { isNonUsLocation } from '../utils/location';
 import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
 
 // Workday-specific senior/sales title signals not caught by inferExperienceLevel
@@ -30,55 +31,6 @@ const WORKDAY_TITLE_EXCLUSIONS = [
   'fellow',
 ];
 
-// Non-US location signals — skip these to keep the feed US-focused
-const NON_US_LOCATION_SIGNALS = [
-  // Countries
-  'canada', 'mexico', 'uk', 'united kingdom', 'india', 'china',
-  'japan', 'korea', 'singapore', 'australia', 'germany', 'france',
-  'spain', 'italy', 'netherlands', 'poland', 'brazil', 'argentina',
-  'colombia', 'chile', 'peru', 'israel', 'turkey', 'ukraine',
-  'russia', 'pakistan', 'bangladesh', 'philippines', 'indonesia',
-  'malaysia', 'thailand', 'vietnam', 'taiwan', 'hong kong',
-  'palestine',
-  'new zealand', 'sweden', 'norway', 'denmark', 'finland',
-  'switzerland', 'austria', 'belgium', 'portugal', 'czech',
-  'romania', 'hungary', 'bulgaria', 'croatia', 'serbia',
-  'egypt', 'nigeria', 'south africa', 'kenya', 'ghana',
-  'uae', 'dubai', 'saudi arabia', 'qatar', 'kuwait',
-
-  // Mexican location patterns
-  'd.f.', 'del.', 'miguel hidalgo', 'ciudad de mexico',
-  'cdmx', 'guadalajara', 'monterrey', 'puebla', 'tijuana',
-  'eagle - d.f', 'eagle - df',
-
-  // Canadian cities
-  'toronto', 'vancouver', 'montreal', 'calgary', 'ottawa',
-  'winnipeg', 'edmonton', 'quebec', 'ontario', 'british columbia',
-
-  // Indian cities
-  'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad',
-  'pune', 'chennai', 'kolkata', 'noida', 'gurugram', 'gurgaon',
-
-  // Other major international cities
-  'london', 'paris', 'berlin', 'amsterdam', 'dublin', 'lyon',
-  'stockholm', 'copenhagen', 'oslo', 'zurich', 'geneva',
-  'sydney', 'melbourne', 'auckland', 'tokyo', 'osaka',
-  'beijing', 'shanghai', 'shenzhen', 'seoul', 'taipei',
-  'jakarta', 'kuala lumpur', 'bangkok', 'manila', 'ho chi minh',
-  'tel aviv', 'istanbul', 'moscow', 'warsaw', 'prague',
-  'budapest', 'bucharest', 'sofia', 'zagreb', 'belgrade',
-  'cairo', 'lagos', 'nairobi', 'johannesburg', 'accra',
-  'abu dhabi', 'riyadh', 'doha', 'rawabi',
-
-  // Penang specifically
-  'penang',
-
-  // Canadian province abbreviations (only when followed by comma+space or end of string)
-  // Handle these carefully to not conflict with US states
-];
-
-const CANADIAN_PROVINCE_ABBREVIATION_RE = /(?:^|,\s)(?:ab|bc|mb|nb|nl|ns|nt|nu|on|pe|qc|sk|yt)(?=, |$)/i;
-
 /**
  * Returns true if the job title contains a Workday-specific senior/sales signal.
  * Special case: 'consultant' is only excluded when NOT preceded by 'associate' or 'junior'.
@@ -96,30 +48,6 @@ function isWorkdaySeniorTitle(title: string): boolean {
       lower.includes('junior consultant');
     if (!hasJuniorPrefix) return true;
   }
-
-  return false;
-}
-
-/**
- * Returns true if the location signals a non-US office.
- * Keeps jobs that are US-based, remote, or have no clear location signal.
- */
-function isNonUsLocation(location: string): boolean {
-  if (!location) return false;
-  const lower = location.toLowerCase();
-  const matchesNonUsSignal = (value: string) =>
-    NON_US_LOCATION_SIGNALS.some(signal => value.includes(signal)) ||
-    CANADIAN_PROVINCE_ABBREVIATION_RE.test(value);
-
-  const separatorIndex = lower.indexOf(' - ');
-  if (separatorIndex !== -1) {
-    const suffix = lower.slice(separatorIndex + 3).trim();
-    if (matchesNonUsSignal(suffix)) return true;
-  }
-
-  if (matchesNonUsSignal(lower)) return true;
-  if (lower.includes('united states') || lower.includes('usa')) return false;
-  if (lower.includes('remote')) return false;
 
   return false;
 }
@@ -181,6 +109,70 @@ function isValidWorkdayUrl(url: string): boolean {
   );
 }
 
+const WORKDAY_TECH_COMPANIES = new Set([
+  'nvidia', 'intel', 'salesforce', 'crowdstrike', 'marvell', 'draftkings',
+  'workiva', 'amazon', 'microsoft', 'apple', 'meta', 'google', 'ibm',
+  'oracle', 'sap', 'adobe', 'qualcomm', 'amd', 'broadcom', 'ti',
+  'analog', 'xilinx', 'vmware', 'workday', 'servicenow', 'splunk',
+  'paloaltonetworks', 'fortinet', 'netapp', 'purestorage', 'nutanix',
+  'elastic', 'mongodb', 'cloudera', 'dynatrace', 'informatica',
+  'teradata', 'f5', 'juniper', 'arista', 'commvault', 'verint',
+  'opentext', 'tibco', 'solarwinds', 'uber', 'lyft', 'airbnb',
+  'doordash', 'instacart', 'atlassian', 'dropbox', 'box', 'zendesk',
+  'hubspot', 'twilio', 'cloudflare', 'databricks', 'snowflake',
+  'palantir', 'veeva', 'guidewire', 'paylocity', 'adp', 'paychex',
+  'medallia', 'qualtrics', 'sprinklr', 'meltwater', 'okta', 'zscaler',
+  'pagerduty', 'sumo-logic', 'tableau', 'microstrategy', 'nuance',
+  'talend', 'qlik', 'motorolasolutions',
+]);
+
+const PROTECTED_TECH_TITLE_PATTERNS = [
+  /\bsoftware\b.*\b(?:engineer|developer)\b/,
+  /\bsoftware development engineer\b/,
+  /\bdata\b.*\b(?:scientist|analyst|engineer)\b/,
+  /\bmachine learning\b.*\b(?:engineer|scientist|researcher|developer|analyst)\b/,
+  /\bartificial intelligence\b.*\b(?:engineer|scientist|researcher|developer|analyst)\b/,
+  /\bai\b.*\b(?:engineer|scientist|researcher|developer|analyst)\b/,
+  /\bml\b.*\b(?:engineer|scientist|researcher|developer|analyst)\b/,
+  /\bproduct\b.*\b(?:manager|analyst)\b/,
+  /\bsecurity\b.*\b(?:engineer|analyst)\b/,
+  /\bcyber(?:security)?\b.*\b(?:engineer|analyst)\b/,
+  /\bsystems?\b.*\b(?:engineer|analyst)\b/,
+  /\bcloud engineer\b/,
+  /\bdevops\b/,
+  /\bsre\b/,
+  /\bsite reliability\b/,
+  /\bplatform engineer\b/,
+  /\bbusiness analyst\b/,
+  /\bquantitative analyst\b/,
+  /\bquant\b.*\b(?:analyst|developer|researcher|engineer)\b/,
+  /\bit\b.*\b(?:engineer|analyst)\b/,
+];
+
+const SOFTWARE_CONTEXT_PATTERNS = [
+  'software',
+  'data',
+  'machine learning',
+  'artificial intelligence',
+  ' ai ',
+  ' ai,',
+  ' ai/',
+  ' ai-',
+  ' ml ',
+  'ml engineer',
+  'security',
+  'cyber',
+  'cloud',
+  'devops',
+  'sre',
+  'site reliability',
+  'platform',
+  'systems',
+  'network',
+  'it ',
+  'it-',
+];
+
 const NON_TECH_PATTERNS = [
   'relationship banker', 'retail banker', 'personal banker',
   'associate banker', 'banker', 'bank teller', 'teller',
@@ -227,10 +219,73 @@ const NON_TECH_PATTERNS = [
   'administrative assistant', 'receptionist', 'office manager',
   'scheduling coordinator', 'commodity analyst', 'customs',
   'bindery', 'litho', 'recommerce', 'resale', 'liquidation',
+  'risk manager', 'risk event', 'risk analyst',
+  'portfolio marketing', 'marketing manager', 'brand manager',
+  'vaccines', 'vaccine', 'immunology', 'oncology',
+  'business manager', 'business development manager',
+  'sales manager', 'sales representative', 'sales executive',
+  'account manager', 'account executive', 'account director',
+  'territory', 'regional manager', 'district manager',
+  'operations improvement', 'operational excellence',
+  'quality control', 'diagnostic', 'assay', 'laboratory', 'lab scientist',
+  'marine', 'maritime', 'nautical',
+  'tax', 'audit', 'accounting',
+  'communications manager', 'pr manager', 'public relations',
 ];
 
-function isNonTechRole(title: string): boolean {
+function isProtectedTechTitle(title: string): boolean {
   const t = title.toLowerCase();
+  return PROTECTED_TECH_TITLE_PATTERNS.some(pattern => pattern.test(t));
+}
+
+function isSoftwareContext(title: string): boolean {
+  const padded = ` ${title.toLowerCase()} `;
+  return SOFTWARE_CONTEXT_PATTERNS.some(pattern => padded.includes(pattern));
+}
+
+function isTechCompany(company: string): boolean {
+  return WORKDAY_TECH_COMPANIES.has(company.toLowerCase());
+}
+
+function extractWorkdaySourceId(
+  company: string,
+  title: string,
+  location: string,
+  posting: WorkdayJob,
+): string {
+  const bulletFieldId = posting.bulletFields
+    ?.map(field => field.trim())
+    .find(field => /^[A-Z]{1,6}\d{4,}$/i.test(field));
+  const pathId = posting.externalPath?.match(/_([A-Za-z0-9-]+)$/)?.[1];
+  const stableFallback = `${company}:${title.toLowerCase().trim()}:${location.toLowerCase().trim()}`;
+
+  return posting.jobPostingId ?? bulletFieldId ?? pathId ?? stableFallback;
+}
+
+function isNonTechRole(title: string, company: string): boolean {
+  const t = title.toLowerCase();
+
+  if (isProtectedTechTitle(t)) return false;
+
+  if (
+    t.includes('process engineer') &&
+    !/\b(?:software|data)\s+process engineer\b/.test(t)
+  ) {
+    return true;
+  }
+
+  if (t.includes('quality assurance') && !isSoftwareContext(t)) {
+    return true;
+  }
+
+  if (t.includes('field engineer') && !isSoftwareContext(t)) {
+    return true;
+  }
+
+  if (t.includes('financial analyst') && !isTechCompany(company)) {
+    return true;
+  }
+
   return NON_TECH_PATTERNS.some(p => t.includes(p));
 }
 
@@ -855,7 +910,7 @@ async function scrapeCompany(
       if (hasNonLatinCharacters(title) || hasNonLatinCharacters(location)) continue;
 
       // Skip non-tech roles that slip through (banking, nursing, retail, etc.)
-      if (isNonTechRole(title)) {
+      if (isNonTechRole(title, company)) {
         if (isFirstSeenPosting) stats.filteredNonTech += 1;
         continue;
       }
@@ -871,7 +926,7 @@ async function scrapeCompany(
 
       jobs.push({
         source: 'workday',
-        source_id: posting.jobPostingId ?? externalPath,
+        source_id: extractWorkdaySourceId(company, title, location, posting),
         title,
         company: company.charAt(0).toUpperCase() + company.slice(1),
         location,

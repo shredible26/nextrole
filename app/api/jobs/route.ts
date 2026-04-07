@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     const GITHUB_REPO_SOURCES = [
       'pittcsc', 'simplify_internships',
       'vanshb03_newgrad', 'vanshb03_internships',
-      'speedyapply_swe', 'speedyapply_ai',
+      'ambicuity', 'speedyapply_swe', 'speedyapply_ai',
     ];
     if (sources.includes('github_repos')) {
       // Expand 'github_repos' group to all individual GitHub-backed sources

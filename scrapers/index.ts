@@ -2,6 +2,7 @@ import { scrapePittCSC }             from './sources/pittcsc';
 import { scrapeSimplifyInternships } from './sources/simplify-internships';
 import { scrapeVanshb03Newgrad }     from './sources/vanshb03-newgrad';
 import { scrapeVanshb03Internships } from './sources/vanshb03-internships';
+import { scrapeAmbicuity }           from './sources/ambicuity';
 import { scrapeSpeedyapplySwe }      from './sources/speedyapply-swe';
 import { scrapeSpeedyapplyAi }       from './sources/speedyapply-ai';
 import { scrapeAdzuna }              from './sources/adzuna';
@@ -34,6 +35,7 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   { name: 'simplify_internships',  fn: scrapeSimplifyInternships },
   { name: 'vanshb03_newgrad',      fn: scrapeVanshb03Newgrad },
   { name: 'vanshb03_internships',  fn: scrapeVanshb03Internships },
+  { name: 'ambicuity',             fn: scrapeAmbicuity },
   { name: 'speedyapply_swe',       fn: scrapeSpeedyapplySwe },
   { name: 'speedyapply_ai',        fn: scrapeSpeedyapplyAi },
   { name: 'adzuna',                fn: scrapeAdzuna },
@@ -68,7 +70,58 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   // (wellfound + dice are now active above)
 ];
 
-// Runs a single scraper end-to-end: fetch → upload → deactivate stale
+type FetchResult =
+  | {
+      name: string;
+      jobs: NormalizedJob[];
+      success: true;
+      startedAt: number;
+    }
+  | {
+      name: string;
+      jobs: [];
+      success: false;
+      startedAt: number;
+    };
+
+let persistQueue: Promise<void> = Promise.resolve();
+
+function enqueuePersistence<T>(task: () => Promise<T>): Promise<T> {
+  const next = persistQueue.then(task, task);
+  persistQueue = next.then(() => undefined, () => undefined);
+  return next;
+}
+
+async function persistScraper(result: FetchResult) {
+  if (!result.success) {
+    return { name: result.name, count: 0, success: false, elapsed: ((Date.now() - result.startedAt) / 1000).toFixed(1) };
+  }
+
+  try {
+    const uploadStats = await uploadJobs(result.jobs);
+    let staleCount = 0;
+
+    // jobspy jobs carry per-site sources (e.g. jobspy_indeed) so we can't
+    // deactivate stale entries by the orchestrator-level name 'jobspy'.
+    if (result.name !== 'jobspy') {
+      staleCount = await deactivateStaleJobs(result.name, result.jobs.map(job => job.dedup_hash));
+    }
+
+    if (result.name === 'workday') {
+      console.log(`  [workday] Upserted ${uploadStats.upserted} jobs; marked ${staleCount} stale`);
+    }
+
+    const elapsed = ((Date.now() - result.startedAt) / 1000).toFixed(1);
+    console.log(`  [${result.name}] ✓ Done in ${elapsed}s`);
+
+    return { name: result.name, count: result.jobs.length, success: true, elapsed };
+  } catch (err) {
+    const elapsed = ((Date.now() - result.startedAt) / 1000).toFixed(1);
+    console.error(`  [${result.name}] ✗ Failed after ${elapsed}s:`, (err as Error).message);
+    return { name: result.name, count: 0, success: false, elapsed };
+  }
+}
+
 async function runScraper(name: string, fn: () => Promise<NormalizedJob[]>) {
   const start = Date.now();
   console.log(`  [${name}] Starting...`);
@@ -76,21 +129,12 @@ async function runScraper(name: string, fn: () => Promise<NormalizedJob[]>) {
   try {
     const jobs = await fn();
     console.log(`  [${name}] Fetched ${jobs.length} jobs`);
-
-    await uploadJobs(jobs);
-    // jobspy jobs carry per-site sources (e.g. jobspy_indeed) so we can't
-    // deactivate stale entries by the orchestrator-level name 'jobspy'.
-    if (name !== 'jobspy') {
-      await deactivateStaleJobs(name, jobs.map(j => j.dedup_hash));
-    }
-
-    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-    console.log(`  [${name}] ✓ Done in ${elapsed}s`);
-
-    return { name, count: jobs.length, success: true, elapsed };
+    return await enqueuePersistence(() =>
+      persistScraper({ name, jobs, success: true, startedAt: start }),
+    );
   } catch (err) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-    console.error(`  [${name}] ✗ Failed after ${elapsed}s:`, (err as Error).message);
+    console.error(`  [${name}] ✗ Fetch failed after ${elapsed}s:`, (err as Error).message);
     return { name, count: 0, success: false, elapsed };
   }
 }
@@ -101,7 +145,6 @@ async function run() {
 
   const globalStart = Date.now();
 
-  // All scrapers fire simultaneously — total time = slowest scraper, not sum
   const results = await Promise.allSettled(
     SCRAPERS.map(({ name, fn }) => runScraper(name, fn))
   );
