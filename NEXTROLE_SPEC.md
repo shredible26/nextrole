@@ -40,8 +40,6 @@
 - Runtime: `tsx` + `dotenv-cli` (NOT ts-node)
 - Script: `"scrape": "dotenv -e .env.local -- tsx scrapers/index.ts"`
 - Scheduler: GitHub Actions cron daily at 7AM UTC
-- Scrape workflow timeout: 60 minutes
-- GitHub Actions caches `~/.cache/pip` to speed up Python `jobspy` installs
 - All scrapers run concurrently via `Promise.allSettled`
 - Deduplication: `dedup_hash = hash(company + title + location)`
 - Stale job deactivation: `deactivateStaleJobs()` runs per source after scrape
@@ -103,38 +101,31 @@
 
 | Source | File | Method | ~Jobs |
 |--------|------|--------|-------|
-| pittcsc | pittcsc.ts | GitHub JSON (SimplifyJobs new grad) | 14,763 |
-| simplify_internships | simplify-internships.ts | GitHub JSON | 18,913 |
+| pittcsc | pittcsc.ts | GitHub JSON (SimplifyJobs new grad) | 14,688 |
+| simplify_internships | simplify-internships.ts | GitHub JSON | 18,806 |
 | vanshb03_newgrad | vanshb03-newgrad.ts | GitHub JSON | 636 |
 | vanshb03_internships | vanshb03-internships.ts | GitHub JSON | 1,229 |
-| ambicuity | ambicuity.ts | GitHub JSON | 1,044 |
-| greenhouse | greenhouse.ts | Free REST API, 840 verified companies, batched 15 at a time | 5,398 |
-| ashby | ashby.ts | Free REST API | 1,904 |
-| lever | lever.ts | Free REST API | 1,471 |
-| workday | workday.ts | POST API, 307 companies, 25-company batches, 8s timeout, dead-company cache | 947 |
-| dice | dice.ts | Dice internal search API + HTML fallback | 1,957 |
-| simplyhired | simplyhired.ts | Search HTML + embedded JSON + browser fallback | 193 |
-| adzuna | adzuna.ts | Free API (redirect_url only) | 1,119 |
-| jobspy | jobspy.ts | ts-jobspy library | 499 |
-| careerjet | careerjet.ts | Public search results | 133 |
-| workatastartup | workatastartup.ts | Public role pages fallback | 222 |
-| builtin | builtin.ts | HTML fallback parsing | 505 |
-| arbeitnow | arbeitnow.ts | Free API | 300 |
-| usajobs | usajobs.ts | Official govt API + key | 172 |
+| greenhouse | greenhouse.ts | Free REST API, 300+ companies | 2,715 |
+| ashby | ashby.ts | Free REST API, 150+ companies | 1,917 |
+| lever | lever.ts | Free REST API, 115 companies | 77 |
+| workday | workday.ts | POST API, 16+ companies working | 559 |
+| adzuna | adzuna.ts | Free API (redirect_url only) | 1,112 |
+| jobspy_indeed | jobspy.ts | ts-jobspy library | 252 |
+| arbeitnow | arbeitnow.ts | Free API | 363 |
+| usajobs | usajobs.ts | Official govt API + key | 183 |
 | remoteok | remoteok.ts | Free API | 41 |
 | themuse | themuse.ts | Free API | 10 |
 
-## Wired But 0 This Run
-- `speedyapply-swe.ts` — upstream JSON still 404s
-- `speedyapply-ai.ts` — upstream JSON still 404s
-- `ziprecruiter.ts` — wired, 0 jobs this run
-- `glassdoor.ts` — wired, 0 jobs this run
-- `wellfound.ts` — auth / fallback still blocked
-- `handshake.ts` — primary 500, fallback 403, HTML fallback still 0
-- `bamboohr.ts` — wrong endpoints
-- `rippling.ts` — wrong endpoints
-- `linkedin.ts` — LinkedIn (proxy required)
+## Stub Scrapers (0 jobs — wired but not producing)
 - `dice_rss.ts` — Dice RSS (gated)
+- `dice.ts` — Dice API (paid key required)
+- `wellfound.ts` — Wellfound (auth required)
+- `handshake.ts` — Handshake (auth required)
+- `linkedin.ts` — LinkedIn (proxy required)
+- `bamboohr.ts` — BambooHR (wrong endpoints)
+- `rippling.ts` — Rippling (wrong endpoints)
+- `speedyapply-swe.ts` — SpeedyApply (JSON not public)
+- `speedyapply-ai.ts` — SpeedyApply (JSON not public)
 
 ---
 
@@ -157,13 +148,9 @@ Order of checks in `inferExperienceLevel(title, description)`:
 - Google OAuth: test users must be added in consent screen
 - `dotenv-cli` required: `pnpm add dotenv-cli`, use `"dotenv -e .env.local --"`
 - Supabase 414 error: chunk large dedup hash sets (500 at a time)
-- Greenhouse: 840 unique companies merged from the existing list, curated GitHub sources, and a large verified hardcoded expansion; requests run in batches of 15 with 150ms delay
-- Workday: runs 25 companies at a time, uses an 8s `AbortController` timeout per request, and stores dead-company skips in `scrapers/cache/workday-dead.json` for 3 runs
-- Workday: known-good `wdVersion`/slug pairs are tried first for previously verified companies before broader `wd1–wd12/wd100` discovery
+- Workday: tries all `wd1–wd12/wd100` × 9 slug variations per company
 - **Workday URL bug:** API returns relative `externalPath` values. If path starts with `/en-US/`, use directly. Otherwise prepend `/en-US/{careerSite}/`. Also check `externalUrl` and `jobPostingUrl` fields first.
 - **Workday filter pipeline order:** `inferExperienceLevel` → `isWorkdaySeniorTitle` → `isNonUsLocation` → `hasNonLatinCharacters` → `isNonTechRole`
-- Dice: endpoint 1 (`job-search-api.svc.dhigroupinc.com`) works, endpoint 3 POST still returns `403 Missing Authentication Token`, and endpoint 2 HTML remains a fallback
-- SimplyHired: direct fetches hit a Cloudflare challenge in this environment, so the scraper falls back to Playwright-backed HTML parsing when needed
 - Greenhouse/Lever/Ashby: all free public APIs, no auth
 - **Adzuna:** only provides `redirect_url` (their landing page), no direct apply URL. UTM param `&utm_source=nextrole` is appended. Apply button is uniform "Apply ↗" for all sources.
 - Stripe webhook: must use `req.text()` not `req.json()` for raw body
@@ -216,6 +203,7 @@ MUSE_API_KEY, USAJOBS_API_KEY, USAJOBS_EMAIL
 - [FEATURE]: Improve sources, especially ones that are showing low numbers
 - [FEATURE]: Other sources & github repos (super extensive search, figure out how to do so)
 - [FEATURE]: Job tracker: limit to like 100 for free users, unlimited for pro
+- [FEATURE]: Change job view logic to 50-100 total jobs for free user
 - [FEATURE]: Job Search (company, role, etc)
 - [FEATURE]: Profile page with necessary info and option to upload resume
 - [FEATURE]: Agentic RAG (Claude chat)
@@ -244,19 +232,22 @@ MUSE_API_KEY, USAJOBS_API_KEY, USAJOBS_EMAIL
 - [FEATURE (MAYBE)]: LinkedIn Jobs
 
 - Workday scraper takes an hour, make significantly faster
-- Try to implement Monster
+- Try to implement Monster and bypass ClowdFlare Protection (Playwright + stealth plugins)
 
 ## TODO:
 ## Phase 1: Max out job count (goal: 50k+)
-Complete prompts 6/7 and 7/7 first, then:
 
-PROMPT A: Fix remaining broken scrapers (BambooHR, Handshake, Wellfound)
-- Give Codex each broken scraper + tell it to research and self-debug
-- Use o3 model, full-auto mode
+PROMPT A: Workable
+- Add Workable as new source (1,700+ companies, auto-discoverable)
+- Use Codex to find the Workable company discovery endpoint
 
-PROMPT B: Expand Greenhouse dramatically (300 → 1000+ companies)
-- Use ambicuity/New-Grad-Jobs + other GitHub repos as slug sources
-- Same approach that worked for Lever (77 → 1,434)
+PROMPT B: Fix broken scrapers 
+- Wellfound aggressive debug
+- Rippling aggressive debug
+
+PROMPT B (Part 2):
+- iCIMS as new source
+- SmartRecruiters as new source
 
 PROMPT C: Expand Ashby similarly
 - Find verified Ashby company list from GitHub repos
