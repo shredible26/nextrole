@@ -264,6 +264,8 @@ async function fetchMarkdown(url: string): Promise<string | null> {
 }
 
 export async function scrapeSpeedyApplySWENewGrad(): Promise<NormalizedJob[]> {
+  let firstParsedJobs: NormalizedJob[] | null = null;
+
   for (const url of CANDIDATE_URLS) {
     const markdown = await fetchMarkdown(url);
     if (!markdown) continue;
@@ -276,9 +278,13 @@ export async function scrapeSpeedyApplySWENewGrad(): Promise<NormalizedJob[]> {
     );
 
     console.log(`  [${SOURCE}] Parsed ${jobs.length} jobs from ${path}`);
-    if (jobs.length > 0) {
-      return jobs;
+    if (jobs.length > 0 && firstParsedJobs === null) {
+      firstParsedJobs = jobs;
     }
+  }
+
+  if (firstParsedJobs) {
+    return firstParsedJobs;
   }
 
   throw new Error('No parseable new-grad jobs found in SpeedyApply markdown sources');
