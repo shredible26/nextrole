@@ -9,7 +9,7 @@ import {
 } from '../utils/normalize';
 
 const SOURCE = 'hackernews';
-const REQUEST_TIMEOUT_MS = 15_000;
+const REQUEST_TIMEOUT_MS = 10_000;
 const THREAD_COUNT = 2;
 const THREAD_LOOKUP_BATCH_SIZE = 10;
 const COMMENT_BATCH_SIZE = 20;
@@ -18,6 +18,7 @@ const SUBMITTED_URL =
   'https://hacker-news.firebaseio.com/v0/user/whoishiring/submitted.json';
 const ITEM_URL = 'https://hacker-news.firebaseio.com/v0/item';
 const FALLBACK_URL_PREFIX = 'https://news.ycombinator.com/item?id=';
+const FALLBACK_THREAD_IDS = [47601859, 47219668] as const;
 const EARLY_CAREER_DESCRIPTION_RE =
   /\b(?:new grad|entry level|entry-level|junior|0\s*(?:-|to)\s*2 years?)\b/i;
 const EMPLOYMENT_TYPE_RE =
@@ -36,6 +37,10 @@ type HackerNewsItem = {
   time?: number;
   title?: string;
   type?: string;
+};
+
+type FetchJsonOptions = {
+  logRawResponse?: boolean;
 };
 
 function decodeHtmlEntities(value: string): string {
@@ -284,27 +289,98 @@ function normalizeComment(comment: HackerNewsItem): NormalizedJob | null {
   };
 }
 
-async function fetchJson<T>(url: string): Promise<T | null> {
+async function fetchJson<T>(
+  url: string,
+  options: FetchJsonOptions = {},
+): Promise<T | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: controller.signal,
     });
-    if (!response.ok) return null;
+    const raw = await response.text();
 
-    return (await response.json()) as T;
-  } catch {
+    if (options.logRawResponse) {
+      console.log(`  [${SOURCE}] Firebase raw response for ${url}: ${raw}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Firebase request failed for ${url}: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    if (!raw.trim()) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw) as T;
+    } catch (error) {
+      throw new Error(
+        `Invalid JSON returned for ${url}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function fetchItem(
+  id: number,
+  options: FetchJsonOptions = {},
+): Promise<HackerNewsItem | null> {
+  try {
+    return await fetchJson<HackerNewsItem>(`${ITEM_URL}/${id}.json`, options);
+  } catch (error) {
+    console.warn(
+      `  [${SOURCE}] Failed to fetch item ${id}:`,
+      error instanceof Error ? error.message : error,
+    );
     return null;
   }
 }
 
-async function fetchItem(id: number): Promise<HackerNewsItem | null> {
-  return fetchJson<HackerNewsItem>(`${ITEM_URL}/${id}.json`);
+async function fetchFallbackThreads(reason: string): Promise<HackerNewsItem[]> {
+  console.warn(
+    `  [${SOURCE}] Falling back to hardcoded thread IDs ${FALLBACK_THREAD_IDS.join(', ')}: ${reason}`,
+  );
+
+  const fallbackThreads = await Promise.all(
+    FALLBACK_THREAD_IDS.map(id => fetchItem(id, { logRawResponse: true })),
+  );
+  const resolvedThreads = fallbackThreads.filter(
+    (thread): thread is HackerNewsItem => Boolean(thread?.id && Array.isArray(thread.kids)),
+  );
+
+  if (resolvedThreads.length < THREAD_COUNT) {
+    throw new Error(
+      `Unable to resolve fallback hiring threads; found ${resolvedThreads.length}`,
+    );
+  }
+
+  return resolvedThreads;
 }
 
 async function fetchLatestHiringThreads(): Promise<HackerNewsItem[]> {
-  const submitted = await fetchJson<number[]>(SUBMITTED_URL);
+  let submitted: number[] | null = null;
+
+  try {
+    submitted = await fetchJson<number[]>(SUBMITTED_URL, { logRawResponse: true });
+  } catch (error) {
+    return fetchFallbackThreads(
+      error instanceof Error ? error.message : 'unknown whoishiring fetch error',
+    );
+  }
+
   if (!Array.isArray(submitted) || submitted.length === 0) {
-    throw new Error('Unable to load whoishiring submitted items');
+    return fetchFallbackThreads(
+      `unexpected whoishiring payload: ${JSON.stringify(submitted)}`,
+    );
   }
 
   const threads: HackerNewsItem[] = [];
@@ -315,7 +391,9 @@ async function fetchLatestHiringThreads(): Promise<HackerNewsItem[]> {
     index += THREAD_LOOKUP_BATCH_SIZE
   ) {
     const batchIds = submitted.slice(index, index + THREAD_LOOKUP_BATCH_SIZE);
-    const batchItems = await Promise.all(batchIds.map(id => fetchItem(id)));
+    const batchItems = await Promise.all(
+      batchIds.map(id => fetchItem(id, { logRawResponse: true })),
+    );
 
     for (const item of batchItems) {
       if (!item?.id || item.type !== 'story') continue;
@@ -327,7 +405,7 @@ async function fetchLatestHiringThreads(): Promise<HackerNewsItem[]> {
   }
 
   if (threads.length < THREAD_COUNT) {
-    throw new Error(`Expected ${THREAD_COUNT} hiring threads, found ${threads.length}`);
+    return fetchFallbackThreads(`expected ${THREAD_COUNT} hiring threads, found ${threads.length}`);
   }
 
   return threads;
