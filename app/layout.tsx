@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import { Toaster } from '@/components/ui/sonner';
+import { Analytics } from '@vercel/analytics/react';
 
 const geist = Geist({
   variable: '--font-geist-sans',
@@ -29,6 +30,7 @@ export default function RootLayout({
         <Navbar />
         <main className="flex flex-col flex-1">{children}</main>
         <Toaster richColors position="bottom-right" />
+        <Analytics />
       </body>
     </html>
   );
