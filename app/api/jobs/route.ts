@@ -32,7 +32,12 @@ export async function GET(req: NextRequest) {
   const params      = req.nextUrl.searchParams;
   const rolesParam  = params.get('roles');
   // Strip 'all' — it means no filter
-  const roles       = rolesParam ? rolesParam.split(',').filter(r => r && r !== 'all') : [];
+  const roles       = rolesParam
+    ? rolesParam
+        .split(',')
+        .map(role => role.trim().toLowerCase())
+        .filter(role => role && role !== 'all')
+    : [];
   const remote      = params.get('remote') === 'true';
   const level       = params.get('level');
   const sourcesParam = params.get('source');
@@ -57,7 +62,11 @@ export async function GET(req: NextRequest) {
     .order('posted_at', { ascending: false })
     .range((page - 1) * perPage, page * perPage - 1);
 
-  if (roles.length > 0)   query = query.overlaps('roles', roles);
+  if (roles.length > 0) {
+    for (const role of roles) {
+      query = query.contains('roles', [role]);
+    }
+  }
   if (remote)             query = query.eq('remote', true);
   if (level)              query = query.eq('experience_level', level);
 

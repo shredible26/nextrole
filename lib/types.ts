@@ -1,5 +1,5 @@
 export type ExperienceLevel = 'new_grad' | 'entry_level' | 'internship';
-export type Role = 'SWE' | 'DS' | 'ML' | 'AI' | 'Analyst' | 'PM';
+export type Role = 'swe' | 'ds' | 'ml' | 'ai' | 'analyst' | 'pm';
 export type ApplicationStatus =
   | 'applied'
   | 'phone_screen'
@@ -51,12 +51,21 @@ export type JobFilters = {
 };
 
 export const ROLE_COLORS: Record<Role, string> = {
-  SWE: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  DS: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  ML: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  AI: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  Analyst: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
-  PM: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+  swe: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  ds: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+  ml: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  ai: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  analyst: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+  pm: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+};
+
+export const ROLE_LABELS: Record<Role, string> = {
+  swe: 'SWE',
+  ds: 'DS',
+  ml: 'ML',
+  ai: 'AI',
+  analyst: 'Analyst',
+  pm: 'PM',
 };
 
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {

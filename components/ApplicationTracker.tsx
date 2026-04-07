@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Application, ApplicationStatus, Role, STATUS_LABELS } from '@/lib/types';
+import { Application, ApplicationStatus, Role, ROLE_LABELS, STATUS_LABELS } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { ExternalLink, Loader2, LayoutGrid, Table2, X, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,15 +40,15 @@ const SOURCE_LABELS: Record<string, string> = {
   themuse: 'The Muse',
 };
 
-const ROLE_OPTIONS: Role[] = ['SWE', 'DS', 'ML', 'AI', 'Analyst', 'PM'];
+const ROLE_OPTIONS: Role[] = ['swe', 'ds', 'ml', 'ai', 'analyst', 'pm'];
 
 const ROLE_CHIP_COLORS: Record<Role, string> = {
-  SWE:     'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-  DS:      'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200 dark:border-purple-800',
-  ML:      'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-  AI:      'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
-  Analyst: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 border-teal-200 dark:border-teal-800',
-  PM:      'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border-pink-200 dark:border-pink-800',
+  swe: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+  ds: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+  ml: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+  ai: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
+  analyst: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+  pm: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border-pink-200 dark:border-pink-800',
 };
 
 async function patchApplication(id: string, status?: ApplicationStatus, notes?: string) {
@@ -361,7 +361,7 @@ export default function ApplicationTracker() {
                     : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
                 )}
               >
-                {role}
+                {ROLE_LABELS[role]}
               </button>
             ))}
           </div>

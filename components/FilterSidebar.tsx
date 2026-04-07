@@ -8,12 +8,12 @@ import { cn } from '@/lib/utils';
 
 const ROLES: { value: Role | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'SWE', label: 'SWE' },
-  { value: 'DS', label: 'DS' },
-  { value: 'ML', label: 'ML' },
-  { value: 'AI', label: 'AI' },
-  { value: 'Analyst', label: 'Analyst' },
-  { value: 'PM', label: 'PM' },
+  { value: 'swe', label: 'SWE' },
+  { value: 'ds', label: 'DS' },
+  { value: 'ml', label: 'ML' },
+  { value: 'ai', label: 'AI' },
+  { value: 'analyst', label: 'Analyst' },
+  { value: 'pm', label: 'PM' },
 ];
 const LEVELS: { value: ExperienceLevel | ''; label: string }[] = [
   { value: '', label: 'All' },

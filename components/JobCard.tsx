@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Job, Role, ROLE_COLORS } from '@/lib/types';
+import { Job, Role, ROLE_COLORS, ROLE_LABELS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { MapPin, CheckCircle2, Plus } from 'lucide-react';
 
@@ -108,7 +108,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
               key={role}
               className={cn('rounded-full px-2 py-0.5 text-xs font-medium', ROLE_COLORS[role as Role])}
             >
-              {role}
+              {ROLE_LABELS[role as Role] ?? role}
             </span>
           ))}
         </div>

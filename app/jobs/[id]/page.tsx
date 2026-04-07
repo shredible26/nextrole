@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import { Role, ROLE_LABELS } from '@/lib/types'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -92,8 +93,8 @@ export default async function JobPage({ params }: Props) {
               {experienceBadge}
             </span>
             {(job.roles as string[] | null)?.map(role => (
-              <span key={role} className="px-3 py-1 bg-secondary text-secondary-foreground text-xs font-medium rounded-full uppercase">
-                {role}
+              <span key={role} className="px-3 py-1 bg-secondary text-secondary-foreground text-xs font-medium rounded-full">
+                {ROLE_LABELS[role as Role] ?? role}
               </span>
             ))}
             <span className="px-3 py-1 bg-muted text-muted-foreground text-xs rounded-full capitalize">
