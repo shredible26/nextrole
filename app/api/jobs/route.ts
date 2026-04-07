@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server';
+import { GITHUB_REPO_SOURCES } from '@/lib/source-groups';
 import { NextRequest, NextResponse } from 'next/server';
 
 const FREE_PER_PAGE = 20;
@@ -61,11 +62,6 @@ export async function GET(req: NextRequest) {
   if (level)              query = query.eq('experience_level', level);
 
   if (sources.length > 0) {
-    const GITHUB_REPO_SOURCES = [
-      'pittcsc', 'simplify_internships',
-      'vanshb03_newgrad', 'vanshb03_internships',
-      'ambicuity', 'speedyapply_swe', 'speedyapply_ai',
-    ];
     if (sources.includes('github_repos')) {
       // Expand 'github_repos' group to all individual GitHub-backed sources
       const expanded = [
