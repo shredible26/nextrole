@@ -6,9 +6,11 @@ import { scrapeAmbicuity }           from './sources/ambicuity';
 import { scrapeSpeedyapplySwe }      from './sources/speedyapply-swe';
 import { scrapeSpeedyapplyAi }       from './sources/speedyapply-ai';
 import { scrapeSpeedyapplyAiNewgrad } from './sources/speedyapply-ai-newgrad';
+import { scrapeSpeedyApplySWENewGrad } from './sources/speedyapply-swe-newgrad';
 import { scrapeJobrightSwe }         from './sources/jobright-swe';
 import { scrapeJobrightData }        from './sources/jobright-data';
 import { scrapeZapplyjobs }          from './sources/zapplyjobs';
+import { scrapeHackerNews }          from './sources/hackernews';
 import { scrapeAdzuna }              from './sources/adzuna';
 import { scrapeRemoteOK }            from './sources/remoteok';
 import { scrapeArbeitnow }           from './sources/arbeitnow';
@@ -47,9 +49,11 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   { name: 'speedyapply_swe',       fn: scrapeSpeedyapplySwe },
   { name: 'speedyapply_ai',        fn: scrapeSpeedyapplyAi },
   { name: 'speedyapply_ai_newgrad', fn: scrapeSpeedyapplyAiNewgrad },
+  { name: 'speedyapply_swe_newgrad', fn: scrapeSpeedyApplySWENewGrad },
   { name: 'jobright_swe',          fn: scrapeJobrightSwe },
   { name: 'jobright_data',         fn: scrapeJobrightData },
   { name: 'zapplyjobs',            fn: scrapeZapplyjobs },
+  { name: 'hackernews',            fn: scrapeHackerNews },
   { name: 'adzuna',                fn: scrapeAdzuna },
   { name: 'remoteok',             fn: scrapeRemoteOK },
   { name: 'arbeitnow',            fn: scrapeArbeitnow },

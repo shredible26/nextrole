@@ -200,10 +200,12 @@ MUSE_API_KEY, USAJOBS_API_KEY, USAJOBS_EMAIL
 ## GOALS:
 - [FEATURE]: Add more startups
 - [FEATURE]: Fix sources where job count = 0 (ziprecruiter, glassdoor, dice, etc), use codex to figure out correct methods/logic
+- [FEATURE]: Fix Ashby (commoncrawl, slugs) and workatastartup (try to get more jobs)
 - [FEATURE]: Improve sources, especially ones that are showing low numbers
 - [FEATURE]: Other sources & github repos (super extensive search, figure out how to do so)
 - [FEATURE]: Job tracker: limit to like 100 for free users, unlimited for pro
 - [FEATURE]: Change job view logic to 50-100 total jobs for free user
+- [FEATURE]: Add more role and experience level filters for better filterins + higher job count
 - [FEATURE]: Job Search (company, role, etc)
 - [FEATURE]: Profile page with necessary info and option to upload resume
 - [FEATURE]: Agentic RAG (Claude chat)
@@ -230,9 +232,26 @@ MUSE_API_KEY, USAJOBS_API_KEY, USAJOBS_EMAIL
 - ANALYTICS: Add Sentry for Error Monitoring (once real users hit the site)
 - MARKETING: r/cscareerquestions, r/csMajors, CS Discord servers
 - [FEATURE (MAYBE)]: LinkedIn Jobs
-
-- Workday scraper takes an hour, make significantly faster
 - Try to implement Monster and bypass ClowdFlare Protection (Playwright + stealth plugins)
+
+
+## Current sources to add:
+High Priority:
+- SmartRecruiters (GET https://api.smartrecruiters.com/v1/companies/{company}/postings)
+- Recruitee (GET https://{company}.recruitee.com/api/offers/)
+- TeamTailor (GET https://api.teamtailor.com/v1/jobs)
+- Presonio (XML)
+- SpeedApply (https://github.com/speedyapply)
+- rabiuk/job-scraper (GitHub)
+
+Medium Priority:
+- HackerNews (GET https://hacker-news.firebaseio.com/v0/item/{thread_id}.json)
+- Workable (GET https://jobs.workable.com/api/v1/jobs?q=software+engineer&location=United+States)
+- Cavuno’s 2026 roundup — confirms six no-auth public ATS sources and adds implementation details for Greenhouse, Lever, Ashby, Workable, Recruitee, and Personio.
+- Fantastic Jobs ATS article — separately documents public APIs for Ashby, Greenhouse, Lever, and Recruitee, useful as a second source for endpoint validation.
+- No-auth API directory — a broader free/open API list that may help with adjacent job-related endpoints, though it is not job-specific.
+- bttf/internio — a scraper that aggregates new-grad and internship listings by scraping GitHub repos, including SimplifyJobs sources.
+- SpeedyApply pinned repos — 2026-SWE-College-Jobs and 2026-AI-College-Jobs are surfaced on the SpeedyApply org page and are distinct from the org homepage you already listed. 
 
 ## TODO:
 ## Phase 1: Max out job count (goal: 50k+)

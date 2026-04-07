@@ -7,6 +7,7 @@ export const GITHUB_REPO_SOURCES = [
   'speedyapply_swe',
   'speedyapply_ai',
   'speedyapply_ai_newgrad',
+  'speedyapply_swe_newgrad',
   'jobright_swe',
   'jobright_data',
   'zapplyjobs',

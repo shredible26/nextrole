@@ -22,7 +22,9 @@ type CuratedGitHubJobsConfig = {
   source: string;
   repo: string;
   branches?: string[];
-  markdownPath: string;
+  markdownPath?: string;
+  markdownPaths?: string[];
+  allowJson?: boolean;
   parseMarkdown: (markdown: string) => CuratedRepoRow[];
 };
 
@@ -332,37 +334,46 @@ export async function fetchCuratedGitHubJobs(
 ): Promise<NormalizedJob[]> {
   const branches = config.branches ?? ['main', 'master'];
 
-  try {
-    const jsonJobs = await fetchCuratedGitHubJson(
-      config.source,
-      config.repo,
-      branches,
-    );
-    if (jsonJobs) {
-      return jsonJobs;
+  if (config.allowJson !== false) {
+    try {
+      const jsonJobs = await fetchCuratedGitHubJson(
+        config.source,
+        config.repo,
+        branches,
+      );
+      if (jsonJobs) {
+        return jsonJobs;
+      }
+    } catch (error) {
+      console.warn(
+        `  [${config.source}] listings.json unavailable, falling back to markdown:`,
+        (error as Error).message,
+      );
     }
-  } catch (error) {
-    console.warn(
-      `  [${config.source}] listings.json unavailable, falling back to markdown:`,
-      (error as Error).message,
-    );
   }
 
-  const resolved = await fetchFirstAvailable(
-    config.repo,
-    config.markdownPath,
-    branches,
-  );
-  if (!resolved) return [];
+  const markdownPaths = config.markdownPaths ??
+    (config.markdownPath ? [config.markdownPath] : []);
 
-  const markdown = await resolved.response.text();
-  const jobs = dedupeByUrl(
-    config
-      .parseMarkdown(markdown)
-      .map(row => normalizeRow(config.source, row))
-      .filter((job): job is NormalizedJob => job !== null),
-  );
+  for (const markdownPath of markdownPaths) {
+    const resolved = await fetchFirstAvailable(
+      config.repo,
+      markdownPath,
+      branches,
+    );
+    if (!resolved) continue;
 
-  console.log(`  [${config.source}] Loaded ${jobs.length} jobs from ${resolved.url}`);
-  return jobs;
+    const markdown = await resolved.response.text();
+    const jobs = dedupeByUrl(
+      config
+        .parseMarkdown(markdown)
+        .map(row => normalizeRow(config.source, row))
+        .filter((job): job is NormalizedJob => job !== null),
+    );
+
+    console.log(`  [${config.source}] Loaded ${jobs.length} jobs from ${resolved.url}`);
+    return jobs;
+  }
+
+  return [];
 }
