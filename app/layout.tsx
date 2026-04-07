@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: 'NextRole — New Grad Tech Jobs',
   description:
     'Every new grad SWE, DS, ML, and AI job. One feed. Auto-tracked applications.',
+  verification: {
+    google: '0M_4OBAoQA3Yqn7RbywjU4HyT-49ubU3MkCEcR_qtrI',
+  },
 };
 
 export default function RootLayout({
