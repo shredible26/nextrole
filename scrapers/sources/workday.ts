@@ -7,6 +7,8 @@
 import { generateHash } from '../utils/dedup';
 import { isNonUsLocation } from '../utils/location';
 import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '../utils/normalize';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 // Workday-specific senior/sales title signals not caught by inferExperienceLevel
 const WORKDAY_TITLE_EXCLUSIONS = [
@@ -662,7 +664,54 @@ const WORKDAY_COMPANIES: [string, string][] = [
   ['atmos', 'atmosenergy'],
 ];
 
+const WORKDAY_BATCH_SIZE = 25;
+const WORKDAY_REQUEST_TIMEOUT_MS = 8_000;
+const WORKDAY_SKIP_RUNS = 3;
+const WORKDAY_DEAD_CACHE_PATH = join(process.cwd(), 'scrapers', 'cache', 'workday-dead.json');
+
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+async function loadWorkdayDeadCache(): Promise<WorkdayDeadCache> {
+  try {
+    const raw = await readFile(WORKDAY_DEAD_CACHE_PATH, 'utf8');
+    const parsed = JSON.parse(raw) as Record<string, Partial<WorkdayDeadCacheEntry>>;
+
+    return Object.fromEntries(
+      Object.entries(parsed)
+        .filter(([, value]) => typeof value?.zeroCount === 'number')
+        .map(([company, value]) => [
+          company,
+          {
+            zeroCount: Math.max(0, Math.trunc(value.zeroCount ?? 0)),
+            lastAttempt: typeof value.lastAttempt === 'string' ? value.lastAttempt : '',
+          },
+        ]),
+    );
+  } catch {
+    return {};
+  }
+}
+
+async function saveWorkdayDeadCache(cache: WorkdayDeadCache): Promise<void> {
+  await mkdir(join(process.cwd(), 'scrapers', 'cache'), { recursive: true });
+  await writeFile(WORKDAY_DEAD_CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`);
+}
+
+function groupWorkdayCompanies(): Array<{ company: string; careerSites: string[] }> {
+  const grouped = new Map<string, Set<string>>();
+
+  for (const [company, careerSite] of WORKDAY_COMPANIES) {
+    if (!grouped.has(company)) {
+      grouped.set(company, new Set<string>());
+    }
+    grouped.get(company)?.add(careerSite);
+  }
+
+  return Array.from(grouped, ([company, careerSites]) => ({
+    company,
+    careerSites: Array.from(careerSites),
+  }));
+}
 
 /**
  * Workday returns human-readable strings like "Posted 30+ Days Ago" or "Posted Today".
@@ -699,15 +748,54 @@ interface WorkdayResponse {
   total?: number;
 }
 
+type WorkdayFetchResult = {
+  data: WorkdayResponse | null;
+  timedOut: boolean;
+};
+
+type WorkdayResolvedAttempt = {
+  jobs: WorkdayJob[];
+  wdVersion: string;
+  slug: string;
+};
+
+type WorkdayKnownTarget = {
+  wdVersion: string;
+  slug: string;
+};
+
+type WorkdayAttemptState = {
+  result: WorkdayResolvedAttempt | null;
+  hadSuccessfulResponse: boolean;
+  hadTimeout: boolean;
+};
+
 type WorkdayScrapeStats = {
   uniqueFetched: number;
   filteredNonUs: number;
   filteredNonTech: number;
 };
 
+type WorkdayDeadCacheEntry = {
+  zeroCount: number;
+  lastAttempt: string;
+};
+
+type WorkdayDeadCache = Record<string, WorkdayDeadCacheEntry>;
+
 type CompanyScrapeResult = {
   jobs: NormalizedJob[];
   stats: WorkdayScrapeStats;
+  hadSuccessfulResponse: boolean;
+  hadTimeout: boolean;
+};
+
+type CompanyGroupScrapeResult = {
+  company: string;
+  jobs: NormalizedJob[];
+  stats: WorkdayScrapeStats;
+  hadSuccessfulResponse: boolean;
+  hadTimeout: boolean;
 };
 
 function createEmptyWorkdayStats(): WorkdayScrapeStats {
@@ -726,6 +814,46 @@ function isUsefulWorkdaySampleLocation(location?: string): boolean {
     /\bUS,\b/.test(location) ||
     /,\s?[A-Z]{2}(?:\b|,|\s|$)/.test(location)
   );
+}
+
+const WORKDAY_KNOWN_TARGETS: Record<string, WorkdayKnownTarget> = {
+  'argonne|Argonne_Careers': { wdVersion: 'wd1', slug: 'Argonne_Careers' },
+  'astrazeneca|careers': { wdVersion: 'wd3', slug: 'careers' },
+  'baxter|baxter': { wdVersion: 'wd1', slug: 'baxter' },
+  'bmo|external': { wdVersion: 'wd3', slug: 'external' },
+  'capitalone|Capital_One': { wdVersion: 'wd12', slug: 'Capital_One' },
+  'cigna|cignacareers': { wdVersion: 'wd5', slug: 'cignacareers' },
+  'crowdstrike|crowdstrikecareers': { wdVersion: 'wd5', slug: 'crowdstrikecareers' },
+  'draftkings|DraftKings': { wdVersion: 'wd1', slug: 'DraftKings' },
+  'intel|external': { wdVersion: 'wd1', slug: 'external' },
+  'jll|jllcareers': { wdVersion: 'wd1', slug: 'jllcareers' },
+  'leidos|external': { wdVersion: 'wd5', slug: 'external' },
+  'marvell|marvellcareers': { wdVersion: 'wd1', slug: 'marvellcareers' },
+  'mars|External': { wdVersion: 'wd3', slug: 'External' },
+  'mastercard|CorporateCareers': { wdVersion: 'wd1', slug: 'CorporateCareers' },
+  'medtronic|medtronic': { wdVersion: 'wd1', slug: 'medtroniccareers' },
+  'micron|external': { wdVersion: 'wd1', slug: 'external' },
+  'mksinst|MKSCareersUniversity': { wdVersion: 'wd1', slug: 'MKSCareersUniversity' },
+  'motorolasolutions|careers': { wdVersion: 'wd5', slug: 'careers' },
+  'nvidia|NVIDIAExternalCareerSite': { wdVersion: 'wd5', slug: 'NVIDIAExternalCareerSite' },
+  'pfizer|pfizercareers': { wdVersion: 'wd1', slug: 'pfizercareers' },
+  'prudential|prudential': { wdVersion: 'wd3', slug: 'prudential' },
+  'pwc|US_Entry_Level_Careers': { wdVersion: 'wd3', slug: 'US_Entry_Level_Careers' },
+  'quickenloans|rocket_careers': { wdVersion: 'wd5', slug: 'rocket_careers' },
+  'relx|ElsevierJobs': { wdVersion: 'wd3', slug: 'ElsevierJobs' },
+  'relx|relx': { wdVersion: 'wd3', slug: 'relx' },
+  'salesforce|External_Career_Site': { wdVersion: 'wd12', slug: 'External_Career_Site' },
+  'sanofi|sanoficareers': { wdVersion: 'wd3', slug: 'sanoficareers' },
+  'target|Target': { wdVersion: 'wd5', slug: 'targetcareers' },
+  'transunion|TransUnion': { wdVersion: 'wd5', slug: 'TransUnion' },
+  'visa|visa': { wdVersion: 'wd5', slug: 'visa' },
+};
+
+function getKnownWorkdayTarget(
+  company: string,
+  careerSite: string,
+): WorkdayKnownTarget | null {
+  return WORKDAY_KNOWN_TARGETS[`${company}|${careerSite}`] ?? null;
 }
 
 const WORKDAY_SAMPLE_TITLE_SIGNALS = [
@@ -774,54 +902,89 @@ function slugVariations(company: string, careerSite: string): string[] {
   return Array.from(unique);
 }
 
+async function fetchWorkdayResponse(
+  company: string,
+  url: string,
+  searchText: string,
+): Promise<WorkdayFetchResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), WORKDAY_REQUEST_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ limit: 20, offset: 0, searchText }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      return { data: null, timedOut: false };
+    }
+
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      return { data: null, timedOut: false };
+    }
+
+    const data = (await res.json()) as WorkdayResponse;
+    if (!Array.isArray(data.jobPostings)) {
+      return { data: null, timedOut: false };
+    }
+
+    return { data, timedOut: false };
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      console.warn(`  [workday] timeout: ${company}`);
+      return { data: null, timedOut: true };
+    }
+
+    return { data: null, timedOut: false };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 /**
  * Try all (wdVersion, slug) combinations until one returns HTTP 200 with valid JSON
  * containing a jobPostings array. Returns the jobs plus the working (wdVersion, slug).
- * Times out each attempt after 5 seconds.
+ * Times out each attempt after 8 seconds.
  */
 async function tryWorkdayCompany(
   company: string,
   careerSite: string,
   searchText: string,
-): Promise<{ jobs: WorkdayJob[]; wdVersion: string; slug: string } | null> {
+): Promise<WorkdayAttemptState> {
   const slugs = slugVariations(company, careerSite);
+  let hadSuccessfulResponse = false;
+  let hadTimeout = false;
 
-  for (const wdVersion of WD_VERSIONS) {
-    for (const slug of slugs) {
-      const url = `https://${company}.${wdVersion}.myworkdayjobs.com/wday/cxs/${company}/${slug}/jobs`;
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5_000);
+  for (const slug of slugs) {
+    const attempts = await Promise.all(
+      WD_VERSIONS.map(async wdVersion => {
+        const url = `https://${company}.${wdVersion}.myworkdayjobs.com/wday/cxs/${company}/${slug}/jobs`;
+        const response = await fetchWorkdayResponse(company, url, searchText);
+        return { wdVersion, response };
+      }),
+    );
 
-        let res: Response;
-        try {
-          res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ limit: 20, offset: 0, searchText }),
-            signal: controller.signal,
-          });
-        } finally {
-          clearTimeout(timer);
-        }
+    for (const { wdVersion, response } of attempts) {
+      hadTimeout ||= response.timedOut;
 
-        if (!res.ok) continue;
-
-        const contentType = res.headers.get('content-type') ?? '';
-        if (!contentType.includes('application/json')) continue;
-
-        const data: WorkdayResponse = await res.json();
-        if (!Array.isArray(data.jobPostings)) continue;
-
-        return { jobs: data.jobPostings, wdVersion, slug };
-      } catch {
-        // Timeout, network error, JSON parse error — try next combination
+      if (!response.data) {
         continue;
       }
+
+      hadSuccessfulResponse = true;
+      return {
+        result: { jobs: response.data.jobPostings ?? [], wdVersion, slug },
+        hadSuccessfulResponse,
+        hadTimeout,
+      };
     }
   }
 
-  return null;
+  return { result: null, hadSuccessfulResponse, hadTimeout };
 }
 
 async function scrapeCompany(
@@ -832,46 +995,54 @@ async function scrapeCompany(
   const seenFetched = new Set<string>();
   const jobs: NormalizedJob[] = [];
   const stats = createEmptyWorkdayStats();
+  let hadSuccessfulResponse = false;
+  let hadTimeout = false;
 
   // Discover which (wdVersion, slug) pair works using the first search term
   let foundVersion: string | null = null;
   let foundSlug: string | null = null;
+  const knownTarget = getKnownWorkdayTarget(company, careerSite);
 
   for (const term of SEARCH_TERMS) {
-    let result: { jobs: WorkdayJob[]; wdVersion: string; slug: string } | null = null;
+    let result: WorkdayResolvedAttempt | null = null;
 
     if (foundVersion && foundSlug) {
       // Re-use the working combination for subsequent search terms
       const url = `https://${company}.${foundVersion}.myworkdayjobs.com/wday/cxs/${company}/${foundSlug}/jobs`;
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5_000);
-        let res: Response;
-        try {
-          res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ limit: 20, offset: 0, searchText: term }),
-            signal: controller.signal,
-          });
-        } finally {
-          clearTimeout(timer);
-        }
+      const response = await fetchWorkdayResponse(company, url, term);
+      hadTimeout ||= response.timedOut;
 
-        if (res.ok) {
-          const contentType = res.headers.get('content-type') ?? '';
-          if (contentType.includes('application/json')) {
-            const data: WorkdayResponse = await res.json();
-            if (Array.isArray(data.jobPostings)) {
-              result = { jobs: data.jobPostings, wdVersion: foundVersion, slug: foundSlug };
-            }
-          }
-        }
-      } catch {
-        // skip
+      if (response.data) {
+        hadSuccessfulResponse = true;
+        result = {
+          jobs: response.data.jobPostings ?? [],
+          wdVersion: foundVersion,
+          slug: foundSlug,
+        };
       }
-    } else {
-      result = await tryWorkdayCompany(company, careerSite, term);
+    } else if (knownTarget) {
+      const url = `https://${company}.${knownTarget.wdVersion}.myworkdayjobs.com/wday/cxs/${company}/${knownTarget.slug}/jobs`;
+      const response = await fetchWorkdayResponse(company, url, term);
+      hadTimeout ||= response.timedOut;
+
+      if (response.data) {
+        hadSuccessfulResponse = true;
+        foundVersion = knownTarget.wdVersion;
+        foundSlug = knownTarget.slug;
+        result = {
+          jobs: response.data.jobPostings ?? [],
+          wdVersion: foundVersion,
+          slug: foundSlug,
+        };
+      }
+    }
+
+    if (!result) {
+      const attempt = await tryWorkdayCompany(company, careerSite, term);
+      hadSuccessfulResponse ||= attempt.hadSuccessfulResponse;
+      hadTimeout ||= attempt.hadTimeout;
+      result = attempt.result;
+
       if (result) {
         foundVersion = result.wdVersion;
         foundSlug = result.slug;
@@ -947,27 +1118,102 @@ async function scrapeCompany(
     console.log(`  [workday] ${company} (${foundVersion}/${foundSlug}): ${jobs.length} jobs`);
   }
 
-  return { jobs, stats };
+  return { jobs, stats, hadSuccessfulResponse, hadTimeout };
+}
+
+async function scrapeCompanyGroup(
+  company: string,
+  careerSites: string[],
+): Promise<CompanyGroupScrapeResult> {
+  const dedupedJobs = new Map<string, NormalizedJob>();
+  const stats = createEmptyWorkdayStats();
+  let hadSuccessfulResponse = false;
+  let hadTimeout = false;
+
+  for (const careerSite of careerSites) {
+    const result = await scrapeCompany(company, careerSite);
+    hadSuccessfulResponse ||= result.hadSuccessfulResponse;
+    hadTimeout ||= result.hadTimeout;
+    stats.uniqueFetched += result.stats.uniqueFetched;
+    stats.filteredNonUs += result.stats.filteredNonUs;
+    stats.filteredNonTech += result.stats.filteredNonTech;
+
+    for (const job of result.jobs) {
+      dedupedJobs.set(job.dedup_hash, job);
+    }
+  }
+
+  return {
+    company,
+    jobs: Array.from(dedupedJobs.values()),
+    stats,
+    hadSuccessfulResponse,
+    hadTimeout,
+  };
 }
 
 export async function scrapeWorkday(): Promise<NormalizedJob[]> {
-  const tasks = WORKDAY_COMPANIES.map(([company, careerSite], i) =>
-    delay(i * 150).then(() => scrapeCompany(company, careerSite)),
-  );
+  const today = new Date().toISOString().slice(0, 10);
+  const deadCache = await loadWorkdayDeadCache();
+  const nextDeadCache: WorkdayDeadCache = {};
+  const companyGroups = groupWorkdayCompanies();
+  const companiesToAttempt: Array<{ company: string; careerSites: string[] }> = [];
+  let skippedFromCache = 0;
 
-  const results = await Promise.allSettled(tasks);
+  for (const group of companyGroups) {
+    const cached = deadCache[group.company];
+    if (cached && cached.zeroCount > 0) {
+      skippedFromCache += 1;
+      nextDeadCache[group.company] = {
+        zeroCount: Math.max(0, cached.zeroCount - 1),
+        lastAttempt: cached.lastAttempt,
+      };
+      continue;
+    }
+
+    companiesToAttempt.push(group);
+  }
 
   const all: NormalizedJob[] = [];
   const stats = createEmptyWorkdayStats();
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
+  let companiesWithJobs = 0;
+  let timedOutCompanies = 0;
+
+  for (let i = 0; i < companiesToAttempt.length; i += WORKDAY_BATCH_SIZE) {
+    const batch = companiesToAttempt.slice(i, i + WORKDAY_BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(group => scrapeCompanyGroup(group.company, group.careerSites)),
+    );
+
+    for (const result of results) {
+      if (result.status !== 'fulfilled') continue;
+
       all.push(...result.value.jobs);
       stats.uniqueFetched += result.value.stats.uniqueFetched;
       stats.filteredNonUs += result.value.stats.filteredNonUs;
       stats.filteredNonTech += result.value.stats.filteredNonTech;
+
+      if (result.value.jobs.length > 0) {
+        companiesWithJobs += 1;
+      } else if (result.value.hadSuccessfulResponse || !result.value.hadTimeout) {
+        nextDeadCache[result.value.company] = {
+          zeroCount: WORKDAY_SKIP_RUNS,
+          lastAttempt: today,
+        };
+      }
+
+      if (result.value.hadTimeout) {
+        timedOutCompanies += 1;
+      }
     }
   }
 
+  await saveWorkdayDeadCache(nextDeadCache);
+
+  console.log(`  [workday] Cache skipped: ${skippedFromCache} companies`);
+  console.log(`  [workday] Attempted: ${companiesToAttempt.length} companies`);
+  console.log(`  [workday] Companies with jobs: ${companiesWithJobs}`);
+  console.log(`  [workday] Timed out: ${timedOutCompanies} companies`);
   console.log(`  [workday] Total unique postings fetched: ${stats.uniqueFetched}`);
   console.log(`  [workday] Filtered out non-US location: ${stats.filteredNonUs}`);
   console.log(`  [workday] Filtered out non-tech role: ${stats.filteredNonTech}`);

@@ -20,6 +20,7 @@ import { scrapeWorkAtAStartup }      from './sources/workatastartup';
 import { scrapeBuiltIn }             from './sources/builtin';
 import { scrapeWellfound }           from './sources/wellfound';
 import { scrapeDice }                from './sources/dice';
+import { scrapeSimplyHired }         from './sources/simplyhired';
 import { scrapeHandshake }           from './sources/handshake';
 import { scrapeAshby }              from './sources/ashby';
 import { scrapeBambooHR }           from './sources/bamboohr';
@@ -53,6 +54,7 @@ const SCRAPERS: { name: string; fn: () => Promise<NormalizedJob[]> }[] = [
   { name: 'builtin',              fn: scrapeBuiltIn },
   { name: 'wellfound',            fn: scrapeWellfound },
   { name: 'dice',                 fn: scrapeDice },
+  { name: 'simplyhired',          fn: scrapeSimplyHired },
   { name: 'handshake',            fn: scrapeHandshake },
   { name: 'ashby',               fn: scrapeAshby },
   { name: 'bamboohr',            fn: scrapeBambooHR },

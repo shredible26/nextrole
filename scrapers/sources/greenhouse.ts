@@ -7,7 +7,7 @@ import { inferRoles, inferRemote, inferExperienceLevel, NormalizedJob } from '..
 
 const stripHtml = (html: string): string => html.replace(/<[^>]*>/g, ' ');
 
-const COMPANIES = [
+const BASE_GREENHOUSE_COMPANIES = [
   // Big Tech & FAANG-adjacent
   'google', 'meta', 'apple', 'netflix', 'spotify', 'twitter',
   'pinterest', 'snap', 'reddit', 'quora', 'medium',
@@ -175,6 +175,126 @@ const COMPANIES = [
   'conductor', 'botify', 'searchmetrics',
 ];
 
+// Verified Greenhouse slugs parsed from:
+// - ambicuity/New-Grad-Jobs config.yml
+// - SimplifyJobs/Summer2025-Internships listings.json
+// - pittcsc/Summer2022-Internships README.md
+const CURATED_GREENHOUSE_COMPANIES = [
+  '10alabs', '10beauty', '10xgenomics', '1800contacts', '8451university',
+  'abacusinsights', 'abdielcapital', 'abelsontaylor', 'accuweather',
+  'acluinternships', 'ada18', 'adcouncil', 'aechelontechnology',
+  'aevexaerospace', 'agencywithin', 'agilespaceindustries',
+  'agwestfarmcredit', 'aircapture', 'alamarbiosciences', 'alarmcom',
+  'align46', 'alku', 'aloyoga', 'ampsortation', 'andurilindustries',
+  'antora', 'aperaaiinc', 'apexcompanies', 'appian',
+  'appliedintuition', 'aquaticcapitalmanagement', 'arcboatcompany',
+  'arcellx', 'arcesiumllc', 'archer56', 'armada', 'arvinas',
+  'assuredguaranty', 'asteraearlycareer', 'asteraearlycareer2026',
+  'astranis', 'athinkingape', 'atlassand', 'atlassp',
+  'attainpartners', 'attentionarc', 'auctane', 'audaxgroup',
+  'authenticbrandsgroup', 'avalabs', 'avepoint', 'awetomaton',
+  'axios', 'axon', 'axontalentcommunity', 'axq', 'axs',
+  'axsometherapeutics', 'aypapower', 'babelstreet',
+  'baltimoreorioles', 'bamboohr17', 'bandwidth', 'baselayer',
+  'beamtherapeutics', 'bedrockrobotics', 'betterhelpcom', 'bgeinc',
+  'bgeinccampus', 'billiontoone', 'biomedrealty',
+  'bitgointernships', 'blackedgecapital', 'blacksky', 'blockchain',
+  'bloombergdotorg', 'bluelabsanalyticsinc', 'blueskyinnovators',
+  'bluestaq', 'boomsupersonic', 'botauto', 'boxinc',
+  'bracebridgecapital', 'brave', 'breezeairways', 'brevium',
+  'businessolverinvitationonly', 'cadencesolutions', 'calyxo',
+  'campusopportunities', 'capitalrx', 'capitaltg', 'carbondirect',
+  'cartesiansystems', 'celestialai', 'cellsignalingtechnology79',
+  'celonis', 'censys',
+];
+
+const ADDITIONAL_GREENHOUSE_COMPANIES = [
+  'abnormalsecurity', 'affirm', 'airtable', 'alchemy',
+  'algolia', 'amplitude', 'anduril', 'anthropic', 'asana',
+  'benchling', 'brex', 'calm', 'carta', 'cerebral',
+  'chainalysis', 'checkr', 'chime', 'chronosphere', 'circle',
+  'circleci', 'cityblock', 'clickhouse', 'cloudflare',
+  'cloudinary', 'cockroachlabs', 'coinbase', 'color',
+  'column', 'contentful', 'coursera', 'cruise', 'cultureamp',
+  'databricks', 'datadog', 'deel', 'devotedhealth', 'dialpad',
+  'discord', 'dropbox', 'duolingo', 'elastic', 'epicgames',
+  'faire', 'fastly', 'figma', 'fireblocks', 'fivetran',
+  'flatironhealth', 'flexport', 'gemini', 'getaround',
+  'gitlab', 'goat', 'grafanalabs', 'grammarly', 'gusto',
+  'hashicorp', 'heap', 'himsandhers', 'honeycomb',
+  'huntress', 'imply', 'instacart', 'intercom', 'jamcity',
+  'justworks', 'khanaacademy', 'kraken', 'lattice',
+  'launchdarkly', 'lever', 'lime', 'linkedin', 'locus',
+  'lucidmotors', 'lyft', 'marqeta', 'mckinsey',
+  'mercury', 'miro', 'mixpanel', 'moderntreasury',
+  'mongodb', 'moveworks', 'mux', 'netlify', 'niantic',
+  'noom', 'notion', 'nvidia', 'nuvei', 'okta',
+  'openai', 'orcasecurity', 'pagerduty', 'palantir',
+  'patreon', 'pave', 'persona', 'plaid', 'postman',
+  'productboard', 'pulumi', 'quizlet', 'ramp', 'recharge',
+  'reddit', 'redcanary', 'replit', 'retool', 'rippling',
+  'robinhood', 'rockset', 'ro', 'runway', 'salesloft',
+  'scaleai', 'segment', 'sentry', 'shipbob', 'shippo',
+  'skydio', 'smartsheet', 'snyk', 'socure', 'sonder',
+  'sourcegraph', 'splunk', 'squarespace', 'starburst',
+  'stripe', 'superhuman', 'sysdig', 'tailscale', 'tekion',
+  'temporal', 'thoughtspot', 'toast', 'transcarent',
+  'tremendous', 'truework', 'twilio', 'typeform', 'uber',
+  'unit', 'upstart', 'usertesting', 'vanta', 'verkada',
+  'via', 'vidyard', 'vimeo', 'watershed', 'waymo',
+  'webflow', 'wealthsimple', 'workato', 'xometry', 'yotpo',
+  'zapier', 'zendesk', 'zipline', 'zola', 'zscaler',
+  // More large companies on Greenhouse
+  'airbnb', 'block', 'brainstation', 'brivo', 'cameo',
+  'canva', 'census', 'clearbit', 'clubhouse', 'coda',
+  'codepath', 'collibra', 'confluent', 'covariant',
+  'cribl', 'dbtlabs', 'deepmind', 'demandbase',
+  'descope', 'ditto', 'drata', 'driveway', 'dronedeploy',
+  'duneanalytics', 'envoy', 'etsy', 'eventbrite',
+  'everlaw', 'expensify', 'extend', 'featurebase',
+  'finastra', 'flatfile', 'foursquare', 'front',
+  'gem', 'gladly', 'glean', 'goldmansachs',
+  'gong', 'growthbook', 'gtmhub', 'harness',
+  'hasura', 'healthie', 'heap', 'hex',
+  'hightouch', 'hopin', 'hunters', 'imeg',
+  'incident', 'ironclad', 'jasper', 'jfrog',
+  'jumpcloud', 'kandji', 'klaviyo', 'lob',
+  'looker', 'loom', 'magic', 'mapbox',
+  'medable', 'merge', 'metabase', 'mindstrong',
+  'mixmax', 'modal', 'momentive', 'monograph',
+  'monzo', 'mural', 'myndbend', 'mynd',
+  'narrative', 'newfront', 'nexthink', 'niche',
+  'northflank', 'nuvolo', 'o3world', 'openly',
+  'orion', 'osaro', 'packback', 'pipe',
+  'pitchbook', 'platform9', 'pomelocare',
+  'prefect', 'primer', 'privy', 'proof',
+  'propel', 'proposify', 'quantummetric',
+  'readme', 'recurly', 'reform', 'render',
+  'resilience', 'ridge', 'ritual', 'rootly',
+  'robust', 'row', 'saama', 'scout',
+  'seismic', 'sendbird', 'seso', 'silvus',
+  'simplist', 'sisu', 'socure', 'softrams',
+  'soundhound', 'spotio', 'stedi', 'stella',
+  'stensul', 'streamlit', 'strongdm', 'subsplash',
+  'sunbit', 'sunrun', 'supplyframe', 'suralink',
+  'surescripts', 'switch', 'tacton', 'tango',
+  'telemetry2u', 'terra', 'tesorio', 'thezebra',
+  'thinkific', 'thrivemarket', 'tonal', 'transfix',
+  'tuvahealth', 'twist', 'ujet', 'unison',
+  'vendasta', 'vention', 'vero', 'verusen',
+  'vidahealth', 'vigilant', 'vivid', 'volterra',
+  'voxel51', 'vroom', 'wellthy', 'wex',
+  'whistic', 'windfall', 'wingman', 'wisk',
+  'wonolo', 'workrise', 'woven', 'yotpo',
+  'zego', 'zira',
+];
+
+const GREENHOUSE_COMPANIES = Array.from(new Set([
+  ...BASE_GREENHOUSE_COMPANIES,
+  ...CURATED_GREENHOUSE_COMPANIES,
+  ...ADDITIONAL_GREENHOUSE_COMPANIES,
+]));
+
 const TECH_KEYWORDS = [
   'engineer', 'developer', 'scientist', 'analyst', 'ml', 'ai', 'data',
   'software', 'backend', 'frontend', 'fullstack', 'full stack', 'product manager',
@@ -231,12 +351,12 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export async function scrapeGreenhouse(): Promise<NormalizedJob[]> {
   // Stagger requests in small batches to be polite while still being fast
-  const BATCH_SIZE = 10;
-  const DELAY_MS = 200;
+  const BATCH_SIZE = 15;
+  const DELAY_MS = 150;
   const all: NormalizedJob[] = [];
 
-  for (let i = 0; i < COMPANIES.length; i += BATCH_SIZE) {
-    const batch = COMPANIES.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < GREENHOUSE_COMPANIES.length; i += BATCH_SIZE) {
+    const batch = GREENHOUSE_COMPANIES.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(batch.map(fetchCompany));
 
     for (const result of results) {
@@ -245,7 +365,7 @@ export async function scrapeGreenhouse(): Promise<NormalizedJob[]> {
       }
     }
 
-    if (i + BATCH_SIZE < COMPANIES.length) {
+    if (i + BATCH_SIZE < GREENHOUSE_COMPANIES.length) {
       await sleep(DELAY_MS);
     }
   }
