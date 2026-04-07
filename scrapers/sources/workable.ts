@@ -35,6 +35,45 @@ const SEARCH_TERMS = [
   'software engineer intern',
 ] as const;
 
+const TECH_TITLE_SIGNALS = [
+  'engineer',
+  'developer',
+  'scientist',
+  'analyst',
+  'architect',
+  'devops',
+  'sre',
+  'platform',
+  'backend',
+  'frontend',
+  'fullstack',
+  'full stack',
+  'machine learning',
+  'data',
+  'software',
+  'cloud',
+  'security',
+  'infrastructure',
+  'ml',
+  'ai',
+  'product manager',
+  'program manager',
+  'technical',
+  'systems',
+  'mobile',
+  'ios',
+  'android',
+  'web',
+  'api',
+  'database',
+  'network',
+  'cyber',
+  'quantitative',
+  'quant',
+  'researcher',
+  'site reliability',
+] as const;
+
 type WorkableCompany = {
   name?: string;
   slug?: string;
@@ -145,6 +184,9 @@ function normalizeWorkableJob(job: WorkableJob): NormalizedJob | null {
   const locationSignal = buildLocationSignal(job);
   if (isNonUsLocation(locationSignal)) return null;
 
+  const isTechTitle = TECH_TITLE_SIGNALS.some(signal => title.toLowerCase().includes(signal));
+  if (!isTechTitle) return null;
+
   const description = buildDescription(job.description);
   const experienceLevel = inferExperienceLevel(title, description);
   if (experienceLevel === null) return null;
@@ -224,12 +266,21 @@ async function fetchSearchPage(
 export async function scrapeWorkableSearchTerm(term: string): Promise<NormalizedJob[]> {
   const jobs: NormalizedJob[] = [];
   const seenIds = new Set<string>();
+  const seenTokens = new Set<string>();
   let nextPageToken: string | undefined;
   let page = 0;
   let previousPageSignature: string | undefined;
 
   while (page < MAX_PAGES_PER_TERM) {
+    if (nextPageToken && seenTokens.has(nextPageToken)) {
+      break;
+    }
+
     const data = await fetchSearchPage(term, nextPageToken);
+    if (nextPageToken) {
+      seenTokens.add(nextPageToken);
+    }
+
     if (!data || !Array.isArray(data.jobs) || data.jobs.length === 0) {
       break;
     }
