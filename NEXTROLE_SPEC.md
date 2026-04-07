@@ -197,15 +197,83 @@ MUSE_API_KEY, USAJOBS_API_KEY, USAJOBS_EMAIL
 
 ---
 
-## TODO (Priority Order)
-1. Switch Stripe to live mode (awaiting Stripe account review, ~2–3 days)
-2. Individual job pages `/jobs/[id]` for SEO
-3. Fix Lever slug discovery (77 jobs from 115 companies — slugs not matching)
-4. Improve Workday coverage (more verified company/slug combos)
-5. Marketing: r/cscareerquestions, r/csMajors, CS Discord servers
+## GOALS:
+- [FEATURE]: Add more startups
+- [FEATURE]: Fix sources where job count = 0 (ziprecruiter, glassdoor, dice, etc), use codex to figure out correct methods/logic
+- [FEATURE]: Improve sources, especially ones that are showing low numbers
+- [FEATURE]: Other sources & github repos (super extensive search, figure out how to do so)
+- [FEATURE]: Job tracker: limit to like 100 for free users, unlimited for pro
+- [FEATURE]: Job Search (company, role, etc)
+- [FEATURE]: Profile page with necessary info and option to upload resume
+- [FEATURE]: Agentic RAG (Claude chat)
+  - [FEATURE]: Embeddings Setup
+  - [FEATURE]: Resume Upload
+  - [FEATURE]: Match Scoring UI
+  - [FEATURE]: Agent/Chat
+- [FEATURE]: Add some form of contact for questions, help, etc
+- [FEATURE]: SEO: Submit sitemap to Google Search Console, add meta descriptions per job page — you have 40k+ indexed pages, this is free organic traffic
+- [FEATURE]: Email notifications: "New jobs matching your profile" weekly digest — drives retention
+- [FEATURE]: Rate limiting on API routes: Protect /api/stripe/webhook and job fetch endpoints ???
+- Filtering Feature: Make sure all filters on the site work properly, especially role filtering
+- Filtering Logic: For each source, make sure the keyword search and job filtering (jobs to include, exclude, etc) are as best as possible. Do very extensive research for best results. Make sure as many tech jobs as possible (within available roles on the site) show up.
+- UI: Update all pricing page text
+- UI: Update all home page text (advertise as a huge job aggregate - including all types of companies (startups too), all tech, specific roles)
+- UI: Improve design & color for filter navigation
+- UI: Improve design & color for Application Tracker
+- UI: Improve design & color for Home Page
+- UI: Improve rest of the site color scheme (dark mode, better color scheme more vibrant, etc), make it look modern and nice
+- TEST: Make sure pricing works via an actual purchase
+- TEST: UI flow for everything, edge cases, all functionality, features, and links
+- TEST: UI on different devices (mobile, etc)
+- ANALYTICS: Add Posthog or Vercel Analytics to see where users drop off
+- ANALYTICS: Add Sentry for Error Monitoring (once real users hit the site)
+- MARKETING: r/cscareerquestions, r/csMajors, CS Discord servers
+- [FEATURE (MAYBE)]: LinkedIn Jobs
 
-## TODO (build)
-1. Add python-jobspy for ZipRecruiter + Glassdoor — biggest volume unlock. ZipRecruiter alone has millions of listings, even with entry-level filtering you'd get 500-2000 new jobs. Requires Python installed in GitHub Actions (already available by default on ubuntu-latest).
-2. Careerjet API — free, instant, 5 min integration. Good supplementary source.
-3. More Indeed search terms via ts-jobspy — already working, just add more terms.
-4. BuiltIn.com scraper — tech-focused, good quality but needs HTML parsing.
+- Workday scraper takes an hour, make significantly faster
+- Try to implement Monster
+
+## TODO:
+## Phase 1: Max out job count (goal: 50k+)
+Complete prompts 6/7 and 7/7 first, then:
+
+PROMPT A: Fix broken scrapers (Dice, BambooHR, SimplyHired)
+- Give Codex each broken scraper + tell it to research and self-debug
+- Use o3 model, full-auto mode
+
+PROMPT B: Expand Greenhouse dramatically (300 → 1000+ companies)
+- Use ambicuity/New-Grad-Jobs + other GitHub repos as slug sources
+- Same approach that worked for Lever (77 → 1,434)
+
+PROMPT C: Expand Ashby similarly
+- Find verified Ashby company list from GitHub repos
+
+PROMPT D: Add SimplyHired scraper
+- Free, large volume, consistent HTML structure
+
+PROMPT E: Fix Handshake scraper (currently 0)
+- New grad focused — perfect audience match
+
+PROMPT F: Add more GitHub repo sources
+- Find 5-6 more curated new grad lists
+- Parse their JSON/markdown and ingest
+
+## Phase 2: Filtering logic optimization
+- Per-source keyword tuning
+- Role classification improvements
+- International/non-tech filter tightening
+
+## Phase 3: Features
+- Job search
+- Profile + resume upload
+- Job tracker limits
+- RAG pipeline
+
+## Phase 4: UI overhaul
+- Dark mode
+- Modern color scheme
+- Mobile responsiveness
+
+## Phase 5: Marketing
+- Reddit, Discord
+- ProductHunt
