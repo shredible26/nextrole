@@ -32,21 +32,52 @@ const WORKDAY_TITLE_EXCLUSIONS = [
 
 // Non-US location signals — skip these to keep the feed US-focused
 const NON_US_LOCATION_SIGNALS = [
-  'india', 'bangalore', 'hyderabad', 'mumbai', 'chennai', 'pune',
-  'berlin', 'london', 'toronto', 'montreal', 'sydney', 'singapore',
-  'dublin', 'amsterdam', 'paris', 'tokyo', 'beijing', 'shanghai',
-  ' uk', ' uk,', 'united kingdom', 'canada', 'australia',
-  'germany', 'france', 'netherlands', 'ireland', 'mexico',
-  'brazil', 'argentina', 'colombia', 'chile',
-  // Additional locations
-  'jakarta', 'manila', 'ho chi minh', 'kuala lumpur', 'bangkok',
-  'cairo', 'riyadh', 'dubai', 'abu dhabi', 'doha',
-  'johannesburg', 'cape town', 'lagos', 'nairobi',
-  'lima', 'bogota', 'santiago', 'buenos aires',
-  'warsaw', 'prague', 'budapest', 'bucharest', 'sofia',
-  'zagreb', 'belgrade', 'bratislava',
-  'karachi', 'lahore', 'dhaka', 'colombo',
+  // Countries
+  'canada', 'mexico', 'uk', 'united kingdom', 'india', 'china',
+  'japan', 'korea', 'singapore', 'australia', 'germany', 'france',
+  'spain', 'italy', 'netherlands', 'poland', 'brazil', 'argentina',
+  'colombia', 'chile', 'peru', 'israel', 'turkey', 'ukraine',
+  'russia', 'pakistan', 'bangladesh', 'philippines', 'indonesia',
+  'malaysia', 'thailand', 'vietnam', 'taiwan', 'hong kong',
+  'palestine',
+  'new zealand', 'sweden', 'norway', 'denmark', 'finland',
+  'switzerland', 'austria', 'belgium', 'portugal', 'czech',
+  'romania', 'hungary', 'bulgaria', 'croatia', 'serbia',
+  'egypt', 'nigeria', 'south africa', 'kenya', 'ghana',
+  'uae', 'dubai', 'saudi arabia', 'qatar', 'kuwait',
+
+  // Mexican location patterns
+  'd.f.', 'del.', 'miguel hidalgo', 'ciudad de mexico',
+  'cdmx', 'guadalajara', 'monterrey', 'puebla', 'tijuana',
+  'eagle - d.f', 'eagle - df',
+
+  // Canadian cities
+  'toronto', 'vancouver', 'montreal', 'calgary', 'ottawa',
+  'winnipeg', 'edmonton', 'quebec', 'ontario', 'british columbia',
+
+  // Indian cities
+  'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad',
+  'pune', 'chennai', 'kolkata', 'noida', 'gurugram', 'gurgaon',
+
+  // Other major international cities
+  'london', 'paris', 'berlin', 'amsterdam', 'dublin', 'lyon',
+  'stockholm', 'copenhagen', 'oslo', 'zurich', 'geneva',
+  'sydney', 'melbourne', 'auckland', 'tokyo', 'osaka',
+  'beijing', 'shanghai', 'shenzhen', 'seoul', 'taipei',
+  'jakarta', 'kuala lumpur', 'bangkok', 'manila', 'ho chi minh',
+  'tel aviv', 'istanbul', 'moscow', 'warsaw', 'prague',
+  'budapest', 'bucharest', 'sofia', 'zagreb', 'belgrade',
+  'cairo', 'lagos', 'nairobi', 'johannesburg', 'accra',
+  'abu dhabi', 'riyadh', 'doha', 'rawabi',
+
+  // Penang specifically
+  'penang',
+
+  // Canadian province abbreviations (only when followed by comma+space or end of string)
+  // Handle these carefully to not conflict with US states
 ];
+
+const CANADIAN_PROVINCE_ABBREVIATION_RE = /(?:^|,\s)(?:ab|bc|mb|nb|nl|ns|nt|nu|on|pe|qc|sk|yt)(?=, |$)/i;
 
 /**
  * Returns true if the job title contains a Workday-specific senior/sales signal.
@@ -76,10 +107,21 @@ function isWorkdaySeniorTitle(title: string): boolean {
 function isNonUsLocation(location: string): boolean {
   if (!location) return false;
   const lower = location.toLowerCase();
-  if (lower.includes('remote') || lower.includes('united states') || lower.includes('usa')) {
-    return false;
+  const matchesNonUsSignal = (value: string) =>
+    NON_US_LOCATION_SIGNALS.some(signal => value.includes(signal)) ||
+    CANADIAN_PROVINCE_ABBREVIATION_RE.test(value);
+
+  const separatorIndex = lower.indexOf(' - ');
+  if (separatorIndex !== -1) {
+    const suffix = lower.slice(separatorIndex + 3).trim();
+    if (matchesNonUsSignal(suffix)) return true;
   }
-  return NON_US_LOCATION_SIGNALS.some(signal => lower.includes(signal));
+
+  if (matchesNonUsSignal(lower)) return true;
+  if (lower.includes('united states') || lower.includes('usa')) return false;
+  if (lower.includes('remote')) return false;
+
+  return false;
 }
 
 /**
@@ -162,6 +204,29 @@ const NON_TECH_PATTERNS = [
   'real estate agent', 'property manager',
   'facilities coordinator', 'maintenance technician',
   'food service', 'chef', 'cook', 'barista',
+  'marine', 'mate', 'nautical', 'vessel', 'maritime',
+  'portfolio marketing', 'brand manager', 'marketing manager',
+  'neurosurgical', 'surgical', 'clinical', 'medical device sales',
+  'business development', 'm&a', 'mergers and acquisitions',
+  'field sales', 'territory manager', 'account executive',
+  'supply chain', 'supply chain manager', 'procurement manager', 'buyer',
+  'hr manager', 'human resources manager', 'talent acquisition',
+  'legal counsel', 'attorney', 'paralegal', 'compliance officer',
+  'financial advisor', 'wealth advisor', 'insurance agent',
+  'loan officer', 'mortgage', 'underwriter', 'actuary',
+  'physical therapist', 'occupational therapist', 'speech therapist',
+  'pharmacist', 'pharmacy', 'dental', 'optometrist',
+  'electrician', 'plumber', 'hvac', 'mechanic', 'technician',
+  'welder', 'machinist', 'forklift', 'warehouse',
+  'driver', 'delivery', 'logistics coordinator',
+  'chef', 'cook', 'restaurant', 'hospitality',
+  'teacher', 'instructor', 'professor', 'tutor',
+  'social worker', 'counselor', 'therapist',
+  'security guard', 'loss prevention',
+  'real estate', 'property manager',
+  'administrative assistant', 'receptionist', 'office manager',
+  'scheduling coordinator', 'commodity analyst', 'customs',
+  'bindery', 'litho', 'recommerce', 'resale', 'liquidation',
 ];
 
 function isNonTechRole(title: string): boolean {
@@ -482,6 +547,7 @@ const WORKDAY_COMPANIES: [string, string][] = [
   ['airbnb', 'airbnb'],
   ['doordash', 'doordash'],
   ['instacart', 'instacart'],
+  ['atlassian', 'atlassian'],
   ['dropbox', 'dropbox'],
   ['box', 'box'],
   ['zendesk', 'zendesk'],
@@ -578,6 +644,61 @@ interface WorkdayResponse {
   total?: number;
 }
 
+type WorkdayScrapeStats = {
+  uniqueFetched: number;
+  filteredNonUs: number;
+  filteredNonTech: number;
+};
+
+type CompanyScrapeResult = {
+  jobs: NormalizedJob[];
+  stats: WorkdayScrapeStats;
+};
+
+function createEmptyWorkdayStats(): WorkdayScrapeStats {
+  return {
+    uniqueFetched: 0,
+    filteredNonUs: 0,
+    filteredNonTech: 0,
+  };
+}
+
+function isUsefulWorkdaySampleLocation(location?: string): boolean {
+  if (!location || /^\d+\s+locations?$/i.test(location)) return false;
+
+  return (
+    /\b(?:united states|usa|virtual us|remote)\b/i.test(location) ||
+    /\bUS,\b/.test(location) ||
+    /,\s?[A-Z]{2}(?:\b|,|\s|$)/.test(location)
+  );
+}
+
+const WORKDAY_SAMPLE_TITLE_SIGNALS = [
+  'software',
+  'developer',
+  'engineer',
+  'data',
+  'machine learning',
+  'ml ',
+  ' ai',
+  'artificial intelligence',
+  'devops',
+  'cloud',
+  'security',
+  'systems',
+  'technical',
+  'quantitative',
+  'quant ',
+];
+
+function isUsefulWorkdaySampleJob(job: NormalizedJob): boolean {
+  const title = job.title.toLowerCase();
+  return (
+    isUsefulWorkdaySampleLocation(job.location) &&
+    WORKDAY_SAMPLE_TITLE_SIGNALS.some(signal => title.includes(signal))
+  );
+}
+
 /**
  * Build slug variations to try for a given company + career site.
  */
@@ -651,9 +772,11 @@ async function tryWorkdayCompany(
 async function scrapeCompany(
   company: string,
   careerSite: string,
-): Promise<NormalizedJob[]> {
+): Promise<CompanyScrapeResult> {
   const seen = new Set<string>();
+  const seenFetched = new Set<string>();
   const jobs: NormalizedJob[] = [];
+  const stats = createEmptyWorkdayStats();
 
   // Discover which (wdVersion, slug) pair works using the first search term
   let foundVersion: string | null = null;
@@ -708,6 +831,13 @@ async function scrapeCompany(
       const title = posting.title ?? '';
       const location = posting.locationsText ?? '';
       const externalPath = posting.externalPath ?? '';
+      const hash = generateHash(company, title, location);
+      const isFirstSeenPosting = !seenFetched.has(hash);
+
+      if (isFirstSeenPosting) {
+        seenFetched.add(hash);
+        stats.uniqueFetched += 1;
+      }
 
       const level = inferExperienceLevel(title);
       if (level === null) continue;
@@ -716,13 +846,19 @@ async function scrapeCompany(
       if (isWorkdaySeniorTitle(title)) continue;
 
       // Skip non-US locations
-      if (isNonUsLocation(location)) continue;
+      if (isNonUsLocation(location)) {
+        if (isFirstSeenPosting) stats.filteredNonUs += 1;
+        continue;
+      }
 
       // Skip non-Latin characters in title or location (international postings)
       if (hasNonLatinCharacters(title) || hasNonLatinCharacters(location)) continue;
 
       // Skip non-tech roles that slip through (banking, nursing, retail, etc.)
-      if (isNonTechRole(title)) continue;
+      if (isNonTechRole(title)) {
+        if (isFirstSeenPosting) stats.filteredNonTech += 1;
+        continue;
+      }
 
       // Build full URL from the posting object
       const url = buildWorkdayUrl(company, wdVersion, slug, posting);
@@ -730,7 +866,6 @@ async function scrapeCompany(
       // Skip jobs with invalid/unresolvable Workday URLs
       if (!isValidWorkdayUrl(url)) continue;
 
-      const hash = generateHash(company, title, location);
       if (seen.has(hash)) continue;
       seen.add(hash);
 
@@ -757,7 +892,7 @@ async function scrapeCompany(
     console.log(`  [workday] ${company} (${foundVersion}/${foundSlug}): ${jobs.length} jobs`);
   }
 
-  return jobs;
+  return { jobs, stats };
 }
 
 export async function scrapeWorkday(): Promise<NormalizedJob[]> {
@@ -768,11 +903,33 @@ export async function scrapeWorkday(): Promise<NormalizedJob[]> {
   const results = await Promise.allSettled(tasks);
 
   const all: NormalizedJob[] = [];
+  const stats = createEmptyWorkdayStats();
   for (const result of results) {
     if (result.status === 'fulfilled') {
-      all.push(...result.value);
+      all.push(...result.value.jobs);
+      stats.uniqueFetched += result.value.stats.uniqueFetched;
+      stats.filteredNonUs += result.value.stats.filteredNonUs;
+      stats.filteredNonTech += result.value.stats.filteredNonTech;
     }
   }
+
+  console.log(`  [workday] Total unique postings fetched: ${stats.uniqueFetched}`);
+  console.log(`  [workday] Filtered out non-US location: ${stats.filteredNonUs}`);
+  console.log(`  [workday] Filtered out non-tech role: ${stats.filteredNonTech}`);
+  console.log(`  [workday] Kept jobs after filters: ${all.length}`);
+
+  const sampleJobs = all
+    .filter(isUsefulWorkdaySampleJob)
+    .slice(0, 5);
+
+  const fallbackSampleJobs = all
+    .filter(job => isUsefulWorkdaySampleLocation(job.location))
+    .slice(0, 5);
+
+  (sampleJobs.length > 0 ? sampleJobs : fallbackSampleJobs.length > 0 ? fallbackSampleJobs : all.slice(0, 5))
+    .forEach((job, index) => {
+    console.log(`  [workday] Sample ${index + 1}: ${job.title} | ${job.location ?? 'Unknown'}`);
+    });
 
   return all;
 }
