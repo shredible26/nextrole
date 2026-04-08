@@ -44,11 +44,35 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_KEY!
   )
 
-  await serviceClient.from('profiles').upsert({
+  const displayName = user.user_metadata?.full_name
+    ?? user.user_metadata?.name
+    ?? null
+
+  let shouldIncludeDisplayName = false
+
+  if (displayName) {
+    const { data: existingProfile, error: existingProfileError } = await serviceClient
+      .from('profiles')
+      .select('id, display_name')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (existingProfileError) {
+      console.error('[auth/callback] profile lookup error:', existingProfileError.message)
+    } else {
+      shouldIncludeDisplayName = !existingProfile?.display_name
+    }
+  }
+
+  const { error: profileUpsertError } = await serviceClient.from('profiles').upsert({
     id: user.id,
-    email: user.email,
-    tier: 'free',
-  }, { onConflict: 'id', ignoreDuplicates: true })
+    email: user.email ?? null,
+    ...(displayName && shouldIncludeDisplayName ? { display_name: displayName } : {}),
+  }, { onConflict: 'id', ignoreDuplicates: false })
+
+  if (profileUpsertError) {
+    console.error('[auth/callback] profile upsert error:', profileUpsertError.message)
+  }
 
   return response
 }
