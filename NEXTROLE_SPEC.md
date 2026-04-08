@@ -198,15 +198,16 @@ MUSE_API_KEY, USAJOBS_API_KEY, USAJOBS_EMAIL
 ---
 
 ## GOALS:
+- [FEATURE]: Fix description text when you click on any job.
 - [FEATURE]: Add more startups
 - [FEATURE]: Fix sources where job count = 0 (ziprecruiter, glassdoor, dice, etc), use codex to figure out correct methods/logic
 - [FEATURE]: Fix Ashby (commoncrawl, slugs) and workatastartup (try to get more jobs)
 - [FEATURE]: Improve sources, especially ones that are showing low numbers
 - [FEATURE]: Other sources & github repos (super extensive search, figure out how to do so)
 - [FEATURE]: Job tracker: limit to like 100 for free users, unlimited for pro
-- [FEATURE]: Change job view logic to 50-100 total jobs for free user
+- [FEATURE]: Change job view logic to 50-100 total jobs can view for free user
 - [FEATURE]: Add more role and experience level filters for better filterins + higher job count
-- [FEATURE]: Job Search (company, role, etc)
+- [FEATURE]: Job Search fix: Make just one big horizontal bar (remove duplicate role filters, replace that space with the search bar). Search should only be available to pro users. 
 - [FEATURE]: Profile page with necessary info and option to upload resume
 - [FEATURE]: Agentic RAG (Claude chat)
   - [FEATURE]: Embeddings Setup
