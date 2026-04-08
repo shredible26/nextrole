@@ -17,6 +17,7 @@ const DEFAULT_FILTERS: JobFilters = {
   search: '',
   level: '',
   remote: false,
+  location: 'usa',
   postedWithin: '',
   sources: [],
   page: 1,
@@ -79,6 +80,7 @@ export default function JobFeed() {
     if (f.search) params.set('search', f.search);
     if (f.level) params.set('level', f.level);
     if (f.remote) params.set('remote', 'true');
+    if (f.location) params.set('location', f.location);
     if (f.postedWithin) params.set('postedWithin', f.postedWithin);
     if (f.sources.length) params.set('source', f.sources.join(','));
     params.set('page', String(f.page));
@@ -144,7 +146,7 @@ export default function JobFeed() {
 
     fetchJobs(nextFilters, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.roles.join(), filters.search, filters.level, filters.remote, filters.postedWithin, filters.sources.join()]);
+  }, [filters.roles.join(), filters.search, filters.level, filters.remote, filters.location, filters.postedWithin, filters.sources.join()]);
 
   async function handleTrack(job: Job) {
     // Optimistic update — both React state and localStorage

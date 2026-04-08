@@ -27,6 +27,10 @@ const POSTED_OPTIONS: { value: JobFilters['postedWithin']; label: string }[] = [
   { value: '3', label: 'Last 3 days' },
   { value: '7', label: 'Last week' },
 ];
+const LOCATION_OPTIONS: { value: Exclude<JobFilters['location'], ''>; label: string }[] = [
+  { value: 'usa', label: 'USA' },
+  { value: 'other', label: 'Other' },
+];
 const SOURCES = [
   { value: 'github_repos',           label: 'GitHub Repos' },
   { value: 'pittcsc',                label: 'Simplify (New Grad)' },
@@ -154,6 +158,30 @@ export default function FilterSidebar({ filters, onChange }: Props) {
           checked={filters.remote}
           onCheckedChange={checked => onChange({ ...filters, remote: checked, page: 1 })}
         />
+      </div>
+
+      <Separator />
+
+      {/* Location */}
+      <div>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Location
+        </p>
+        <div className="space-y-2">
+          {LOCATION_OPTIONS.map(({ value, label }) => (
+            <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="radio"
+                name="location"
+                value={value}
+                checked={(filters.location || 'usa') === value}
+                onChange={() => onChange({ ...filters, location: value, page: 1 })}
+                className="accent-primary"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
       </div>
 
       <Separator />

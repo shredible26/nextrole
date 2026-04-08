@@ -46,6 +46,7 @@ export type JobFilters = {
   search: string;
   level: ExperienceLevel | '';
   remote: boolean;
+  location: 'usa' | 'other' | '';
   postedWithin: '' | '1' | '3' | '7';
   sources: string[];
   page: number;
