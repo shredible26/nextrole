@@ -2,17 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import FilterSidebar from './FilterSidebar';
+import FilterSidebar, { ROLE_OPTIONS } from './FilterSidebar';
 import JobCard from './JobCard';
 import UpgradeModal from './UpgradeModal';
 import { Button } from '@/components/ui/button';
-import { Job, JobFilters } from '@/lib/types';
+import { Input } from '@/components/ui/input';
+import { Job, JobFilters, Role, ROLE_COLORS } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { getTrackedIds, addTrackedId, removeTrackedId, writeTrackedIds } from '@/lib/trackedStorage';
-import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Loader2, Search, X } from 'lucide-react';
 
 const DEFAULT_FILTERS: JobFilters = {
   roles: [],
+  search: '',
   level: '',
   remote: false,
   postedWithin: '',
@@ -36,11 +39,12 @@ export default function JobFeed() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   // Seed from localStorage immediately so cards render correct state before Supabase resolves
   const [trackedIds, setTrackedIds] = useState<Set<string>>(() => getTrackedIds());
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const isFirstLoad = useRef(true);
+  const requestIdRef = useRef(0);
 
   // Pre-populate tracked IDs from the user's existing applications
   useEffect(() => {
@@ -64,6 +68,7 @@ export default function JobFeed() {
   const buildQuery = useCallback((f: JobFilters) => {
     const params = new URLSearchParams();
     if (f.roles.length) params.set('roles', f.roles.join(','));
+    if (f.search) params.set('search', f.search);
     if (f.level) params.set('level', f.level);
     if (f.remote) params.set('remote', 'true');
     if (f.postedWithin) params.set('postedWithin', f.postedWithin);
@@ -73,10 +78,14 @@ export default function JobFeed() {
   }, []);
 
   const fetchJobs = useCallback(async (f: JobFilters, append = false) => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
     append ? setLoadingMore(true) : setLoading(true);
     try {
       const res = await fetch(`/api/jobs?${buildQuery(f)}`);
       const data: FeedResponse = await res.json();
+
+      if (requestId !== requestIdRef.current) return;
 
       if (data.upgrade) {
         setShowUpgrade(true);
@@ -95,29 +104,39 @@ export default function JobFeed() {
       setTotal(data.total ?? 0);
       setHasMore((data.jobs?.length ?? 0) === data.perPage && data.total > f.page * data.perPage);
     } catch {
+      if (requestId !== requestIdRef.current) return;
       toast.error('Failed to load jobs. Please try again.');
     } finally {
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
       setLoadingMore(false);
     }
   }, [buildQuery]);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const nextSearch = searchInput.trim();
+      setFilters(prev =>
+        prev.search === nextSearch
+          ? prev
+          : { ...prev, search: nextSearch, page: 1 }
+      );
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
+
   // On filter change, reset to page 1 and fetch fresh results
   useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-    }
-    const f = { ...filters, page: 1 };
-    setFilters(f);
-    fetchJobs(f, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.roles.join(), filters.level, filters.remote, filters.postedWithin, filters.sources.join()]);
+    const nextFilters = filters.page === 1 ? filters : { ...filters, page: 1 };
 
-  // Initial load
-  useEffect(() => {
-    fetchJobs(filters, false);
+    if (nextFilters !== filters) {
+      setFilters(nextFilters);
+    }
+
+    fetchJobs(nextFilters, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [filters.roles.join(), filters.search, filters.level, filters.remote, filters.postedWithin, filters.sources.join()]);
 
   async function handleTrack(job: Job) {
     // Optimistic update — both React state and localStorage
@@ -150,6 +169,30 @@ export default function JobFeed() {
     setFilters(f);
   }
 
+  function handleRoleToggle(role: Role | 'all') {
+    if (role === 'all') {
+      setFilters(prev => ({ ...prev, roles: [], page: 1 }));
+      return;
+    }
+
+    setFilters(prev => ({
+      ...prev,
+      roles: prev.roles[0] === role ? [] : [role],
+      page: 1,
+    }));
+  }
+
+  function handleClearSearch() {
+    setSearchInput('');
+    setFilters(prev => (
+      prev.search
+        ? { ...prev, search: '', page: 1 }
+        : prev
+    ));
+  }
+
+  const isSearching = loading && (searchInput.trim().length > 0 || filters.search.length > 0);
+
   return (
     <>
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
@@ -163,9 +206,69 @@ export default function JobFeed() {
 
         {/* Feed — independent scroll */}
         <div className="flex flex-1 flex-col min-w-0 overflow-y-auto px-6 py-6 sm:px-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 space-y-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+              <div className="flex flex-wrap gap-2">
+                {ROLE_OPTIONS.map(({ value, label }) => {
+                  const isSelected =
+                    value === 'all'
+                      ? filters.roles.length === 0
+                      : filters.roles.includes(value as Role);
+                  const colorClass =
+                    isSelected && value !== 'all'
+                      ? ROLE_COLORS[value as Role] + ' border-transparent'
+                      : isSelected
+                      ? 'bg-foreground text-background border-transparent'
+                      : 'border-border text-muted-foreground hover:border-foreground/30';
+
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => handleRoleToggle(value)}
+                      className={cn(
+                        'rounded-full px-3 py-1 text-xs font-medium transition-all border',
+                        colorClass
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex w-full items-center gap-2 md:ml-auto md:max-w-xl">
+                <div className="relative w-full">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    value={searchInput}
+                    onChange={e => setSearchInput(e.target.value)}
+                    placeholder="Search jobs, companies, or keywords..."
+                    className="h-9 pl-9 pr-9"
+                    aria-label="Search jobs, companies, or keywords"
+                  />
+                  {searchInput && (
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {isSearching && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    Searching...
+                  </span>
+                )}
+              </div>
+            </div>
+
             <p className="text-sm text-muted-foreground">
-              {loading ? 'Loading…' : `${total.toLocaleString()} jobs found`}
+              {isSearching ? 'Searching...' : loading ? 'Loading…' : `${total.toLocaleString()} jobs found`}
             </p>
           </div>
 

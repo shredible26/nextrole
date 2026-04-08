@@ -29,8 +29,10 @@ export async function GET(req: NextRequest) {
   const isPro = profile.tier === 'pro';
 
   // Parse query params
-  const params      = req.nextUrl.searchParams;
+  const url = req.nextUrl;
+  const params      = url.searchParams;
   const rolesParam  = params.get('roles');
+  const search      = url.searchParams.get('search')?.trim() ?? '';
   // Strip 'all' — it means no filter
   const roles       = rolesParam
     ? rolesParam
@@ -58,9 +60,14 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('jobs')
     .select('*', { count: 'exact' })
-    .eq('is_active', true)
-    .order('posted_at', { ascending: false })
-    .range((page - 1) * perPage, page * perPage - 1);
+    .eq('is_active', true);
+
+  if (search) {
+    query = query.textSearch('fts', search, {
+      type: 'websearch',
+      config: 'english',
+    });
+  }
 
   if (roles.length > 0) {
     for (const role of roles) {
@@ -96,6 +103,10 @@ export async function GET(req: NextRequest) {
       query = query.gte('posted_at', cutoff);
     }
   }
+
+  query = query
+    .order('posted_at', { ascending: false })
+    .range((page - 1) * perPage, page * perPage - 1);
 
   const { data: jobs, count, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

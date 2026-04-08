@@ -43,6 +43,7 @@ export type Application = {
 
 export type JobFilters = {
   roles: Role[];
+  search: string;
   level: ExperienceLevel | '';
   remote: boolean;
   postedWithin: '' | '1' | '3' | '7';

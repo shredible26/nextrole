@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { JobFilters, Role, ExperienceLevel, ROLE_COLORS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-const ROLES: { value: Role | 'all'; label: string }[] = [
+export const ROLE_OPTIONS: { value: Role | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'swe', label: 'SWE' },
   { value: 'ds', label: 'DS' },
@@ -91,7 +91,7 @@ export default function FilterSidebar({ filters, onChange }: Props) {
           Role
         </p>
         <div className="flex flex-wrap gap-2">
-          {ROLES.map(({ value, label }) => {
+          {ROLE_OPTIONS.map(({ value, label }) => {
             const isSelected =
               value === 'all'
                 ? filters.roles.length === 0
