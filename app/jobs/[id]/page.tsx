@@ -1,10 +1,54 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import sanitizeHtml from 'sanitize-html'
 import { Role, ROLE_LABELS } from '@/lib/types'
 
 interface Props {
   params: Promise<{ id: string }>
+}
+
+function decodeDescription(raw: string): string {
+  return raw
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+}
+
+function cleanDescription(raw: string): string {
+  const decoded = decodeDescription(raw)
+
+  return sanitizeHtml(decoded, {
+    allowedTags: [
+      'p', 'br', 'strong', 'em', 'b', 'i', 'u',
+      'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4',
+      'div', 'span', 'a',
+    ],
+    allowedAttributes: {
+      a: ['href', 'target', 'rel'],
+      span: ['style'],
+      p: ['style'],
+    },
+    transformTags: {
+      a: sanitizeHtml.simpleTransform('a', {
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      }),
+    },
+  })
+}
+
+function plainDescription(raw?: string | null): string {
+  if (!raw) return ''
+
+  return decodeDescription(raw)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 async function getJob(id: string) {
@@ -25,9 +69,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const job = await getJob(id)
   if (!job) return { title: 'Job Not Found | NextRole' }
+  const metadataDescription = plainDescription(job.description).slice(0, 120)
   return {
     title: `${job.title} at ${job.company} | NextRole`,
-    description: `${job.experience_level === 'new_grad' ? 'New grad' : 'Entry level'} ${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ''}. ${job.description?.slice(0, 120) ?? ''}`,
+    description: `${job.experience_level === 'new_grad' ? 'New grad' : 'Entry level'} ${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ''}. ${metadataDescription}`,
     openGraph: {
       title: `${job.title} — ${job.company}`,
       description: `${job.experience_level === 'new_grad' ? 'New grad' : 'Entry level'} role at ${job.company}`,
@@ -58,6 +103,10 @@ export default async function JobPage({ params }: Props) {
     : null
 
   const applyLabel = 'Apply Now ↗'
+  const description = job.description ?? ''
+  const truncatedDescription = description.length > 5000
+    ? description.slice(0, 5000) + '...'
+    : description
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
@@ -112,15 +161,16 @@ export default async function JobPage({ params }: Props) {
           </a>
         </div>
 
-        {job.description && (
+        {description && (
           <div className="bg-card border rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-4">About this role</h2>
-            <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-              {job.description.length > 3000
-                ? job.description.slice(0, 3000) + '...'
-                : job.description}
-            </div>
-            {job.description.length > 3000 && (
+            <div
+              className="prose prose-sm max-w-none text-muted-foreground leading-relaxed prose-headings:text-foreground prose-headings:font-semibold prose-strong:text-foreground prose-a:text-primary"
+              dangerouslySetInnerHTML={{
+                __html: cleanDescription(truncatedDescription),
+              }}
+            />
+            {description.length > 5000 && (
               <a
                 href={job.url}
                 target="_blank"
@@ -140,7 +190,7 @@ export default async function JobPage({ params }: Props) {
               '@context': 'https://schema.org',
               '@type': 'JobPosting',
               title: job.title,
-              description: job.description?.slice(0, 500),
+              description: plainDescription(job.description).slice(0, 500),
               hiringOrganization: {
                 '@type': 'Organization',
                 name: job.company,

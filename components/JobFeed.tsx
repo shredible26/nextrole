@@ -1,17 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import FilterSidebar, { ROLE_OPTIONS } from './FilterSidebar';
+import FilterSidebar from './FilterSidebar';
 import JobCard from './JobCard';
 import UpgradeModal from './UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Job, JobFilters, Role, ROLE_COLORS } from '@/lib/types';
+import { Job, JobFilters } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { getTrackedIds, addTrackedId, removeTrackedId, writeTrackedIds } from '@/lib/trackedStorage';
-import { cn } from '@/lib/utils';
-import { Loader2, Search, X } from 'lucide-react';
+import { Loader2, Lock, Search, X } from 'lucide-react';
 
 const DEFAULT_FILTERS: JobFilters = {
   roles: [],
@@ -44,13 +43,22 @@ export default function JobFeed() {
   const [trackedIds, setTrackedIds] = useState<Set<string>>(() => getTrackedIds());
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [isPro, setIsPro] = useState(false);
   const requestIdRef = useRef(0);
 
-  // Pre-populate tracked IDs from the user's existing applications
+  // Pre-populate tracked IDs and tier from Supabase
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', user.id)
+        .single();
+      setIsPro(profile?.tier === 'pro');
+
       const { data } = await supabase
         .from('applications')
         .select('job_id')
@@ -169,19 +177,6 @@ export default function JobFeed() {
     setFilters(f);
   }
 
-  function handleRoleToggle(role: Role | 'all') {
-    if (role === 'all') {
-      setFilters(prev => ({ ...prev, roles: [], page: 1 }));
-      return;
-    }
-
-    setFilters(prev => ({
-      ...prev,
-      roles: prev.roles[0] === role ? [] : [role],
-      page: 1,
-    }));
-  }
-
   function handleClearSearch() {
     setSearchInput('');
     setFilters(prev => (
@@ -189,6 +184,28 @@ export default function JobFeed() {
         ? { ...prev, search: '', page: 1 }
         : prev
     ));
+  }
+
+  function openUpgradeModal() {
+    window.setTimeout(() => {
+      setShowUpgrade(true);
+    }, 0);
+  }
+
+  function handleSearchFocus(e: FocusEvent<HTMLInputElement>) {
+    if (isPro) return;
+    e.preventDefault();
+    e.currentTarget.blur();
+    openUpgradeModal();
+  }
+
+  function handleSearchChange(value: string) {
+    if (!isPro) {
+      openUpgradeModal();
+      return;
+    }
+
+    setSearchInput(value);
   }
 
   const isSearching = loading && (searchInput.trim().length > 0 || filters.search.length > 0);
@@ -207,64 +224,38 @@ export default function JobFeed() {
         {/* Feed — independent scroll */}
         <div className="flex flex-1 flex-col min-w-0 overflow-y-auto px-6 py-6 sm:px-8">
           <div className="mb-4 space-y-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              <div className="flex flex-wrap gap-2">
-                {ROLE_OPTIONS.map(({ value, label }) => {
-                  const isSelected =
-                    value === 'all'
-                      ? filters.roles.length === 0
-                      : filters.roles.includes(value as Role);
-                  const colorClass =
-                    isSelected && value !== 'all'
-                      ? ROLE_COLORS[value as Role] + ' border-transparent'
-                      : isSelected
-                      ? 'bg-foreground text-background border-transparent'
-                      : 'border-border text-muted-foreground hover:border-foreground/30';
-
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => handleRoleToggle(value)}
-                      className={cn(
-                        'rounded-full px-3 py-1 text-xs font-medium transition-all border',
-                        colorClass
-                      )}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex w-full items-center gap-2 md:ml-auto md:max-w-xl">
-                <div className="relative w-full">
+            <div className="flex w-full items-center gap-2">
+              <div className="relative w-full">
+                {isPro ? (
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    value={searchInput}
-                    onChange={e => setSearchInput(e.target.value)}
-                    placeholder="Search jobs, companies, or keywords..."
-                    className="h-9 pl-9 pr-9"
-                    aria-label="Search jobs, companies, or keywords"
-                  />
-                  {searchInput && (
-                    <button
-                      type="button"
-                      onClick={handleClearSearch}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      aria-label="Clear search"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                {isSearching && (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    Searching...
-                  </span>
+                ) : (
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                )}
+                <Input
+                  type="search"
+                  value={searchInput}
+                  onFocus={handleSearchFocus}
+                  onChange={e => handleSearchChange(e.target.value)}
+                  placeholder={isPro ? 'Search jobs, companies, or keywords...' : 'Search jobs, companies, or keywords... (Pro)'}
+                  className="h-9 pl-9 pr-9"
+                  aria-label="Search jobs, companies, or keywords"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
               </div>
+              {isSearching && (
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  Searching...
+                </span>
+              )}
             </div>
 
             <p className="text-sm text-muted-foreground">
