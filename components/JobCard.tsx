@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Job, Role, ROLE_COLORS, ROLE_LABELS } from '@/lib/types';
+import { Job, Role, ROLE_LABELS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { MapPin, CheckCircle2, Plus } from 'lucide-react';
 
@@ -18,6 +18,16 @@ const SOURCE_LABELS: Record<string, string> = {
   arbeitnow: 'Arbeitnow',
   themuse: 'The Muse',
 };
+
+const ROLE_BADGE_COLORS: Partial<Record<Role, string>> = {
+  swe: 'bg-indigo-500/15 text-indigo-400',
+  ds: 'bg-sky-500/15 text-sky-400',
+  ml: 'bg-violet-500/15 text-violet-400',
+  ai: 'bg-violet-500/15 text-violet-400',
+  pm: 'bg-violet-500/15 text-violet-400',
+  analyst: 'bg-sky-500/15 text-sky-400',
+};
+const DEFAULT_ROLE_BADGE_COLOR = 'bg-indigo-500/15 text-indigo-400';
 
 function CompanyLogo({ company }: { company: string }) {
   const [failed, setFailed] = useState(false);
@@ -106,7 +116,10 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
           {job.roles.map(role => (
             <span
               key={role}
-              className={cn('rounded-full px-2 py-0.5 text-xs font-medium', ROLE_COLORS[role as Role])}
+              className={cn(
+                'rounded-full px-2 py-0.5 text-xs font-medium',
+                ROLE_BADGE_COLORS[role as Role] ?? DEFAULT_ROLE_BADGE_COLOR
+              )}
             >
               {ROLE_LABELS[role as Role] ?? role}
             </span>

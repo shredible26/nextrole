@@ -219,7 +219,7 @@ export default function JobFeed() {
       {/* h-14 = 56px navbar height; both columns scroll independently */}
       <div className="flex h-[calc(100vh-56px)] overflow-hidden mx-auto w-full max-w-7xl">
         {/* Sidebar — independent scroll */}
-        <aside className="hidden md:block w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r px-6 py-6">
+        <aside className="hidden md:block w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6">
           <FilterSidebar
             filters={filters}
             onChange={handleFilterChange}
@@ -233,9 +233,9 @@ export default function JobFeed() {
             <div className="flex w-full items-center gap-2">
               <div className="relative w-full">
                 {isPro ? (
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#555566]" />
                 ) : (
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#555566]" />
                 )}
                 <Input
                   type="search"
@@ -243,14 +243,14 @@ export default function JobFeed() {
                   onFocus={handleSearchFocus}
                   onChange={e => handleSearchChange(e.target.value)}
                   placeholder={isPro ? 'Search jobs, companies, or keywords...' : 'Search jobs, companies, or keywords... (Pro)'}
-                  className="h-9 pl-9 pr-9"
+                  className="h-9 border-[#2a2a35] bg-[#0f0f12] pl-9 pr-9 text-[#f5f5ff] placeholder:text-[#555566] focus-visible:border-indigo-500/50 focus-visible:ring-0"
                   aria-label="Search jobs, companies, or keywords"
                 />
                 {searchInput && (
                   <button
                     type="button"
                     onClick={handleClearSearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#555566] transition-colors hover:bg-[#1e1e28] hover:text-[#aaaacc]"
                     aria-label="Clear search"
                   >
                     <X className="h-4 w-4" />

@@ -100,7 +100,7 @@ export default function Navbar() {
         {/* Auth */}
         <div className="ml-auto flex items-center gap-3">
           {user && isPro && (
-            <Badge className="hidden sm:inline-flex bg-emerald-600 hover:bg-emerald-600 text-white text-xs px-2 py-0.5">
+            <Badge className="hidden sm:inline-flex border border-indigo-500/30 bg-indigo-500/15 px-2 py-0.5 text-xs text-indigo-400 hover:bg-indigo-500/15">
               Pro
             </Badge>
           )}

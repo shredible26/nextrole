@@ -8,7 +8,7 @@ import {
   JOB_BOARD_SOURCES,
   JOB_BOARD_SOURCE_SET,
 } from '@/lib/source-groups';
-import { JobFilters, Role, ExperienceLevel, ROLE_COLORS } from '@/lib/types';
+import { JobFilters, Role, ExperienceLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export const ROLE_OPTIONS: { value: Role | 'all'; label: string }[] = [
@@ -91,6 +91,11 @@ export default function FilterSidebar({
   onChange,
   isPro = false,
 }: FilterSidebarProps) {
+  const sectionLabelClassName =
+    'mb-3 text-xs font-semibold uppercase tracking-wider text-[#555566]';
+  const radioInputClassName = 'accent-indigo-500';
+  const optionLabelClassName = 'flex items-center gap-2 cursor-pointer text-sm text-[#aaaacc]';
+
   function toggleRole(role: Role | 'all') {
     if (role === 'all') {
       onChange({ ...filters, roles: [], page: 1 });
@@ -110,10 +115,10 @@ export default function FilterSidebar({
   const freeSourceSelection = getFreeSourceSelection(filters.sources);
 
   return (
-    <aside className="w-full overflow-x-hidden space-y-6">
+    <aside className="w-full overflow-x-hidden space-y-6 bg-[#0f0f12]">
       {/* Roles */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className={sectionLabelClassName}>
           Role
         </p>
         <div className="flex flex-wrap gap-2">
@@ -122,12 +127,9 @@ export default function FilterSidebar({
               value === 'all'
                 ? filters.roles.length === 0
                 : filters.roles.includes(value as Role);
-            const colorClass =
-              isSelected && value !== 'all'
-                ? ROLE_COLORS[value as Role] + ' border-transparent'
-                : isSelected
-                ? 'bg-foreground text-background border-transparent'
-                : 'border-border text-muted-foreground hover:border-foreground/30';
+            const colorClass = isSelected
+              ? 'bg-indigo-500 border-indigo-500 text-white'
+              : 'border-[#2a2a35] bg-transparent text-[#aaaacc]';
             return (
               <button
                 key={value}
@@ -144,23 +146,23 @@ export default function FilterSidebar({
         </div>
       </div>
 
-      <Separator />
+      <Separator className="bg-[#1e1e28]" />
 
       {/* Level */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className={sectionLabelClassName}>
           Experience Level
         </p>
         <div className="space-y-2">
           {LEVELS.map(({ value, label }) => (
-            <label key={label} className="flex items-center gap-2 cursor-pointer text-sm">
+            <label key={label} className={optionLabelClassName}>
               <input
                 type="radio"
                 name="level"
                 value={value}
                 checked={filters.level === value}
                 onChange={() => onChange({ ...filters, level: value, page: 1 })}
-                className="accent-primary"
+                className={radioInputClassName}
               />
               {label}
             </label>
@@ -168,37 +170,38 @@ export default function FilterSidebar({
         </div>
       </div>
 
-      <Separator />
+      <Separator className="bg-[#1e1e28]" />
 
       {/* Remote */}
       <div className="flex items-center justify-between">
-        <Label htmlFor="remote-toggle" className="text-sm">
+        <Label htmlFor="remote-toggle" className="text-sm text-[#aaaacc]">
           Remote only
         </Label>
         <Switch
           id="remote-toggle"
           checked={filters.remote}
           onCheckedChange={checked => onChange({ ...filters, remote: checked, page: 1 })}
+          className="data-checked:bg-indigo-500 data-unchecked:bg-[#2a2a35]"
         />
       </div>
 
-      <Separator />
+      <Separator className="bg-[#1e1e28]" />
 
       {/* Location */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className={sectionLabelClassName}>
           Location
         </p>
         <div className="space-y-2">
           {LOCATION_OPTIONS.map(({ value, label }) => (
-            <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
+            <label key={value} className={optionLabelClassName}>
               <input
                 type="radio"
                 name="location"
                 value={value}
                 checked={(filters.location || 'usa') === value}
                 onChange={() => onChange({ ...filters, location: value, page: 1 })}
-                className="accent-primary"
+                className={radioInputClassName}
               />
               {label}
             </label>
@@ -206,23 +209,23 @@ export default function FilterSidebar({
         </div>
       </div>
 
-      <Separator />
+      <Separator className="bg-[#1e1e28]" />
 
       {/* Posted within */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className={sectionLabelClassName}>
           Posted within
         </p>
         <div className="space-y-2">
           {POSTED_OPTIONS.map(({ value, label }) => (
-            <label key={label} className="flex items-center gap-2 cursor-pointer text-sm">
+            <label key={label} className={optionLabelClassName}>
               <input
                 type="radio"
                 name="posted"
                 value={value}
                 checked={filters.postedWithin === value}
                 onChange={() => onChange({ ...filters, postedWithin: value, page: 1 })}
-                className="accent-primary"
+                className={radioInputClassName}
               />
               {label}
             </label>
@@ -230,35 +233,35 @@ export default function FilterSidebar({
         </div>
       </div>
 
-      <Separator />
+      <Separator className="bg-[#1e1e28]" />
 
       {/* Sources */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className={sectionLabelClassName}>
           Source
         </p>
         {isPro ? (
           <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <label className={optionLabelClassName}>
               <input
                 type="radio"
                 name="source"
                 value=""
                 checked={filters.sources.length === 0}
                 onChange={() => toggleSource('')}
-                className="accent-primary"
+                className={radioInputClassName}
               />
               All
             </label>
             {SOURCES.map(({ value, label }) => (
-              <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
+              <label key={value} className={optionLabelClassName}>
                 <input
                   type="radio"
                   name="source"
                   value={value}
                   checked={filters.sources[0] === value}
                   onChange={() => toggleSource(value)}
-                  className="accent-primary"
+                  className={radioInputClassName}
                 />
                 {label}
               </label>
@@ -266,36 +269,36 @@ export default function FilterSidebar({
           </div>
         ) : (
           <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <label className={optionLabelClassName}>
               <input
                 type="radio"
                 name="source"
                 value=""
                 checked={freeSourceSelection === 'all'}
                 onChange={() => onChange({ ...filters, sources: [], page: 1 })}
-                className="accent-primary"
+                className={radioInputClassName}
               />
               All Sources
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <label className={optionLabelClassName}>
               <input
                 type="radio"
                 name="source"
                 value="github_repos"
                 checked={freeSourceSelection === 'github_repos'}
                 onChange={() => onChange({ ...filters, sources: ['github_repos'], page: 1 })}
-                className="accent-primary"
+                className={radioInputClassName}
               />
               GitHub Repos
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <label className={optionLabelClassName}>
               <input
                 type="radio"
                 name="source"
                 value="job_boards"
                 checked={freeSourceSelection === 'job_boards'}
                 onChange={() => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 })}
-                className="accent-primary"
+                className={radioInputClassName}
               />
               Job Boards
             </label>
