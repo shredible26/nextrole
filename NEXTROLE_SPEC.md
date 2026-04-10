@@ -1,4 +1,4 @@
-# NextRole — Project Spec & State (April 2026)
+# NextRole — Project Spec & State (as of April 10, 2026)
 
 ## SECTION 1: Overview
 
