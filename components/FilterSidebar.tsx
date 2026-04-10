@@ -92,7 +92,7 @@ export default function FilterSidebar({
   isPro = false,
 }: FilterSidebarProps) {
   const sectionLabelClassName =
-    'mb-3 text-xs font-semibold uppercase tracking-wider text-[#888899]';
+    'mb-3 text-xs font-semibold uppercase tracking-wider text-[#9999bb]';
   const radioInputClassName = 'accent-indigo-500';
   const optionLabelClassName = 'flex items-center gap-2 cursor-pointer text-sm text-[#f0f0fa]';
 
