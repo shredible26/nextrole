@@ -9,7 +9,7 @@ import { Check, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 const COMPARISON = [
-  { feature: 'Jobs per day', free: '20', pro: 'Unlimited' },
+  { feature: 'Jobs per page', free: '30', pro: 'Unlimited' },
   { feature: 'Role filters', free: '✓', pro: '✓' },
   { feature: 'Remote filter', free: '✓', pro: '✓' },
   { feature: 'Application tracking', free: '✓', pro: '✓' },
@@ -57,7 +57,7 @@ export default function UpgradeModal({ open, onClose }: Props) {
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">You've seen your 20 jobs for today</DialogTitle>
+          <DialogTitle className="text-xl">You've seen your 30 jobs for today</DialogTitle>
           <DialogDescription>
             Upgrade to Pro for unlimited access.
           </DialogDescription>
