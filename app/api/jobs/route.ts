@@ -247,6 +247,11 @@ export async function GET(req: NextRequest) {
     }, { status: 402 });
   }
 
+  const searchParam = params.get('search')?.trim();
+  if (searchParam && profile.tier === 'free') {
+    return Response.json({ error: 'Pro required', upgrade: true }, { status: 402 });
+  }
+
   if (cutoffIso) {
     console.log(`[jobs/route] postedWithin="${postedWithin}" → cutoff=${cutoffIso}`);
   }
