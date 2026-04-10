@@ -2,7 +2,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { GITHUB_REPO_SOURCES } from '@/lib/source-groups';
 import { NextRequest, NextResponse } from 'next/server';
 
-const FREE_PER_PAGE = 20;
+const FREE_PER_PAGE = 30;
 const PRO_PER_PAGE = 50;
 const POSTED_WITHIN_MS: Record<string, number> = {
   '1': 24 * 60 * 60 * 1000,

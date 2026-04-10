@@ -3,6 +3,11 @@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import {
+  GITHUB_REPO_SOURCE_SET,
+  JOB_BOARD_SOURCES,
+  JOB_BOARD_SOURCE_SET,
+} from '@/lib/source-groups';
 import { JobFilters, Role, ExperienceLevel, ROLE_COLORS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -65,12 +70,27 @@ const SOURCES = [
   { value: 'builtin',                label: 'BuiltIn' },
 ];
 
-interface Props {
+type FreeSourceOption = 'all' | 'github_repos' | 'job_boards';
+
+interface FilterSidebarProps {
   filters: JobFilters;
   onChange: (f: JobFilters) => void;
+  isPro?: boolean;
 }
 
-export default function FilterSidebar({ filters, onChange }: Props) {
+function getFreeSourceSelection(sources: string[]): FreeSourceOption | null {
+  if (sources.length === 0) return 'all';
+  if (sources.length === 1 && sources[0] === 'github_repos') return 'github_repos';
+  if (sources.every(source => GITHUB_REPO_SOURCE_SET.has(source))) return 'github_repos';
+  if (sources.every(source => JOB_BOARD_SOURCE_SET.has(source))) return 'job_boards';
+  return null;
+}
+
+export default function FilterSidebar({
+  filters,
+  onChange,
+  isPro = false,
+}: FilterSidebarProps) {
   function toggleRole(role: Role | 'all') {
     if (role === 'all') {
       onChange({ ...filters, roles: [], page: 1 });
@@ -86,6 +106,8 @@ export default function FilterSidebar({ filters, onChange }: Props) {
     const sources = source === '' || filters.sources[0] === source ? [] : [source];
     onChange({ ...filters, sources, page: 1 });
   }
+
+  const freeSourceSelection = getFreeSourceSelection(filters.sources);
 
   return (
     <aside className="w-full overflow-x-hidden space-y-6">
@@ -215,32 +237,70 @@ export default function FilterSidebar({ filters, onChange }: Props) {
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Source
         </p>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer text-sm">
-            <input
-              type="radio"
-              name="source"
-              value=""
-              checked={filters.sources.length === 0}
-              onChange={() => toggleSource('')}
-              className="accent-primary"
-            />
-            All
-          </label>
-          {SOURCES.map(({ value, label }) => (
-            <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
+        {isPro ? (
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
               <input
                 type="radio"
                 name="source"
-                value={value}
-                checked={filters.sources[0] === value}
-                onChange={() => toggleSource(value)}
+                value=""
+                checked={filters.sources.length === 0}
+                onChange={() => toggleSource('')}
                 className="accent-primary"
               />
-              {label}
+              All
             </label>
-          ))}
-        </div>
+            {SOURCES.map(({ value, label }) => (
+              <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="radio"
+                  name="source"
+                  value={value}
+                  checked={filters.sources[0] === value}
+                  onChange={() => toggleSource(value)}
+                  className="accent-primary"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="radio"
+                name="source"
+                value=""
+                checked={freeSourceSelection === 'all'}
+                onChange={() => onChange({ ...filters, sources: [], page: 1 })}
+                className="accent-primary"
+              />
+              All Sources
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="radio"
+                name="source"
+                value="github_repos"
+                checked={freeSourceSelection === 'github_repos'}
+                onChange={() => onChange({ ...filters, sources: ['github_repos'], page: 1 })}
+                className="accent-primary"
+              />
+              GitHub Repos
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="radio"
+                name="source"
+                value="job_boards"
+                checked={freeSourceSelection === 'job_boards'}
+                onChange={() => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 })}
+                className="accent-primary"
+              />
+              Job Boards
+            </label>
+          </div>
+        )}
       </div>
     </aside>
   );
