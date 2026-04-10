@@ -11,22 +11,28 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
 const FREE_FEATURES = [
-  '20 jobs per day',
-  'Basic role + level filters',
-  'Remote filter',
-  'Application tracking (auto)',
+  'Browse up to 30 jobs per search',
+  'Internship, new grad, and entry-level roles',
+  'Role, experience, and location filters',
+  'Full-text job search',
+  'Application tracker (up to 100 jobs)',
+  'No account required to browse',
 ];
 
 const PRO_FEATURES = [
-  'Unlimited jobs per day',
-  'All filters + source filter',
-  'AI match scoring',
-  'Email alerts for new matches',
-  'CSV export',
+  'Unlimited job browsing',
+  'Filter by specific job source',
+  'Full-text search across all 55,000+ jobs',
+  'Unlimited application tracking',
+  'AI resume match scoring A–F',
+  'Email alerts for new matching jobs',
   'Priority support',
 ];
 
-const COMING_SOON = new Set(['AI match scoring', 'Email alerts for new matches', 'CSV export']);
+const COMING_SOON = new Set([
+  'AI resume match scoring A–F',
+  'Email alerts for new matching jobs',
+]);
 
 function FeatureRow({ label, coming }: { label: string; coming?: boolean }) {
   return (
@@ -234,6 +240,9 @@ export default function PricingClient() {
             )}
           </CardFooter>
         </Card>
+        <p className="sm:col-span-2 text-center text-sm text-muted-foreground">
+          NextRole aggregates internship, new grad, and entry-level tech roles from 25+ sources. Updated daily.
+        </p>
       </section>
 
     </div>

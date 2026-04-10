@@ -6,14 +6,17 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const STATS = [
-  { value: '33,000+', label: 'Jobs aggregated' },
-  { value: '10+', label: 'Sources' },
-  { value: '100%', label: 'Auto-tracked' },
+  { value: '55,000+', label: 'Active jobs' },
+  { value: '25+', label: 'Sources' },
+  { value: 'Daily', label: 'Updates' },
 ];
 
 const SOURCES = [
-  'SimplifyJobs', 'RemoteOK', 'Adzuna', 'Arbeitnow',
-  'The Muse', 'Jobright', 'Levels.fyi', 'LinkedIn*',
+  'SimplifyJobs', 'Greenhouse', 'Lever', 'Ashby',
+  'Workday', 'Dice', 'Adzuna', 'BuiltIn',
+  'USAJobs', 'RemoteOK', 'Arbeitnow', 'The Muse',
+  'Indeed', 'HackerNews', 'WorkAtAStartup', 'SmartRecruiters',
+  '+ 10 more',
 ];
 
 export default function HomePage() {
@@ -21,18 +24,14 @@ export default function HomePage() {
     <div className="flex flex-col flex-1">
       {/* Hero */}
       <section className="flex flex-col items-center justify-center px-4 pt-24 pb-20 text-center">
-        <Badge variant="secondary" className="mb-6 text-xs font-medium">
-          Now in beta · Week 1 sources live
-        </Badge>
-
         <h1 className="max-w-3xl text-5xl font-bold tracking-tight leading-[1.1] sm:text-6xl">
-          Every new grad tech job.{' '}
+          Every internship & new grad tech job.{' '}
           <span className="text-primary">One feed.</span>
         </h1>
 
         <p className="mt-6 max-w-xl text-lg text-muted-foreground leading-relaxed">
-          NextRole aggregates SWE, DS, ML, and AI roles from 10+ sources and
-          auto-tracks every application — so you can focus on applying, not searching.
+          55,000+ internship, new grad, and entry-level roles from 25+ sources —
+          updated daily. Find the right role and track every application in one place.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-3">
@@ -46,7 +45,7 @@ export default function HomePage() {
             href="/pricing"
             className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
           >
-            See Pricing
+            View Pricing
           </Link>
         </div>
       </section>
@@ -72,18 +71,18 @@ export default function HomePage() {
           {[
             {
               step: '01',
-              title: 'We scrape daily',
-              body: 'Scrapers run every morning at 3 AM EST pulling fresh listings from all sources.',
+              title: 'Updated daily',
+              body: 'Scrapers run every morning pulling fresh listings from 25+ sources including GitHub repos, company ATS platforms, and job boards.',
             },
             {
               step: '02',
-              title: 'You apply once',
-              body: 'Click Apply on any card. The application is auto-logged in your tracker — no manual entry.',
+              title: 'Apply in one click',
+              body: 'Click Apply on any card. The application is auto-logged in your tracker — no manual entry required.',
             },
             {
               step: '03',
               title: 'Track your pipeline',
-              body: 'Kanban or table view. Move cards through Applied → Interview → Offer with one click.',
+              body: 'Table or kanban view. Move applications through Applied → Interview → Offer with one click.',
             },
           ].map(({ step, title, body }) => (
             <div key={step} className="flex flex-col gap-3">
@@ -99,7 +98,7 @@ export default function HomePage() {
       <section className="border-t border-border/60 bg-muted/20 px-4 py-16">
         <div className="mx-auto max-w-4xl text-center">
           <p className="text-sm font-medium text-muted-foreground mb-6">
-            Pulling from these sources and more
+            Aggregated from 25+ sources
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             {SOURCES.map(s => (
@@ -108,13 +107,12 @@ export default function HomePage() {
               </Badge>
             ))}
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">* LinkedIn coming Week 3</p>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-border/60 px-4 py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} NextRole · Built for new grads
+        © {new Date().getFullYear()} NextRole · Built for students and recent grads
       </footer>
     </div>
   );
