@@ -92,7 +92,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
           >
             {job.title}
           </Link>
-          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-[#c0c0d8]">
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-[#c0c0d8]">
             <span>{job.company}</span>
             {job.location && (
               <>
@@ -129,7 +129,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-auto pt-1">
-        <div className="flex items-center gap-3 text-xs text-[#c0c0d8]">
+        <div className="flex items-center gap-3 text-xs font-medium text-[#c0c0d8]">
           {salary && <span className="font-medium text-[#f0f0fa]">{salary}</span>}
           <span>{SOURCE_LABELS[job.source] ?? job.source}</span>
           {postedAgo && <span>{postedAgo}</span>}

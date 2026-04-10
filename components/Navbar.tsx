@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,25 +70,42 @@ export default function Navbar() {
     : user?.email?.[0]?.toUpperCase() ?? 'U';
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24]">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
-        {/* Logo */}
-        <Link href="/" className="mr-8 flex items-center gap-1.5">
-          <span className="text-lg font-bold tracking-tight">
-            Next<span className="text-primary">R</span>ole
+        {/* Logo — left */}
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-[#f0f0fa]"
+          >
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+            <line x1="12" y1="12" x2="12" y2="16" />
+            <line x1="10" y1="14" x2="14" y2="14" />
+          </svg>
+          <span className="text-base font-bold tracking-tight text-[#f0f0fa]">
+            NextRole
           </span>
         </Link>
 
-        {/* Nav links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium flex-1">
+        {/* Nav links — centered */}
+        <nav className="hidden flex-1 items-center justify-center gap-8 text-sm font-medium md:flex">
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className={`transition-colors hover:text-foreground ${
+              className={`transition-colors ${
                 pathname.startsWith(href)
-                  ? 'text-foreground'
-                  : 'text-muted-foreground'
+                  ? 'text-[#f0f0fa]'
+                  : 'text-[#8888aa] hover:text-[#f0f0fa]'
               }`}
             >
               {label}
@@ -97,8 +113,8 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Auth */}
-        <div className="ml-auto flex items-center gap-3">
+        {/* Auth — right */}
+        <div className="flex shrink-0 items-center gap-3">
           {user && isPro && (
             <Badge className="hidden sm:inline-flex border border-indigo-500/30 bg-indigo-500/15 px-2 py-0.5 text-xs text-indigo-400 hover:bg-indigo-500/15">
               Pro
@@ -112,31 +128,43 @@ export default function Navbar() {
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={avatarUrl} alt={fullName ?? 'User'} />
-                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-[#2a2a35] text-xs text-[#f0f0fa]">{initials}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">
+              <DropdownMenuContent align="end" className="w-48 border-[#2a2a35] bg-[#1a1a24]">
+                <div className="truncate px-2 py-1.5 text-sm text-[#8888aa]">
                   {user.email}
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <DropdownMenuSeparator className="bg-[#2a2a35]" />
+                <DropdownMenuItem
+                  onClick={() => router.push('/profile')}
+                  className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
+                >
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/settings')}>
+                <DropdownMenuSeparator className="bg-[#2a2a35]" />
+                <DropdownMenuItem
+                  onClick={() => router.push('/settings')}
+                  className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
+                >
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} variant="destructive">
+                <DropdownMenuSeparator className="bg-[#2a2a35]" />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-400 focus:bg-[#2a2a35] focus:text-red-400"
+                >
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button size="sm" onClick={handleLogin}>
-              Sign in with Google
-            </Button>
+            <button
+              onClick={handleLogin}
+              className="rounded-full bg-[#f0f0fa] px-4 py-1.5 text-sm font-semibold text-[#0d0d12] transition-colors hover:bg-white"
+            >
+              Sign in
+            </button>
           )}
         </div>
       </div>
