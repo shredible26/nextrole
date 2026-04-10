@@ -92,9 +92,9 @@ export default function FilterSidebar({
   isPro = false,
 }: FilterSidebarProps) {
   const sectionLabelClassName =
-    'mb-3 text-xs font-semibold uppercase tracking-wider text-[#555566]';
+    'mb-3 text-xs font-semibold uppercase tracking-wider text-[#888899]';
   const radioInputClassName = 'accent-indigo-500';
-  const optionLabelClassName = 'flex items-center gap-2 cursor-pointer text-sm text-[#aaaacc]';
+  const optionLabelClassName = 'flex items-center gap-2 cursor-pointer text-sm text-[#f0f0fa]';
 
   function toggleRole(role: Role | 'all') {
     if (role === 'all') {
@@ -128,8 +128,8 @@ export default function FilterSidebar({
                 ? filters.roles.length === 0
                 : filters.roles.includes(value as Role);
             const colorClass = isSelected
-              ? 'bg-indigo-500 border-indigo-500 text-white'
-              : 'border-[#2a2a35] bg-transparent text-[#aaaacc]';
+              ? 'bg-indigo-500 border-indigo-500 text-[#f0f0fa]'
+              : 'border-[#2a2a35] bg-transparent text-[#f0f0fa]';
             return (
               <button
                 key={value}
@@ -174,7 +174,7 @@ export default function FilterSidebar({
 
       {/* Remote */}
       <div className="flex items-center justify-between">
-        <Label htmlFor="remote-toggle" className="text-sm text-[#aaaacc]">
+        <Label htmlFor="remote-toggle" className="text-sm text-[#f0f0fa]">
           Remote only
         </Label>
         <Switch

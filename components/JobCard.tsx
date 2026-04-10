@@ -88,11 +88,11 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
         <div className="min-w-0 flex-1">
           <Link
             href={`/jobs/${job.id}`}
-            className="truncate font-semibold text-sm leading-snug hover:underline"
+            className="truncate font-semibold text-sm leading-snug text-[#f0f0fa] hover:underline"
           >
             {job.title}
           </Link>
-          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-[#8888aa]">
             <span>{job.company}</span>
             {job.location && (
               <>
@@ -129,8 +129,8 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-auto pt-1">
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          {salary && <span className="font-medium text-foreground">{salary}</span>}
+        <div className="flex items-center gap-3 text-xs text-[#8888aa]">
+          {salary && <span className="font-medium text-[#f0f0fa]">{salary}</span>}
           <span>{SOURCE_LABELS[job.source] ?? job.source}</span>
           {postedAgo && <span>{postedAgo}</span>}
         </div>
@@ -147,7 +147,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
 
           {/* Track: logs application, separate from apply */}
           {tracked ? (
-            <div className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 px-1.5">
+            <div className="flex items-center gap-1 text-xs font-medium text-emerald-400 px-1.5">
               <CheckCircle2 className="h-3.5 w-3.5" />
               Tracked
             </div>
@@ -155,7 +155,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs gap-1 text-muted-foreground"
+              className="h-7 text-xs gap-1 text-[#aaaacc]"
               onClick={() => onTrack(job)}
             >
               <Plus className="h-3 w-3" />
