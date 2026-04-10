@@ -81,7 +81,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
       : null;
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+    <div className="flex flex-col gap-3 rounded-xl border border-[#2a2a35] bg-[#1a1a24] p-4 shadow-sm transition-shadow hover:border-[#3a3a45]">
       {/* Header */}
       <div className="flex items-start gap-3">
         <CompanyLogo company={job.company} />
@@ -104,7 +104,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
           </div>
         </div>
         {job.remote && (
-          <Badge className="shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-transparent text-xs">
+          <Badge className="shrink-0 bg-emerald-500/15 text-emerald-400 border-transparent text-xs">
             Remote
           </Badge>
         )}

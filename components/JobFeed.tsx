@@ -213,11 +213,11 @@ export default function JobFeed() {
   const isSearching = loading && (searchInput.trim().length > 0 || filters.search.length > 0);
 
   return (
-    <>
+    <div className="bg-[#0d0d12]">
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
 
       {/* h-14 = 56px navbar height; both columns scroll independently */}
-      <div className="flex h-[calc(100vh-56px)] overflow-hidden mx-auto w-full max-w-7xl">
+      <div className="flex h-[calc(100vh-56px)] overflow-hidden mx-auto w-full max-w-7xl bg-[#0d0d12]">
         {/* Sidebar — independent scroll */}
         <aside className="hidden md:block w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6">
           <FilterSidebar
@@ -228,7 +228,7 @@ export default function JobFeed() {
         </aside>
 
         {/* Feed — independent scroll */}
-        <div className="flex flex-1 flex-col min-w-0 overflow-y-auto px-6 py-6 sm:px-8">
+        <div className="flex flex-1 flex-col min-w-0 overflow-y-auto px-6 py-6 sm:px-8 bg-[#0d0d12]">
           <div className="mb-4 space-y-3">
             <div className="flex w-full items-center gap-2">
               <div className="relative w-full">
@@ -243,7 +243,7 @@ export default function JobFeed() {
                   onFocus={handleSearchFocus}
                   onChange={e => handleSearchChange(e.target.value)}
                   placeholder={isPro ? 'Search jobs, companies, or keywords...' : 'Search jobs, companies, or keywords... (Pro)'}
-                  className="h-9 border-[#2a2a35] bg-[#0f0f12] pl-9 pr-9 text-[#f5f5ff] placeholder:text-[#555566] focus-visible:border-indigo-500/50 focus-visible:ring-0"
+                  className="h-9 border-[#2a2a35] bg-[#1a1a24] pl-9 pr-9 text-[#f5f5ff] placeholder:text-[#555566] focus-visible:border-indigo-500/50 focus-visible:ring-0"
                   aria-label="Search jobs, companies, or keywords"
                 />
                 {searchInput && (
@@ -309,6 +309,6 @@ export default function JobFeed() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
