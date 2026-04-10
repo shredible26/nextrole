@@ -64,6 +64,44 @@ const US_EXPLICIT = [
   'Anywhere in the US',
   'Anywhere in the USA',
 ];
+const WORKDAY_MULTI_LOCATION_REGEX = /^\d+ Locations?$/i;
+const WORKDAY_US_PREFIX_REGEX = /^US[,\s]/i;
+const REMOTE_US_PATTERNS = [
+  'Remote (Any State)',
+  'Remote/Teleworker US',
+  'Teleworker US',
+  'USA - Remote',
+  'Remote - USA',
+  'US - Remote',
+  'Remote - US',
+  '100% Remote',
+  'Work From Home',
+  'WFH',
+  'Telework',
+  'Virtual - US',
+  'Virtual US',
+  'Anywhere in US',
+  'Nationwide',
+];
+const USA_LOCATION_ILIKE_PATTERNS = [
+  '% Locations',
+  '1 Location',
+  'US,_%',
+  'US %',
+  '%Remote%US%',
+  '%Teleworker US%',
+  '%USA - Remote%',
+  '%Remote - USA%',
+  '%100% Remote%',
+  '%Work From Home%',
+  '%Telework%',
+  '%Nationwide%',
+  '%Remote (Any State)%',
+  '%WFH%',
+  '%Virtual - US%',
+  '%Virtual US%',
+  '%Anywhere in US%',
+];
 const USA_SUBSTRING_PATTERNS = [
   ...US_EXPLICIT,
   ...US_STATE_NAMES,
@@ -113,6 +151,10 @@ function quotePostgrestValue(value: string) {
   return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
+function buildPostgrestCondition(column: string, operator: string, value: string) {
+  return `${column}.${operator}.${quotePostgrestValue(value)}`;
+}
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -121,9 +163,12 @@ function buildUsaLocationOrFilter() {
   return [
     'remote.eq.true',
     'location.is.null',
-    'location.eq.""',
-    `location.imatch.${quotePostgrestValue(USA_SUBSTRING_REGEX_SOURCE)}`,
-    `location.imatch.${quotePostgrestValue(US_STATE_ABBREV_REGEX_SOURCE)}`,
+    buildPostgrestCondition('location', 'eq', ''),
+    ...USA_LOCATION_ILIKE_PATTERNS.map(pattern =>
+      buildPostgrestCondition('location', 'ilike', pattern)
+    ),
+    buildPostgrestCondition('location', 'imatch', USA_SUBSTRING_REGEX_SOURCE),
+    buildPostgrestCondition('location', 'imatch', US_STATE_ABBREV_REGEX_SOURCE),
   ].join(',');
 }
 
@@ -131,12 +176,19 @@ function isUsaJob(job: { remote?: boolean; location?: string | null }): boolean 
   if (job.remote) return true;
   const rawLocation = job.location;
   if (!rawLocation) return true;
+  const loc = rawLocation.trim();
 
   if (NON_US_LOCATION_REGEXES.some(regex => regex.test(rawLocation))) {
     return false;
   }
 
-  return USA_SUBSTRING_REGEX.test(rawLocation) || US_STATE_ABBREV_REGEX.test(rawLocation);
+  if (WORKDAY_MULTI_LOCATION_REGEX.test(loc)) return true;
+  if (WORKDAY_US_PREFIX_REGEX.test(loc)) return true;
+  if (REMOTE_US_PATTERNS.some(pattern =>
+    loc.toLowerCase().includes(pattern.toLowerCase())
+  )) return true;
+
+  return USA_SUBSTRING_REGEX.test(loc) || US_STATE_ABBREV_REGEX.test(loc);
 }
 
 export async function GET(req: NextRequest) {
@@ -278,8 +330,13 @@ export async function GET(req: NextRequest) {
     query = query
       .eq('remote', false)
       .not('location', 'is', null)
-      .not('location', 'eq', '')
-      .not('location', 'ilike', '%Remote%US%')
+      .not('location', 'eq', '');
+
+    for (const pattern of USA_LOCATION_ILIKE_PATTERNS) {
+      query = query.not('location', 'ilike', pattern);
+    }
+
+    query = query
       .not('location', 'imatch', USA_SUBSTRING_REGEX_SOURCE)
       .not('location', 'imatch', US_STATE_ABBREV_REGEX_SOURCE);
   }
