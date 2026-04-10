@@ -46,6 +46,7 @@ export default function JobFeed() {
   const [hasMore, setHasMore] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const requestIdRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Pre-populate tracked IDs and tier from Supabase
   useEffect(() => {
@@ -180,12 +181,9 @@ export default function JobFeed() {
   }
 
   function handleClearSearch() {
-    setSearchInput('');
-    setFilters(prev => (
-      prev.search
-        ? { ...prev, search: '', page: 1 }
-        : prev
-    ));
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
   }
 
   function openUpgradeModal() {
@@ -238,7 +236,8 @@ export default function JobFeed() {
                   <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#555566]" />
                 )}
                 <Input
-                  type="search"
+                  ref={inputRef}
+                  type="text"
                   value={searchInput}
                   onFocus={handleSearchFocus}
                   onChange={e => handleSearchChange(e.target.value)}
@@ -257,11 +256,6 @@ export default function JobFeed() {
                   </button>
                 )}
               </div>
-              {isSearching && (
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  Searching...
-                </span>
-              )}
             </div>
 
             <p className="text-sm text-muted-foreground">

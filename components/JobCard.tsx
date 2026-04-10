@@ -88,11 +88,11 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
         <div className="min-w-0 flex-1">
           <Link
             href={`/jobs/${job.id}`}
-            className="truncate font-semibold text-sm leading-snug text-[#f0f0fa] hover:underline"
+            className="block truncate font-semibold text-sm leading-snug text-white hover:underline"
           >
             {job.title}
           </Link>
-          <div className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-[#c0c0d8]">
+          <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#d0d0e8] font-medium truncate">
             <span>{job.company}</span>
             {job.location && (
               <>
@@ -139,7 +139,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
           {/* Apply: opens the job URL, no tracking */}
           <Button
             size="sm"
-            className="h-7 text-xs gap-1"
+            className="h-7 text-xs gap-1 bg-white text-[#0d0d12] hover:bg-white/90 font-semibold border-0"
             onClick={() => window.open(job.url, '_blank', 'noopener,noreferrer')}
           >
             Apply ↗
@@ -155,7 +155,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs gap-1 text-[#c0c0d8]"
+              className="h-7 text-xs gap-1 bg-[#2a2a35] text-[#f0f0fa] hover:bg-[#3a3a45] border border-[#444455] font-medium"
               onClick={() => onTrack(job)}
             >
               <Plus className="h-3 w-3" />
