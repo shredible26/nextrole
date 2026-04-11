@@ -26,7 +26,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="min-h-full flex flex-col bg-background text-foreground overscroll-none">
         <Navbar />
         <main className="flex flex-col flex-1">{children}</main>
         <Toaster richColors position="bottom-right" />
