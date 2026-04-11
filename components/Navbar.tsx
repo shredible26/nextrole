@@ -27,8 +27,10 @@ export default function Navbar() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     async function loadUser() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
@@ -114,57 +116,61 @@ export default function Navbar() {
         </nav>
 
         {/* Auth — right */}
-        <div className="flex shrink-0 items-center gap-3">
-          {user && isPro && (
-            <Badge className="hidden sm:inline-flex bg-emerald-500 hover:bg-emerald-500 text-white text-xs px-2 py-0.5">
-              Pro
-            </Badge>
-          )}
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="User menu"
-              >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={avatarUrl} alt={fullName ?? 'User'} />
-                  <AvatarFallback className="bg-[#2a2a35] text-xs text-[#f0f0fa]">{initials}</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 border-[#2a2a35] bg-[#1a1a24]">
-                <div className="truncate px-2 py-1.5 text-sm text-[#8888aa]">
-                  {user.email}
-                </div>
-                <DropdownMenuSeparator className="bg-[#2a2a35]" />
-                <DropdownMenuItem
-                  onClick={() => router.push('/profile')}
-                  className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
+        <div className="flex shrink-0 items-center gap-3" style={{ minWidth: '120px' }}>
+          {mounted && (
+            <>
+              {user && isPro && (
+                <Badge className="hidden sm:inline-flex bg-emerald-500 hover:bg-emerald-500 text-white text-xs px-2 py-0.5">
+                  Pro
+                </Badge>
+              )}
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label="User menu"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={avatarUrl} alt={fullName ?? 'User'} />
+                      <AvatarFallback className="bg-[#2a2a35] text-xs text-[#f0f0fa]">{initials}</AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 border-[#2a2a35] bg-[#1a1a24]">
+                    <div className="truncate px-2 py-1.5 text-sm text-[#8888aa]">
+                      {user.email}
+                    </div>
+                    <DropdownMenuSeparator className="bg-[#2a2a35]" />
+                    <DropdownMenuItem
+                      onClick={() => router.push('/profile')}
+                      className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
+                    >
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#2a2a35]" />
+                    <DropdownMenuItem
+                      onClick={() => router.push('/settings')}
+                      className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
+                    >
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#2a2a35]" />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-red-400 focus:bg-[#2a2a35] focus:text-red-400"
+                    >
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <button
+                  onClick={handleLogin}
+                  className="rounded-full bg-[#f0f0fa] px-4 py-1.5 text-sm font-semibold text-[#0d0d12] transition-colors hover:bg-white"
                 >
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-[#2a2a35]" />
-                <DropdownMenuItem
-                  onClick={() => router.push('/settings')}
-                  className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
-                >
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-[#2a2a35]" />
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-400 focus:bg-[#2a2a35] focus:text-red-400"
-                >
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <button
-              onClick={handleLogin}
-              className="rounded-full bg-[#f0f0fa] px-4 py-1.5 text-sm font-semibold text-[#0d0d12] transition-colors hover:bg-white"
-            >
-              Sign in
-            </button>
+                  Sign in
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

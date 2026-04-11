@@ -104,9 +104,11 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    setMounted(true);
     async function loadUser() {
       const { data: { user: u } } = await supabase.auth.getUser();
       setUser(u);
@@ -195,7 +197,7 @@ export default function HomePage() {
 
           {/* Center - always takes up flex-1 space to prevent shift */}
           <div className="flex-1 flex justify-center">
-            {!authLoading && user && (
+            {mounted && !authLoading && user && (
               <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
                 {NAV_LINKS.map(({ href, label }) => (
                   <Link
@@ -215,8 +217,8 @@ export default function HomePage() {
           </div>
 
           {/* Auth - always right */}
-          <div className="flex items-center gap-3 shrink-0">
-            {!authLoading && (
+          <div className="flex items-center gap-3 shrink-0" style={{ minWidth: '120px' }}>
+            {mounted && !authLoading && (
               <>
                 {user ? (
                   <>
