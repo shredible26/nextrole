@@ -9,11 +9,11 @@ export const metadata = {
 
 export default function JobsPage() {
   return (
-    <>
+    <div className="min-h-screen bg-[#0d0d12]">
       <Suspense fallback={null}>
         <UpgradedBanner />
       </Suspense>
       <JobFeed />
-    </>
+    </div>
   );
 }
