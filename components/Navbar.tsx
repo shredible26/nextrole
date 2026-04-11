@@ -18,7 +18,6 @@ import type { User } from '@supabase/supabase-js';
 const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs' },
   { href: '/tracker', label: 'Tracker' },
-  { href: '/pricing', label: 'Pricing' },
 ];
 
 export default function Navbar() {
@@ -116,13 +115,21 @@ export default function Navbar() {
         </nav>
 
         {/* Auth — right */}
-        <div className="flex shrink-0 items-center gap-3" style={{ minWidth: '120px' }}>
+        <div className="flex shrink-0 items-center gap-3" style={{ minWidth: '160px' }}>
           {mounted && (
             <>
               {user && isPro && (
                 <Badge className="hidden sm:inline-flex bg-emerald-500 hover:bg-emerald-500 text-white text-xs px-2 py-0.5">
                   Pro
                 </Badge>
+              )}
+              {user && !isPro && (
+                <button
+                  onClick={() => router.push('/pricing')}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:from-indigo-400 hover:to-violet-400 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25"
+                >
+                  Upgrade
+                </button>
               )}
               {user ? (
                 <DropdownMenu>
@@ -145,13 +152,6 @@ export default function Navbar() {
                       className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
                     >
                       Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-[#2a2a35]" />
-                    <DropdownMenuItem
-                      onClick={() => router.push('/settings')}
-                      className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
-                    >
-                      Settings
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-[#2a2a35]" />
                     <DropdownMenuItem

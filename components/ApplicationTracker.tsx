@@ -446,7 +446,11 @@ export default function ApplicationTracker() {
                         value={app.status}
                         onValueChange={val => handleStatusChange(app, val as ApplicationStatus)}
                       >
-                        <SelectTrigger className="h-7 w-36 text-xs bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
+                        <SelectTrigger
+                          className={`h-7 w-36 text-xs border bg-[#1a1a24] focus:ring-1 focus:ring-indigo-500/50 ${
+                            STATUS_COLORS[app.status] ?? 'border-[#2a2a35] text-[#f0f0fa]'
+                          }`}
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

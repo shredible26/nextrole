@@ -10,12 +10,12 @@ import { createClient } from '@/lib/supabase/client';
 
 const COMPARISON = [
   { feature: 'Jobs per page', free: '30', pro: 'Unlimited' },
-  { feature: 'Role filters', free: '✓', pro: '✓' },
-  { feature: 'Remote filter', free: '✓', pro: '✓' },
-  { feature: 'Application tracking', free: '✓', pro: '✓' },
-  { feature: 'AI match scoring', free: '—', pro: 'Coming soon' },
+  { feature: 'Role, experience & location filters', free: '✓', pro: '✓' },
+  { feature: 'Full-text job search', free: '✓', pro: '✓' },
+  { feature: 'Application tracker', free: 'Up to 100', pro: 'Unlimited' },
+  { feature: 'AI resume match scoring', free: '—', pro: 'Coming soon' },
   { feature: 'Email alerts', free: '—', pro: 'Coming soon' },
-  { feature: 'CSV export', free: '—', pro: 'Coming soon' },
+  { feature: 'Filter by job source', free: '—', pro: '✓' },
 ];
 
 interface Props {
@@ -55,33 +55,35 @@ export default function UpgradeModal({ open, onClose }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
         <DialogHeader>
-          <DialogTitle className="text-xl">You've seen your 30 jobs for today</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl text-[#f0f0fa]">You've seen your 30 jobs for today</DialogTitle>
+          <DialogDescription className="text-[#aaaacc]">
             Upgrade to Pro for unlimited access.
           </DialogDescription>
         </DialogHeader>
 
         {/* Feature comparison table */}
-        <div className="mt-2 rounded-lg border border-border overflow-hidden">
+        <div className="mt-2 overflow-hidden rounded-lg border border-[#2a2a35]">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-muted/50">
-                <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">Feature</th>
-                <th className="px-3 py-2 text-center font-medium text-xs text-muted-foreground">Free</th>
-                <th className="px-3 py-2 text-center font-medium text-xs text-primary">Pro</th>
+              <tr className="bg-[#0d0d12]">
+                <th className="px-3 py-2 text-left text-xs font-medium text-[#888899]">Feature</th>
+                <th className="px-3 py-2 text-center text-xs font-medium text-[#888899]">Free</th>
+                <th className="px-3 py-2 text-center text-xs font-medium text-[#888899]">Pro</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
+            <tbody className="divide-y divide-[#2a2a35]">
               {COMPARISON.map(({ feature, free, pro }) => (
                 <tr key={feature}>
-                  <td className="px-3 py-2 text-xs">{feature}</td>
-                  <td className="px-3 py-2 text-center text-xs text-muted-foreground">{free}</td>
-                  <td className="px-3 py-2 text-center text-xs font-medium text-primary">
-                    {pro === 'Unlimited' || pro === '✓' ? (
+                  <td className="px-3 py-2 text-xs text-[#f0f0fa]">{feature}</td>
+                  <td className="px-3 py-2 text-center text-xs text-[#8888aa]">{free}</td>
+                  <td className="px-3 py-2 text-center text-xs font-medium text-indigo-400">
+                    {pro === '✓' ? (
+                      <Check className="mx-auto h-3 w-3" />
+                    ) : pro === 'Unlimited' ? (
                       <span className="flex items-center justify-center gap-1">
-                        <Check className="h-3 w-3" />{pro}
+                        <Check className="h-3 w-3" /> Unlimited
                       </span>
                     ) : (
                       pro
@@ -99,7 +101,7 @@ export default function UpgradeModal({ open, onClose }: Props) {
           <div className="flex flex-col gap-1.5">
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full border-[#2a2a35] bg-[#0d0d12] text-[#f0f0fa] hover:bg-[#2a2a35]"
               onClick={() => handleUpgrade('monthly')}
               disabled={!!loading}
             >
@@ -109,7 +111,7 @@ export default function UpgradeModal({ open, onClose }: Props) {
                 'Monthly'
               )}
             </Button>
-            <p className="text-xs text-center text-muted-foreground">$4.99 / month</p>
+            <p className="text-xs text-center text-[#aaaacc]">$4.99 / month</p>
           </div>
 
           {/* Yearly — highlighted */}
@@ -118,7 +120,7 @@ export default function UpgradeModal({ open, onClose }: Props) {
               Best value
             </Badge>
             <Button
-              className="w-full"
+              className="w-full bg-indigo-500 text-white hover:bg-indigo-400"
               onClick={() => handleUpgrade('yearly')}
               disabled={!!loading}
             >
@@ -128,11 +130,11 @@ export default function UpgradeModal({ open, onClose }: Props) {
                 'Yearly'
               )}
             </Button>
-            <p className="text-xs text-center text-muted-foreground">$50 / year · save 17%</p>
+            <p className="text-xs text-center text-[#aaaacc]">$50 / year · save 17%</p>
           </div>
         </div>
 
-        <Button variant="ghost" onClick={onClose} className="w-full text-muted-foreground">
+        <Button variant="ghost" onClick={onClose} className="w-full text-[#666677] hover:text-[#aaaacc]">
           Maybe later
         </Button>
       </DialogContent>
