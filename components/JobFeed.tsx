@@ -211,7 +211,7 @@ export default function JobFeed() {
   const isSearching = loading && (searchInput.trim().length > 0 || filters.search.length > 0);
 
   return (
-    <div className="bg-[#0d0d12] min-h-screen">
+    <div className="bg-[#0d0d12]">
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
 
       {/* h-14 = 56px navbar height; both columns scroll independently */}

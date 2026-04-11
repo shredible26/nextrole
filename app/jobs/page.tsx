@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function JobsPage() {
   return (
-    <div className="min-h-screen bg-[#0d0d12]" data-page="jobs">
+    <div className="bg-[#0d0d12]" data-page="jobs">
       <Suspense fallback={null}>
         <UpgradedBanner />
       </Suspense>
