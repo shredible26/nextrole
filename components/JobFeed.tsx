@@ -242,7 +242,7 @@ export default function JobFeed() {
                   onFocus={handleSearchFocus}
                   onChange={e => handleSearchChange(e.target.value)}
                   placeholder={isPro ? 'Search jobs, companies, or keywords...' : 'Search jobs, companies, or keywords... (Pro)'}
-                  className="h-9 border-[#2a2a35] bg-[#1a1a24] pl-9 pr-9 text-[#f5f5ff] placeholder:text-[#555566] focus-visible:border-indigo-500/50 focus-visible:ring-0"
+                  className="h-9 border-[#2a2a35] bg-[#1a1a24] pl-9 pr-9 text-[#f5f5ff] placeholder:text-[#8888aa] focus-visible:border-indigo-500/50 focus-visible:ring-0"
                   aria-label="Search jobs, companies, or keywords"
                 />
                 {searchInput && (

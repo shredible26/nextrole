@@ -93,8 +93,7 @@ export default function FilterSidebar({
 }: FilterSidebarProps) {
   const sectionLabelClassName =
     'mb-3 text-xs font-semibold uppercase tracking-wider text-[#9999bb]';
-  const radioInputClassName = 'accent-indigo-500';
-  const optionLabelClassName = 'flex items-center gap-2 cursor-pointer text-sm text-[#f0f0fa]';
+  const optionLabelClassName = 'flex items-center gap-2.5 cursor-pointer group';
 
   function toggleRole(role: Role | 'all') {
     if (role === 'all') {
@@ -154,19 +153,30 @@ export default function FilterSidebar({
           Experience Level
         </p>
         <div className="space-y-2">
-          {LEVELS.map(({ value, label }) => (
-            <label key={label} className={optionLabelClassName}>
-              <input
-                type="radio"
-                name="level"
-                value={value}
-                checked={filters.level === value}
-                onChange={() => onChange({ ...filters, level: value, page: 1 })}
-                className={radioInputClassName}
-              />
-              {label}
-            </label>
-          ))}
+          {LEVELS.map(({ value, label }) => {
+            const checked = filters.level === value;
+
+            return (
+              <label key={label} className={optionLabelClassName}>
+                <input
+                  type="radio"
+                  name="level"
+                  value={value}
+                  checked={checked}
+                  onChange={() => onChange({ ...filters, level: value, page: 1 })}
+                  className="sr-only"
+                />
+                <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+                  checked ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+                }`}>
+                  {checked && (
+                    <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+                  )}
+                </span>
+                <span className="text-sm text-[#f0f0fa]">{label}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
@@ -193,19 +203,30 @@ export default function FilterSidebar({
           Location
         </p>
         <div className="space-y-2">
-          {LOCATION_OPTIONS.map(({ value, label }) => (
-            <label key={value} className={optionLabelClassName}>
-              <input
-                type="radio"
-                name="location"
-                value={value}
-                checked={(filters.location || 'usa') === value}
-                onChange={() => onChange({ ...filters, location: value, page: 1 })}
-                className={radioInputClassName}
-              />
-              {label}
-            </label>
-          ))}
+          {LOCATION_OPTIONS.map(({ value, label }) => {
+            const checked = (filters.location || 'usa') === value;
+
+            return (
+              <label key={value} className={optionLabelClassName}>
+                <input
+                  type="radio"
+                  name="location"
+                  value={value}
+                  checked={checked}
+                  onChange={() => onChange({ ...filters, location: value, page: 1 })}
+                  className="sr-only"
+                />
+                <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+                  checked ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+                }`}>
+                  {checked && (
+                    <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+                  )}
+                </span>
+                <span className="text-sm text-[#f0f0fa]">{label}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
@@ -217,19 +238,30 @@ export default function FilterSidebar({
           Posted within
         </p>
         <div className="space-y-2">
-          {POSTED_OPTIONS.map(({ value, label }) => (
-            <label key={label} className={optionLabelClassName}>
-              <input
-                type="radio"
-                name="posted"
-                value={value}
-                checked={filters.postedWithin === value}
-                onChange={() => onChange({ ...filters, postedWithin: value, page: 1 })}
-                className={radioInputClassName}
-              />
-              {label}
-            </label>
-          ))}
+          {POSTED_OPTIONS.map(({ value, label }) => {
+            const checked = filters.postedWithin === value;
+
+            return (
+              <label key={label} className={optionLabelClassName}>
+                <input
+                  type="radio"
+                  name="posted"
+                  value={value}
+                  checked={checked}
+                  onChange={() => onChange({ ...filters, postedWithin: value, page: 1 })}
+                  className="sr-only"
+                />
+                <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+                  checked ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+                }`}>
+                  {checked && (
+                    <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+                  )}
+                </span>
+                <span className="text-sm text-[#f0f0fa]">{label}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
@@ -249,23 +281,41 @@ export default function FilterSidebar({
                 value=""
                 checked={filters.sources.length === 0}
                 onChange={() => toggleSource('')}
-                className={radioInputClassName}
+                className="sr-only"
               />
-              All
+              <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+                filters.sources.length === 0 ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+              }`}>
+                {filters.sources.length === 0 && (
+                  <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+                )}
+              </span>
+              <span className="text-sm text-[#f0f0fa]">All</span>
             </label>
-            {SOURCES.map(({ value, label }) => (
-              <label key={value} className={optionLabelClassName}>
-                <input
-                  type="radio"
-                  name="source"
-                  value={value}
-                  checked={filters.sources[0] === value}
-                  onChange={() => toggleSource(value)}
-                  className={radioInputClassName}
-                />
-                {label}
-              </label>
-            ))}
+            {SOURCES.map(({ value, label }) => {
+              const checked = filters.sources[0] === value;
+
+              return (
+                <label key={value} className={optionLabelClassName}>
+                  <input
+                    type="radio"
+                    name="source"
+                    value={value}
+                    checked={checked}
+                    onChange={() => toggleSource(value)}
+                    className="sr-only"
+                  />
+                  <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+                    checked ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+                  }`}>
+                    {checked && (
+                      <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+                    )}
+                  </span>
+                  <span className="text-sm text-[#f0f0fa]">{label}</span>
+                </label>
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-2">
@@ -276,9 +326,16 @@ export default function FilterSidebar({
                 value=""
                 checked={freeSourceSelection === 'all'}
                 onChange={() => onChange({ ...filters, sources: [], page: 1 })}
-                className={radioInputClassName}
+                className="sr-only"
               />
-              All Sources
+              <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+                freeSourceSelection === 'all' ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+              }`}>
+                {freeSourceSelection === 'all' && (
+                  <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+                )}
+              </span>
+              <span className="text-sm text-[#f0f0fa]">All Sources</span>
             </label>
             <label className={optionLabelClassName}>
               <input
@@ -287,9 +344,16 @@ export default function FilterSidebar({
                 value="github_repos"
                 checked={freeSourceSelection === 'github_repos'}
                 onChange={() => onChange({ ...filters, sources: ['github_repos'], page: 1 })}
-                className={radioInputClassName}
+                className="sr-only"
               />
-              GitHub Repos
+              <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+                freeSourceSelection === 'github_repos' ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+              }`}>
+                {freeSourceSelection === 'github_repos' && (
+                  <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+                )}
+              </span>
+              <span className="text-sm text-[#f0f0fa]">GitHub Repos</span>
             </label>
             <label className={optionLabelClassName}>
               <input
@@ -298,9 +362,16 @@ export default function FilterSidebar({
                 value="job_boards"
                 checked={freeSourceSelection === 'job_boards'}
                 onChange={() => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 })}
-                className={radioInputClassName}
+                className="sr-only"
               />
-              Job Boards
+              <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+                freeSourceSelection === 'job_boards' ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+              }`}>
+                {freeSourceSelection === 'job_boards' && (
+                  <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+                )}
+              </span>
+              <span className="text-sm text-[#f0f0fa]">Job Boards</span>
             </label>
           </div>
         )}
