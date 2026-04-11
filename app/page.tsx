@@ -186,7 +186,11 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24] h-14">
         <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
           {/* Logo - left */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2"
+            style={{ minWidth: '200px' }}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -229,7 +233,10 @@ export default function HomePage() {
           </div>
 
           {/* Auth - always right */}
-          <div className="flex items-center gap-3 shrink-0" style={{ minWidth: '160px' }}>
+          <div
+            className="flex shrink-0 items-center justify-end gap-3"
+            style={{ minWidth: '200px' }}
+          >
             {mounted && !authLoading && (
               <>
                 {user ? (

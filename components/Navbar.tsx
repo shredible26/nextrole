@@ -81,7 +81,11 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24]">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
         {/* Logo — left */}
-        <Link href="/" className="flex shrink-0 items-center gap-2">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2"
+          style={{ minWidth: '200px' }}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="20"
@@ -105,24 +109,29 @@ export default function Navbar() {
         </Link>
 
         {/* Nav links — centered */}
-        <nav className="hidden flex-1 items-center justify-center gap-8 text-sm font-medium md:flex">
-          {NAV_LINKS.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`transition-colors ${
-                pathname.startsWith(href)
-                  ? 'text-[#f0f0fa]'
-                  : 'text-[#8888aa] hover:text-[#f0f0fa]'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex-1 flex justify-center">
+          <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
+            {NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`transition-colors ${
+                  pathname.startsWith(href)
+                    ? 'text-[#f0f0fa]'
+                    : 'text-[#8888aa] hover:text-[#f0f0fa]'
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
         {/* Auth — right */}
-        <div className="flex shrink-0 items-center gap-3" style={{ minWidth: '160px' }}>
+        <div
+          className="flex shrink-0 items-center justify-end gap-3"
+          style={{ minWidth: '200px' }}
+        >
           {mounted && (
             <>
               {user && isPro && !isProLoading && (
