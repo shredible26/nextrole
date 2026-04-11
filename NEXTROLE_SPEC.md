@@ -515,8 +515,10 @@ This section is included as operational reference. In this checkout, scraper cod
 6. Fix Workable — currently 10 jobs. 429 rate limiting on
    entry-level search terms. Add exponential backoff + retry,
    run failed terms again after delay. (workable scraper kept - email sent to support)
-7. Expand Ashby slug list (currently 255 valid slugs, target
+7a.Expand Ashby slug list (currently 255 valid slugs, target
    400+ via Common Crawl + additional GitHub repos)
+7b.Takes too long to load 'all' jobs. Prioritize loading first 30-50, 
+   figure out how to speed up.    
 8. [COMPLETED ✅]: Expand Lever company list (currently ~115 slugs)
 9. [COMPLETED ✅]: Expand Workday company list — currently 26/365
    companies returning jobs. Verify wdVersions for remaining 339.
