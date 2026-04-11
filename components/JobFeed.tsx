@@ -43,6 +43,7 @@ export default function JobFeed() {
   // Seed from localStorage immediately so cards render correct state before Supabase resolves
   const [trackedIds, setTrackedIds] = useState<Set<string>>(() => getTrackedIds());
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'search' | 'pagination'>('pagination');
   const [hasMore, setHasMore] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const requestIdRef = useRef(0);
@@ -99,6 +100,7 @@ export default function JobFeed() {
       if (requestId !== requestIdRef.current) return;
 
       if (data.upgrade) {
+        setUpgradeReason('pagination');
         setShowUpgrade(true);
         return;
       }
@@ -186,22 +188,24 @@ export default function JobFeed() {
     }
   }
 
-  function openUpgradeModal() {
+  function openUpgradeModal(reason: 'search' | 'pagination' = 'pagination') {
+    setUpgradeReason(reason);
     window.setTimeout(() => {
       setShowUpgrade(true);
-    }, 0);
+    }, 50);
   }
 
   function handleSearchFocus(e: FocusEvent<HTMLInputElement>) {
     if (isPro) return;
+    if (showUpgrade) return;
     e.preventDefault();
     e.currentTarget.blur();
-    openUpgradeModal();
+    openUpgradeModal('search');
   }
 
   function handleSearchChange(value: string) {
     if (!isPro) {
-      openUpgradeModal();
+      openUpgradeModal('search');
       return;
     }
 
@@ -212,7 +216,7 @@ export default function JobFeed() {
 
   return (
     <div className="bg-[#0d0d12] h-full flex flex-col">
-      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <UpgradeModal open={showUpgrade} reason={upgradeReason} onClose={() => setShowUpgrade(false)} />
 
       {/* h-14 = 56px navbar height; both columns scroll independently */}
       <div className="flex flex-1 overflow-hidden mx-auto w-full max-w-7xl bg-[#0d0d12]">

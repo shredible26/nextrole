@@ -26,6 +26,7 @@ export default function Navbar() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [isProLoading, setIsProLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -40,12 +41,18 @@ export default function Navbar() {
           .eq('id', user.id)
           .single();
         setIsPro(data?.tier === 'pro');
+        setIsProLoading(false);
+      } else {
+        setIsProLoading(false);
       }
     }
     loadUser();
     const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
-      if (!session?.user) setIsPro(false);
+      if (!session?.user) {
+        setIsPro(false);
+        setIsProLoading(false);
+      }
     });
     return () => listener.subscription.unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,12 +125,12 @@ export default function Navbar() {
         <div className="flex shrink-0 items-center gap-3" style={{ minWidth: '160px' }}>
           {mounted && (
             <>
-              {user && isPro && (
+              {user && isPro && !isProLoading && (
                 <Badge className="hidden sm:inline-flex bg-emerald-500 hover:bg-emerald-500 text-white text-xs px-2 py-0.5">
                   Pro
                 </Badge>
               )}
-              {user && !isPro && (
+              {user && !isPro && !isProLoading && (
                 <button
                   onClick={() => router.push('/pricing')}
                   className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:from-indigo-400 hover:to-violet-400 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25"

@@ -102,9 +102,11 @@ export default function HomePage() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [isProLoading, setIsProLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [count, setCount] = useState(0);
+  const [loginRedirectToJobs, setLoginRedirectToJobs] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -118,13 +120,19 @@ export default function HomePage() {
           .eq('id', u.id)
           .single();
         setIsPro(data?.tier === 'pro');
+        setIsProLoading(false);
+      } else {
+        setIsProLoading(false);
       }
       setAuthLoading(false);
     }
     loadUser();
     const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
-      if (!session?.user) setIsPro(false);
+      if (!session?.user) {
+        setIsPro(false);
+        setIsProLoading(false);
+      }
       setAuthLoading(false);
     });
     return () => listener.subscription.unsubscribe();
@@ -148,10 +156,15 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  async function handleLogin() {
+  async function handleLogin(redirectToJobs = false) {
+    setLoginRedirectToJobs(redirectToJobs);
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/jobs` },
+      options: {
+        redirectTo: redirectToJobs
+          ? `${window.location.origin}/jobs`
+          : `${window.location.origin}/`,
+      },
     });
   }
 
@@ -221,12 +234,12 @@ export default function HomePage() {
               <>
                 {user ? (
                   <>
-                    {isPro && (
+                    {isPro && !isProLoading && (
                       <Badge className="hidden sm:inline-flex bg-emerald-500 hover:bg-emerald-500 text-white text-xs px-2 py-0.5">
                         Pro
                       </Badge>
                     )}
-                    {!isPro && (
+                    {!isPro && !isProLoading && (
                       <button
                         onClick={() => router.push('/pricing')}
                         className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:from-indigo-400 hover:to-violet-400 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25"
@@ -268,13 +281,13 @@ export default function HomePage() {
                 ) : (
                   <>
                     <button
-                      onClick={handleLogin}
+                      onClick={() => handleLogin()}
                       className="text-[#aaaacc] hover:text-white text-sm transition-colors"
                     >
                       Sign in
                     </button>
                     <button
-                      onClick={handleLogin}
+                      onClick={() => handleLogin()}
                       className="bg-white text-[#0d0d12] font-semibold text-sm px-4 py-1.5 rounded-full hover:bg-white/90 transition-colors"
                     >
                       Get Started →
@@ -368,13 +381,25 @@ export default function HomePage() {
             animate="visible"
             custom={3}
           >
-            <Link
-              href="/jobs"
-              className="group inline-flex items-center gap-2 px-10 py-4 bg-white text-[#030303] rounded-full font-bold text-lg hover:bg-white/90 transition-all duration-300"
-            >
-              Browse Jobs
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            {user ? (
+              <Link
+                href="/jobs"
+                className="group inline-flex items-center gap-2 px-10 py-4 bg-white text-[#030303] rounded-full font-bold text-lg hover:bg-white/90 transition-all duration-300"
+              >
+                Browse Jobs
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            ) : (
+              <button
+                onClick={() => handleLogin(true)}
+                className="group inline-flex items-center gap-2 px-10 py-4 bg-white text-[#030303] rounded-full font-bold text-lg hover:bg-white/90 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-90"
+                aria-busy={loginRedirectToJobs}
+                disabled={loginRedirectToJobs}
+              >
+                Browse Jobs
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            )}
           </motion.div>
 
           {/* Block 4 — Stats */}

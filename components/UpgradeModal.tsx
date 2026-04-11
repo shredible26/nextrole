@@ -21,9 +21,10 @@ const COMPARISON = [
 interface Props {
   open: boolean;
   onClose: () => void;
+  reason?: 'search' | 'pagination';
 }
 
-export default function UpgradeModal({ open, onClose }: Props) {
+export default function UpgradeModal({ open, onClose, reason }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<'monthly' | 'yearly' | null>(null);
 
@@ -57,7 +58,11 @@ export default function UpgradeModal({ open, onClose }: Props) {
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent className="sm:max-w-md bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
         <DialogHeader>
-          <DialogTitle className="text-xl text-[#f0f0fa]">You've seen your 30 jobs for today</DialogTitle>
+          <DialogTitle className="text-xl text-[#f0f0fa]">
+            {reason === 'search'
+              ? 'Upgrade to Pro to unlock job search'
+              : "You've seen your 30 jobs for today"}
+          </DialogTitle>
           <DialogDescription className="text-[#aaaacc]">
             Upgrade to Pro for unlimited access.
           </DialogDescription>
