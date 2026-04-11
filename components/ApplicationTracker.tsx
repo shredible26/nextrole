@@ -22,13 +22,13 @@ const TERMINAL_STATUSES: ApplicationStatus[] = ['rejected', 'withdrawn'];
 const ALL_STATUSES = [...KANBAN_COLUMNS, ...TERMINAL_STATUSES] as ApplicationStatus[];
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
-  applied:       'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  phone_screen:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
-  oa:            'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  interview:     'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  offer:         'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  rejected:      'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  withdrawn:     'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
+  applied:       'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  phone_screen:  'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+  oa:            'bg-orange-500/20 text-orange-300 border-orange-500/30',
+  interview:     'bg-purple-500/20 text-purple-300 border-purple-500/30',
+  offer:         'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+  rejected:      'bg-red-500/20 text-red-300 border-red-500/30',
+  withdrawn:     'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -43,12 +43,12 @@ const SOURCE_LABELS: Record<string, string> = {
 const ROLE_OPTIONS: Role[] = ['swe', 'ds', 'ml', 'ai', 'analyst', 'pm'];
 
 const ROLE_CHIP_COLORS: Record<Role, string> = {
-  swe: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-  ds: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200 dark:border-purple-800',
-  ml: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-  ai: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
-  analyst: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 border-teal-200 dark:border-teal-800',
-  pm: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border-pink-200 dark:border-pink-800',
+  swe:     'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30',
+  ds:      'bg-sky-500/20 text-sky-300 border border-sky-500/30',
+  ml:      'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+  ai:      'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+  analyst: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
+  pm:      'bg-violet-500/20 text-violet-300 border border-violet-500/30',
 };
 
 async function patchApplication(id: string, status?: ApplicationStatus, notes?: string) {
@@ -88,7 +88,7 @@ function NotesCell({
       onChange={e => setValue(e.target.value)}
       onBlur={handleBlur}
       placeholder="Add notes…"
-      className="w-full min-w-[140px] h-7 text-xs bg-transparent border border-transparent rounded-md px-2 hover:border-border focus:border-border focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+      className="w-full min-w-[140px] h-7 text-xs bg-transparent border border-transparent rounded-md px-2 hover:border-[#2a2a35] focus:border-[#2a2a35] focus:outline-none focus:ring-1 focus:ring-ring transition-colors placeholder:text-[#555566]"
     />
   );
 }
@@ -103,11 +103,11 @@ function KanbanCard({
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-lg border border-border/70 bg-card p-3 shadow-sm hover:shadow-md transition-shadow space-y-1.5"
+      className="w-full text-left rounded-lg border border-[#2a2a35] bg-[#1a1a24] p-3 hover:border-[#3a3a45] transition-colors space-y-1.5"
     >
-      <p className="font-medium text-sm leading-snug">{app.job?.company ?? '—'}</p>
-      <p className="text-xs text-muted-foreground line-clamp-2">{app.job?.title ?? '—'}</p>
-      <p className="text-xs text-muted-foreground">
+      <p className="font-medium text-sm leading-snug text-[#f0f0fa]">{app.job?.company ?? '—'}</p>
+      <p className="text-xs text-[#c0c0d8] line-clamp-2">{app.job?.title ?? '—'}</p>
+      <p className="text-xs text-[#8888aa]">
         {formatDistanceToNow(new Date(app.applied_at), { addSuffix: true })}
       </p>
       <Badge className={`text-[10px] px-1.5 py-0 border-transparent ${STATUS_COLORS[app.status]}`}>
@@ -245,14 +245,14 @@ export default function ApplicationTracker() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#555566]" />
       </div>
     );
   }
 
   if (apps.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
+      <div className="flex flex-1 flex-col items-center justify-center py-24 gap-3 text-[#8888aa]">
         <p className="text-lg font-medium">No applications yet</p>
         <p className="text-sm">Click &quot;+ Track&quot; on any job card and it&apos;ll appear here.</p>
       </div>
@@ -263,12 +263,12 @@ export default function ApplicationTracker() {
     <>
       {/* Detail slide-over */}
       <Sheet open={!!selected} onOpenChange={open => !open && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-md">
+        <SheetContent className="w-full sm:max-w-md bg-[#1a1a24] border-[#2a2a35]">
           {selected && (
             <>
               <SheetHeader>
-                <SheetTitle className="text-base">{selected.job?.title ?? 'Job'}</SheetTitle>
-                <p className="text-sm text-muted-foreground">{selected.job?.company}</p>
+                <SheetTitle className="text-base text-[#f0f0fa]">{selected.job?.title ?? 'Job'}</SheetTitle>
+                <p className="text-sm text-[#c0c0d8]">{selected.job?.company}</p>
               </SheetHeader>
               <div className="mt-6 space-y-5">
                 <div className="space-y-1.5">
@@ -331,11 +331,11 @@ export default function ApplicationTracker() {
       <div className="flex flex-col flex-1 gap-5">
         {/* Header row */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Application Tracker</h1>
+          <h1 className="text-xl font-semibold text-[#f0f0fa]">Application Tracker</h1>
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 text-sm"
+            className="gap-2 text-sm border-[#2a2a35] text-[#f0f0fa] bg-[#1a1a24] hover:bg-[#2a2a35]"
             onClick={() => setView(v => v === 'table' ? 'kanban' : 'table')}
           >
             {view === 'table' ? (
@@ -347,7 +347,7 @@ export default function ApplicationTracker() {
         </div>
 
         {/* Filter bar */}
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#2a2a35] bg-[#1a1a24]/30 px-4 py-3">
           {/* Role chips */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {ROLE_OPTIONS.map(role => (
@@ -358,7 +358,7 @@ export default function ApplicationTracker() {
                   'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
                   filterRoles.includes(role)
                     ? ROLE_CHIP_COLORS[role]
-                    : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                    : 'border-[#2a2a35] bg-transparent text-[#f0f0fa] hover:border-[#3a3a45]'
                 )}
               >
                 {ROLE_LABELS[role]}
@@ -366,11 +366,11 @@ export default function ApplicationTracker() {
             ))}
           </div>
 
-          <div className="h-4 w-px bg-border hidden sm:block" />
+          <div className="h-4 w-px bg-[#2a2a35] hidden sm:block" />
 
           {/* Status dropdown */}
           <Select value={filterStatus} onValueChange={v => setFilterStatus(v ?? 'all')}>
-            <SelectTrigger className="h-7 w-36 text-xs">
+            <SelectTrigger className="h-7 w-36 text-xs bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -383,7 +383,7 @@ export default function ApplicationTracker() {
 
           {/* Date applied dropdown */}
           <Select value={filterDate} onValueChange={v => setFilterDate(v ?? 'any')}>
-            <SelectTrigger className="h-7 w-36 text-xs">
+            <SelectTrigger className="h-7 w-36 text-xs bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
               <SelectValue placeholder="Date applied" />
             </SelectTrigger>
             <SelectContent>
@@ -398,7 +398,7 @@ export default function ApplicationTracker() {
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-xs text-[#c0c0d8] hover:text-[#f0f0fa] transition-colors"
             >
               <X className="h-3 w-3" />
               Clear
@@ -407,13 +407,13 @@ export default function ApplicationTracker() {
         </div>
 
         {/* Application count */}
-        <p className="text-sm text-muted-foreground -mt-2">
+        <p className="text-sm text-[#c0c0d8] -mt-2">
           {filteredApps.length} application{filteredApps.length !== 1 ? 's' : ''}
         </p>
 
         {/* No results */}
         {filteredApps.length === 0 && hasActiveFilters ? (
-          <div className="flex flex-1 flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+          <div className="flex flex-1 flex-col items-center justify-center py-20 gap-3 text-[#8888aa]">
             <p className="font-medium">No applications match your filters</p>
             <Button variant="outline" size="sm" onClick={clearFilters}>
               Clear filters
@@ -424,7 +424,7 @@ export default function ApplicationTracker() {
           <div className="overflow-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase tracking-wider">
+                <tr className="border-b border-[#2a2a35] text-left text-xs text-[#888899] uppercase tracking-wider">
                   <th className="pb-3 pr-4 font-medium">Company</th>
                   <th className="pb-3 pr-4 font-medium">Role</th>
                   <th className="pb-3 pr-4 font-medium">Status</th>
@@ -434,11 +434,11 @@ export default function ApplicationTracker() {
                   <th className="pb-3 w-8" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60">
+              <tbody className="divide-y divide-[#2a2a35]/60">
                 {filteredApps.map(app => (
-                  <tr key={app.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="py-3 pr-4 font-medium whitespace-nowrap">{app.job?.company ?? '—'}</td>
-                    <td className="py-3 pr-4 text-muted-foreground max-w-[240px]">
+                  <tr key={app.id} className="hover:bg-[#1a1a24]/50 transition-colors">
+                    <td className="py-3 pr-4 font-medium whitespace-nowrap text-[#f0f0fa]">{app.job?.company ?? '—'}</td>
+                    <td className="py-3 pr-4 text-[#c0c0d8] max-w-[240px]">
                       {app.job?.title ?? '—'}
                     </td>
                     <td className="py-3 pr-4">
@@ -446,7 +446,7 @@ export default function ApplicationTracker() {
                         value={app.status}
                         onValueChange={val => handleStatusChange(app, val as ApplicationStatus)}
                       >
-                        <SelectTrigger className="h-7 w-36 text-xs">
+                        <SelectTrigger className="h-7 w-36 text-xs bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -458,10 +458,10 @@ export default function ApplicationTracker() {
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="py-3 pr-4 text-muted-foreground text-xs whitespace-nowrap">
+                    <td className="py-3 pr-4 text-[#c0c0d8] text-xs whitespace-nowrap">
                       {formatDistanceToNow(new Date(app.applied_at), { addSuffix: true })}
                     </td>
-                    <td className="py-3 pr-4 text-xs text-muted-foreground whitespace-nowrap">
+                    <td className="py-3 pr-4 text-xs text-[#c0c0d8] whitespace-nowrap">
                       {SOURCE_LABELS[app.job?.source ?? ''] ?? app.job?.source ?? '—'}
                     </td>
                     <td className="py-3 pr-4">
@@ -475,16 +475,16 @@ export default function ApplicationTracker() {
                     <td className="py-3 text-right">
                       {confirmingDeleteId === app.id ? (
                         <div className="flex items-center justify-end gap-2 text-xs">
-                          <span className="text-muted-foreground whitespace-nowrap">Remove?</span>
+                          <span className="text-[#c0c0d8] whitespace-nowrap">Remove?</span>
                           <button
                             onClick={() => handleDeleteApp(app.id, app.job_id)}
-                            className="font-medium text-red-500 hover:text-red-600 transition-colors"
+                            className="font-medium text-red-500 hover:text-red-400 transition-colors"
                           >
                             Yes
                           </button>
                           <button
                             onClick={() => setConfirmingDeleteId(null)}
-                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            className="text-[#c0c0d8] hover:text-[#f0f0fa] transition-colors"
                           >
                             No
                           </button>
@@ -492,7 +492,7 @@ export default function ApplicationTracker() {
                       ) : (
                         <button
                           onClick={() => setConfirmingDeleteId(app.id)}
-                          className="p-1 rounded text-muted-foreground/50 hover:text-red-500 transition-colors"
+                          className="p-1 rounded text-[#555566] hover:text-red-500 transition-colors"
                           aria-label="Remove application"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -512,10 +512,10 @@ export default function ApplicationTracker() {
               return (
                 <div key={col} className="flex flex-col gap-3 min-w-[200px] w-[200px]">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[#888899]">
                       {STATUS_LABELS[col]}
                     </span>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="rounded-full bg-[#1a1a24] px-2 py-0.5 text-xs text-[#888899]">
                       {colApps.length}
                     </span>
                   </div>
@@ -524,7 +524,7 @@ export default function ApplicationTracker() {
                       <KanbanCard key={app.id} app={app} onClick={() => openSlideOver(app)} />
                     ))}
                     {colApps.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">
+                      <div className="rounded-lg border border-dashed border-[#2a2a35] p-4 text-center text-xs text-[#555566]">
                         Empty
                       </div>
                     )}
@@ -536,10 +536,10 @@ export default function ApplicationTracker() {
             {/* Rejected / Withdrawn combined column */}
             <div className="flex flex-col gap-3 min-w-[200px] w-[200px]">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#888899]">
                   Closed
                 </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                <span className="rounded-full bg-[#1a1a24] px-2 py-0.5 text-xs text-[#888899]">
                   {filteredApps.filter(a => TERMINAL_STATUSES.includes(a.status)).length}
                 </span>
               </div>
