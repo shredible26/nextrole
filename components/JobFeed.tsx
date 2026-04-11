@@ -285,7 +285,7 @@ export default function JobFeed() {
             </div>
           )}
 
-          {hasMore && (
+          {hasMore && !loading && (
             <div className="mt-8 flex justify-center">
               <Button
                 variant="outline"

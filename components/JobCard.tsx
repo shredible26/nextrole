@@ -20,14 +20,14 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 const ROLE_BADGE_COLORS: Partial<Record<Role, string>> = {
-  swe: 'bg-indigo-500/25 text-indigo-300',
-  ds: 'bg-sky-500/25 text-sky-300',
-  ml: 'bg-violet-500/25 text-violet-300',
-  ai: 'bg-violet-500/25 text-violet-300',
-  pm: 'bg-violet-500/25 text-violet-300',
-  analyst: 'bg-sky-500/25 text-sky-300',
+  swe: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30',
+  ds: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
+  ml: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+  ai: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+  pm: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+  analyst: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
 };
-const DEFAULT_ROLE_BADGE_COLOR = 'bg-indigo-500/25 text-indigo-300';
+const DEFAULT_ROLE_BADGE_COLOR = 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
 
 function CompanyLogo({ company }: { company: string }) {
   const [failed, setFailed] = useState(false);
@@ -72,6 +72,11 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
   const postedAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
+  const postedAgoFormatted = postedAgo
+    ? postedAgo
+        .replace(/^about /, '~')
+        .replace(/ ago$/, '')
+    : null;
 
   const salary =
     job.salary_min && job.salary_max
@@ -92,7 +97,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
           >
             {job.title}
           </Link>
-          <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#d0d0e8] font-medium truncate">
+          <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#e0e0f0] font-medium truncate">
             <span>{job.company}</span>
             {job.location && (
               <>
@@ -117,7 +122,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
             <span
               key={role}
               className={cn(
-                'rounded-full px-2 py-0.5 text-xs font-medium',
+                'rounded-full px-2.5 py-0.5 text-xs font-semibold',
                 ROLE_BADGE_COLORS[role as Role] ?? DEFAULT_ROLE_BADGE_COLOR
               )}
             >
@@ -129,10 +134,10 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-auto pt-1">
-        <div className="flex items-center gap-3 text-xs font-medium text-[#c0c0d8]">
+        <div className="flex items-center gap-3 text-[13px] font-medium text-[#e0e0f0]">
           {salary && <span className="font-medium text-[#f0f0fa]">{salary}</span>}
           <span>{SOURCE_LABELS[job.source] ?? job.source}</span>
-          {postedAgo && <span>{postedAgo}</span>}
+          {postedAgoFormatted && <span>{postedAgoFormatted}</span>}
         </div>
 
         <div className="flex items-center gap-1.5">
