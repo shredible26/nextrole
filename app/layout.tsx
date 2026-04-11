@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
 import './globals.css';
-import Navbar from '@/components/Navbar';
+import ConditionalNavbar from '@/components/ConditionalNavbar';
 import { Toaster } from '@/components/ui/sonner';
 import { Analytics } from '@vercel/analytics/react';
 
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground overscroll-none">
-        <Navbar />
+        <ConditionalNavbar />
         <main className="flex flex-col flex-1 overflow-hidden">{children}</main>
         <Toaster richColors position="bottom-right" />
         <Analytics />
