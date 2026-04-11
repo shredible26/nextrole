@@ -87,9 +87,7 @@ export default function UpgradeModal({ open, onClose, reason }: Props) {
                     {pro === '✓' ? (
                       <Check className="mx-auto h-3 w-3" />
                     ) : pro === 'Unlimited' ? (
-                      <span className="flex items-center justify-center gap-1">
-                        <Check className="h-3 w-3" /> Unlimited
-                      </span>
+                      <span>Unlimited</span>
                     ) : (
                       pro
                     )}

@@ -179,6 +179,7 @@ export default function PricingClient() {
                 <FeatureRow key={f} label={f} coming={COMING_SOON.has(f)} />
               ))}
             </ul>
+            <p className="mt-4 text-xs text-[#555566] italic">Cancel anytime · Secure checkout via Stripe</p>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
             {isPro ? (
@@ -196,12 +197,11 @@ export default function PricingClient() {
               </Button>
             ) : (
               <>
-                <div className="w-full grid grid-cols-2 gap-2">
+                <div className="w-full grid grid-cols-2 gap-2 mt-4">
                   {/* Monthly */}
                   <div className="flex flex-col gap-1">
                     <Button
-                      variant="outline"
-                      className="w-full border-[#2a2a35] bg-[#0d0d12] text-[#f0f0fa] hover:bg-[#2a2a35]"
+                      className="w-full bg-indigo-400 hover:bg-indigo-300 text-white font-semibold"
                       onClick={() => handleUpgrade('monthly')}
                       disabled={!!loading}
                     >
@@ -233,9 +233,6 @@ export default function PricingClient() {
                     <p className="text-xs text-center text-[#888899]">$50 / yr</p>
                   </div>
                 </div>
-                <p className="text-xs text-[#555566] text-center">
-                  Cancel anytime · Secure checkout via Stripe
-                </p>
               </>
             )}
           </CardFooter>
