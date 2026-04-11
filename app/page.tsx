@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, ArrowRight, TrendingUp, Target, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -25,11 +25,7 @@ const NAV_LINKS = [
 ];
 
 const SOURCES = [
-  'Simplify', 'Greenhouse', 'Lever', 'Ashby',
-  'Workday', 'Dice', 'Adzuna', 'BuiltIn',
-  'USAJobs', 'RemoteOK', 'Arbeitnow', 'The Muse',
-  'Indeed', 'HackerNews', 'WorkAtAStartup', 'SmartRecruiters',
-  '+ 10 more',
+  'Simplify', 'Greenhouse', 'Workday', '+ 22 more',
 ];
 
 const HOW_IT_WORKS: Array<{
@@ -103,6 +99,7 @@ const fadeUp = {
 
 export default function HomePage() {
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [isPro, setIsPro] = useState(false);
@@ -171,8 +168,8 @@ export default function HomePage() {
       {/* ── NAVBAR ── */}
       <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24] h-14">
         <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
-          {/* Logo */}
-          <Link href="/" className="flex shrink-0 items-center gap-2">
+          {/* Logo - left */}
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -193,21 +190,30 @@ export default function HomePage() {
             <span className="text-base font-bold tracking-tight text-[#f0f0fa]">NextRole</span>
           </Link>
 
-          {/* Right */}
-          <div className="ml-auto flex shrink-0 items-center gap-3">
+          {/* Nav links - center, only when signed in */}
+          {user && (
+            <nav className="hidden md:flex items-center gap-8 text-sm font-medium flex-1 justify-center">
+              {NAV_LINKS.map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`transition-colors ${
+                    pathname === href || pathname.startsWith(href)
+                      ? 'text-white font-semibold'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          )}
+          {!user && <div className="flex-1" />}
+
+          {/* Auth - right */}
+          <div className="flex items-center gap-3 shrink-0">
             {user ? (
               <>
-                <nav className="hidden md:flex items-center gap-6 text-sm font-medium mr-2">
-                  {NAV_LINKS.map(({ href, label }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      className="text-[#8888aa] hover:text-[#f0f0fa] transition-colors"
-                    >
-                      {label}
-                    </Link>
-                  ))}
-                </nav>
                 {isPro && (
                   <Badge className="hidden sm:inline-flex bg-emerald-500 hover:bg-emerald-500 text-white text-xs px-2 py-0.5">
                     Pro
@@ -314,7 +320,7 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.08]"
           >
             <Zap className="h-4 w-4 fill-blue-500 text-blue-500" />
-            <span className="text-sm text-white/60">Daily Updates • 25+ Sources</span>
+            <span className="text-sm text-white/60">Daily Updates • 25+ Sources • v1.0.0</span>
           </motion.div>
 
           {/* Block 1 — Headline */}
@@ -341,8 +347,8 @@ export default function HomePage() {
             custom={2}
             className="text-base md:text-xl text-white/50 leading-relaxed font-light max-w-3xl mx-auto text-center"
           >
-            55,000+ internship, new grad, and entry-level roles from 25+ sources — updated daily.
-            Find the right role and track every application in one place.
+            55,000+ internship, new grad, and entry-level jobs from 25+ sources — updated daily.
+            Find the right role and automatically track every application in one place.
           </motion.p>
 
           {/* Block 3 — CTA */}
