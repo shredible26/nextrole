@@ -589,8 +589,12 @@ This section is included as operational reference. In this checkout, scraper cod
     - Feature highlights: search, filters, tracker, pro scoring
     - Add social proof when available (users, applications
       tracked, etc.)
-29. [COMPLETED ✅]: Pricing page text rewrite — clarify free vs pro tiers,
+29a.[COMPLETED ✅]: Pricing page text rewrite — clarify free vs pro tiers,
     update feature list, mark coming-soon features clearly
+29b.Add button to Tracker page that allows users to add custom job (with
+    optional url/details/etc) to their tracker
+29c.In the mini pricing window (and main pricing page if applicable),
+    for the two rows that say 'Unlimited' for Pro users, remove the check mark next to Unlimited. 
 30. Full site color scheme overhaul — dark mode improvements,
     more vibrant and modern palette, consistent across all pages
 31. Filter sidebar UI redesign — better visual hierarchy,
