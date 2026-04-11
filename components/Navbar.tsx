@@ -142,7 +142,7 @@ export default function Navbar() {
               {user && !isPro && !isProLoading && (
                 <button
                   onClick={() => router.push('/pricing')}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:from-indigo-400 hover:to-violet-400 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-indigo-500/40 text-indigo-300 bg-transparent hover:bg-gradient-to-r hover:from-indigo-500 hover:to-violet-500 hover:text-white hover:border-transparent transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25"
                 >
                   Upgrade
                 </button>

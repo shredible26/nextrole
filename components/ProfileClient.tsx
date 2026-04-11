@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Briefcase, Loader2, Pencil, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -304,14 +302,15 @@ export default function ProfileClient({
     draftDisplayName.trim().length <= 50;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <div className="rounded-xl border bg-card p-6">
-        <div className="flex flex-col items-start gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-semibold text-primary">
+    <div className="min-h-screen bg-[#0d0d12] py-10 px-4">
+      <div className="max-w-2xl mx-auto flex flex-col gap-5">
+
+        {/* Card 1 — Profile identity */}
+        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex items-center gap-5">
+          <div className="h-16 w-16 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-xl font-bold shrink-0">
             {initials}
           </div>
-
-          <div className="w-full">
+          <div className="flex-1 min-w-0">
             {isEditingName ? (
               <div className="flex flex-col gap-3">
                 <Input
@@ -322,83 +321,81 @@ export default function ProfileClient({
                       event.preventDefault();
                       void handleSaveName();
                     }
-
                     if (event.key === 'Escape') {
                       handleCancelEditing();
                     }
                   }}
                   placeholder="Enter your display name"
                   maxLength={50}
+                  className="bg-[#0d0d12] border-[#2a2a35] text-[#f0f0fa] placeholder:text-[#555566] rounded-lg"
                 />
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => void handleSaveName()} disabled={!canSaveName}>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void handleSaveName()}
+                    disabled={!canSaveName}
+                    className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
+                  >
                     {isSavingName ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="flex items-center gap-1.5">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         Saving...
-                      </>
-                    ) : (
-                      'Save'
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
+                      </span>
+                    ) : 'Save'}
+                  </button>
+                  <button
                     onClick={handleCancelEditing}
                     disabled={isSavingName}
+                    className="bg-[#2a2a35] hover:bg-[#3a3a45] text-[#f0f0fa] text-sm px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                   >
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-semibold">{displayNameLabel}</h1>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={handleStartEditing}
-                  aria-label="Edit display name"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-semibold text-[#f0f0fa]">{displayNameLabel}</span>
+                  <button
+                    onClick={handleStartEditing}
+                    aria-label="Edit display name"
+                    className="text-[#555566] hover:text-[#aaaacc] transition-colors"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-[#888899] mt-1">{email}</p>
+              </>
             )}
-
-            <p className="mt-1 text-sm text-muted-foreground">{email}</p>
           </div>
         </div>
-      </div>
 
-      <div className="rounded-xl border bg-card p-6">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-3 rounded-xl bg-muted/30 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Briefcase className="h-5 w-5" />
+        {/* Card 2 — Stats + Plan */}
+        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex flex-col gap-4">
+          {/* Applications row */}
+          <div className="bg-[#0d0d12] rounded-xl p-4 flex items-center gap-3">
+            <div className="bg-indigo-500/20 rounded-full h-10 w-10 flex items-center justify-center shrink-0">
+              <Briefcase className="text-indigo-400 h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Applications</p>
-              <p className="text-lg font-semibold">{applicationCount} jobs applied</p>
+              <p className="text-[#888899] text-sm">Applications</p>
+              <p className="text-[#f0f0fa] text-lg font-semibold">{applicationCount} jobs applied</p>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* Plan row */}
+          <div className="border-t border-[#2a2a35] pt-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Current plan</span>
+              <span className="text-[#888899] text-sm">Current plan</span>
               {tier === 'pro' ? (
-                <Badge className="bg-emerald-600 px-2 py-0.5 text-xs text-white hover:bg-emerald-600">
-                  Pro
-                </Badge>
+                <span className="bg-emerald-500 text-white text-xs px-2.5 py-0.5 rounded-full font-medium">Pro</span>
               ) : (
-                <Badge variant="secondary" className="px-2 py-0.5 text-xs">
-                  Free
-                </Badge>
+                <span className="bg-[#2a2a35] text-[#aaaacc] text-xs px-2.5 py-0.5 rounded-full font-medium">Free</span>
               )}
             </div>
-
             {tier === 'free' ? (
               <Link
                 href="/pricing"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors"
               >
                 Upgrade to Pro →
               </Link>
@@ -409,102 +406,77 @@ export default function ProfileClient({
             )}
           </div>
         </div>
-      </div>
 
-      <div className="rounded-xl border bg-card p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">Resume</h2>
-            <p className="text-sm text-muted-foreground">Upload a PDF up to 5MB.</p>
+        {/* Card 3 — Resume */}
+        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[#f0f0fa] text-lg font-semibold">Resume</h2>
+            <p className="text-[#888899] text-sm">Upload a PDF up to 5MB.</p>
           </div>
-        </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,application/pdf"
-          className="sr-only"
-          onChange={handleResumeSelected}
-        />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,application/pdf"
+            className="sr-only"
+            onChange={handleResumeSelected}
+          />
 
-        <div className="mt-4">
           {isLoadingResume ? (
-            <div className="flex items-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Checking for an existing resume...
+            <div className="border border-dashed border-[#2a2a35] rounded-xl p-8 text-center mt-4">
+              <Loader2 className="text-[#555566] h-5 w-5 animate-spin mx-auto mb-2" />
+              <p className="text-[#555566] text-sm">Checking for an existing resume...</p>
             </div>
           ) : resume ? (
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-medium">{resume.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Uploaded {formatUploadDate(resume.uploadedAt)}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingResume || isDeletingResume}
-                  >
-                    {isUploadingResume ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      'Replace'
-                    )}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => void handleDeleteResume()}
-                    disabled={isUploadingResume || isDeletingResume}
-                  >
-                    {isDeletingResume ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Deleting...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </>
-                    )}
-                  </Button>
-                </div>
+            <div className="bg-[#0d0d12] rounded-xl border border-[#2a2a35] p-4 mt-4">
+              <p className="text-[#f0f0fa] font-medium">{resume.name}</p>
+              <p className="text-[#888899] text-sm mt-0.5">Uploaded {formatUploadDate(resume.uploadedAt)}</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingResume || isDeletingResume}
+                  className="border border-[#2a2a35] bg-transparent text-[#f0f0fa] hover:bg-[#2a2a35] rounded-lg px-3 py-1.5 text-sm transition-colors disabled:opacity-50"
+                >
+                  {isUploadingResume ? (
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Uploading...
+                    </span>
+                  ) : 'Replace'}
+                </button>
+                <button
+                  onClick={() => void handleDeleteResume()}
+                  disabled={isUploadingResume || isDeletingResume}
+                  className="bg-red-500/15 text-red-400 border border-red-500/25 hover:bg-red-500/25 rounded-lg px-3 py-1.5 text-sm inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  {isDeletingResume ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" />Deleting...</>
+                  ) : (
+                    <><Trash2 className="h-3.5 w-3.5" />Delete</>
+                  )}
+                </button>
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed p-6 text-center">
-              <p className="font-medium">Upload your resume (PDF only)</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Keep one current copy ready for applications.
-              </p>
-              <Button
-                variant="outline"
-                className="mt-4"
+            <div className="border border-dashed border-[#2a2a35] rounded-xl p-8 text-center mt-4">
+              <Upload className="text-[#444455] h-8 w-8 mx-auto mb-3" />
+              <p className="text-[#f0f0fa] font-medium">Upload your resume</p>
+              <p className="text-[#888899] text-sm mt-1">Keep one current copy ready for applications.</p>
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingResume || isDeletingResume}
+                className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-full px-6 py-2 mt-4 inline-flex items-center gap-2 transition-colors disabled:opacity-50"
               >
                 {isUploadingResume ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
+                  <><Loader2 className="h-4 w-4 animate-spin" />Uploading...</>
                 ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    Choose PDF
-                  </>
+                  <><Upload className="h-4 w-4" />Choose PDF</>
                 )}
-              </Button>
+              </button>
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

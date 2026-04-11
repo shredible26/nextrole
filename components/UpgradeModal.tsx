@@ -56,7 +56,7 @@ export default function UpgradeModal({ open, onClose, reason }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="sm:max-w-md bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
+      <DialogContent className="sm:max-w-lg bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
         <DialogHeader>
           <DialogTitle className="text-xl text-[#f0f0fa]">
             {reason === 'search'
@@ -73,17 +73,17 @@ export default function UpgradeModal({ open, onClose, reason }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#0d0d12]">
-                <th className="px-3 py-2 text-left text-xs font-medium text-[#888899]">Feature</th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-[#888899]">Free</th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-[#888899]">Pro</th>
+                <th className="px-3 py-2 text-left text-sm font-medium text-[#888899]">Feature</th>
+                <th className="px-3 py-2 text-center text-sm font-medium text-[#888899]">Free</th>
+                <th className="px-3 py-2 text-center text-sm font-medium text-[#888899]">Pro</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#2a2a35]">
               {COMPARISON.map(({ feature, free, pro }) => (
                 <tr key={feature}>
-                  <td className="px-3 py-2 text-xs text-[#f0f0fa]">{feature}</td>
-                  <td className="px-3 py-2 text-center text-xs text-[#8888aa]">{free}</td>
-                  <td className="px-3 py-2 text-center text-xs font-medium text-indigo-400">
+                  <td className="px-3 py-3 text-sm text-[#f0f0fa]">{feature}</td>
+                  <td className="px-3 py-3 text-center text-sm text-[#8888aa]">{free}</td>
+                  <td className="px-3 py-3 text-center text-sm font-medium text-indigo-400">
                     {pro === '✓' ? (
                       <Check className="mx-auto h-3 w-3" />
                     ) : pro === 'Unlimited' ? (
@@ -116,7 +116,7 @@ export default function UpgradeModal({ open, onClose, reason }: Props) {
                 'Monthly'
               )}
             </Button>
-            <p className="text-xs text-center text-[#aaaacc]">$4.99 / month</p>
+            <p className="text-sm text-center text-[#aaaacc]">$4.99 / month</p>
           </div>
 
           {/* Yearly — highlighted */}
@@ -135,11 +135,11 @@ export default function UpgradeModal({ open, onClose, reason }: Props) {
                 'Yearly'
               )}
             </Button>
-            <p className="text-xs text-center text-[#aaaacc]">$50 / year · save 17%</p>
+            <p className="text-sm text-center text-[#aaaacc]">$50 / year · save 17%</p>
           </div>
         </div>
 
-        <Button variant="ghost" onClick={onClose} className="w-full text-[#666677] hover:text-[#aaaacc]">
+        <Button variant="ghost" onClick={onClose} className="w-full text-[#aaaacc] hover:text-[#f0f0fa]">
           Maybe later
         </Button>
       </DialogContent>

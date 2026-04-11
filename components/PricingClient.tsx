@@ -38,9 +38,9 @@ function FeatureRow({ label, coming }: { label: string; coming?: boolean }) {
   return (
     <li className="flex items-center gap-2.5 text-sm">
       <Check className="h-4 w-4 shrink-0 text-emerald-500" />
-      <span>{label}</span>
+      <span className="text-[#c0c0d8]">{label}</span>
       {coming && (
-        <Badge variant="secondary" className="text-[10px] py-0 h-4">
+        <Badge className="text-[10px] py-0 h-4 bg-[#2a2a35] text-[#888899] border-0">
           Soon
         </Badge>
       )}
@@ -116,8 +116,8 @@ export default function PricingClient() {
     <div className="flex flex-col flex-1">
       {/* Header */}
       <section className="px-4 pt-20 pb-12 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">Simple, transparent pricing</h1>
-        <p className="mt-3 text-muted-foreground text-lg">
+        <h1 className="text-4xl font-bold tracking-tight text-[#f0f0fa]">Simple, transparent pricing</h1>
+        <p className="mt-3 text-[#888899] text-lg">
           Start free. Upgrade when you need more.
         </p>
         {isPro && (
@@ -130,13 +130,13 @@ export default function PricingClient() {
       {/* Cards */}
       <section className="mx-auto w-full max-w-3xl px-4 pb-20 grid gap-6 sm:grid-cols-2">
         {/* Free */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col bg-[#1a1a24] border-[#2a2a35]">
           <CardHeader>
-            <CardTitle>Free</CardTitle>
-            <CardDescription>Everything you need to get started.</CardDescription>
+            <CardTitle className="text-[#f0f0fa]">Free</CardTitle>
+            <CardDescription className="text-[#888899]">Everything you need to get started.</CardDescription>
             <div className="mt-2">
-              <span className="text-4xl font-bold">$0</span>
-              <span className="text-muted-foreground text-sm"> / month</span>
+              <span className="text-4xl font-bold text-[#f0f0fa]">$0</span>
+              <span className="text-[#888899] text-sm"> / month</span>
             </div>
           </CardHeader>
           <CardContent className="flex-1">
@@ -147,7 +147,7 @@ export default function PricingClient() {
           <CardFooter>
             <a
               href="/jobs"
-              className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
+              className={cn(buttonVariants({ variant: 'outline' }), 'w-full border-[#2a2a35] bg-[#0d0d12] text-[#f0f0fa] hover:bg-[#2a2a35] hover:text-white')}
             >
               Get started →
             </a>
@@ -155,21 +155,21 @@ export default function PricingClient() {
         </Card>
 
         {/* Pro */}
-        <Card className="flex flex-col border-primary/40 shadow-md relative overflow-hidden">
+        <Card className="flex flex-col bg-[#1a1a24] border-indigo-500/40 shadow-md relative overflow-hidden">
           <div className="absolute top-3 right-3">
-            <Badge className="bg-primary text-primary-foreground text-xs">Most popular</Badge>
+            <Badge className="bg-indigo-500 text-white text-xs">Most popular</Badge>
           </div>
           <CardHeader>
-            <CardTitle>Pro</CardTitle>
-            <CardDescription>Unlimited access for serious job seekers.</CardDescription>
+            <CardTitle className="text-[#f0f0fa]">Pro</CardTitle>
+            <CardDescription className="text-[#888899]">Unlimited access for serious job seekers.</CardDescription>
             <div className="mt-2 space-y-0.5">
               <div>
-                <span className="text-4xl font-bold">$4.99</span>
-                <span className="text-muted-foreground text-sm"> / month</span>
+                <span className="text-4xl font-bold text-[#f0f0fa]">$4.99</span>
+                <span className="text-[#888899] text-sm"> / month</span>
               </div>
-              <div className="text-sm text-muted-foreground">
-                or <span className="font-semibold text-foreground">$50 / year</span>{' '}
-                <span className="text-emerald-600 dark:text-emerald-400">save 17%</span>
+              <div className="text-sm text-[#888899]">
+                or <span className="font-semibold text-[#f0f0fa]">$50 / year</span>{' '}
+                <span className="text-emerald-400">save 17%</span>
               </div>
             </div>
           </CardHeader>
@@ -183,7 +183,7 @@ export default function PricingClient() {
           <CardFooter className="flex flex-col gap-2">
             {isPro ? (
               <Button
-                className="w-full"
+                className="w-full border-[#2a2a35] bg-[#0d0d12] text-[#f0f0fa] hover:bg-[#2a2a35]"
                 variant="outline"
                 onClick={handleManageSubscription}
                 disabled={loading === 'portal'}
@@ -201,7 +201,7 @@ export default function PricingClient() {
                   <div className="flex flex-col gap-1">
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="w-full border-[#2a2a35] bg-[#0d0d12] text-[#f0f0fa] hover:bg-[#2a2a35]"
                       onClick={() => handleUpgrade('monthly')}
                       disabled={!!loading}
                     >
@@ -211,7 +211,7 @@ export default function PricingClient() {
                         'Monthly'
                       )}
                     </Button>
-                    <p className="text-xs text-center text-muted-foreground">$4.99 / mo</p>
+                    <p className="text-xs text-center text-[#888899]">$4.99 / mo</p>
                   </div>
 
                   {/* Yearly — highlighted */}
@@ -220,7 +220,7 @@ export default function PricingClient() {
                       Best value
                     </Badge>
                     <Button
-                      className="w-full"
+                      className="w-full bg-indigo-500 hover:bg-indigo-400 text-white"
                       onClick={() => handleUpgrade('yearly')}
                       disabled={!!loading}
                     >
@@ -230,21 +230,20 @@ export default function PricingClient() {
                         'Yearly'
                       )}
                     </Button>
-                    <p className="text-xs text-center text-muted-foreground">$50 / yr</p>
+                    <p className="text-xs text-center text-[#888899]">$50 / yr</p>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground text-center">
+                <p className="text-xs text-[#555566] text-center">
                   Cancel anytime · Secure checkout via Stripe
                 </p>
               </>
             )}
           </CardFooter>
         </Card>
-        <p className="sm:col-span-2 text-center text-sm text-muted-foreground">
+        <p className="sm:col-span-2 text-center text-sm text-[#555566]">
           NextRole aggregates internship, new grad, and entry-level tech roles from 25+ sources. Updated daily.
         </p>
       </section>
-
     </div>
   );
 }
