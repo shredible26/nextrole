@@ -506,7 +506,9 @@ This section is included as operational reference. In this checkout, scraper cod
 5c.Viewers should not be able to view jobs without an account - remove 
    from the pricing page. 'View jobs' button while not signed in should redirect to google login. 
 5d.When a user signs in and it automatically goes to the job page, it
-   always shows 0 jobs until the user refreshes the page. Then the jobs load. Fix this- the jobs should load immediately after signing in/signing up. 
+   always shows 0 jobs until the user refreshes the page. Then the jobs load. Fix this- the jobs should load immediately after signing in/signing up.
+5e.In the search bar (in jobs page), the 'x' button doesn't work. It 
+   should clear all the text and unselect the search bar.     
 
 ---
 
@@ -558,17 +560,17 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ### PRIORITY 3: FILTERING LOGIC
 
-22. Per-source keyword tuning — audit each source's role
+22a.Per-source keyword tuning — audit each source's role
     classification accuracy. Ensure SWE/DS/ML/AI chips
     return correct results per source.
+29b.Make the 'remote' filter toggle in the jobs page dark themed / dark.
 23. Role classification improvements — expand inferRoles()
     keyword lists, add more title patterns for each role.
 24. Add more role filters beyond current 7 chips:
-    - DevOps / Infrastructure
+    - Consulting / Tech Consulting
+    - Full-Stack
     - Security
     - Mobile (iOS/Android)
-    - QA / Testing
-    - Embedded / Hardware
 25. Add more experience level filter options:
     - Co-op (separate from internship)
     - Recent Grad (0-2 YOE, distinct from new_grad)
@@ -583,7 +585,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ### PRIORITY 4: UI & DESIGN
 
-28. [COMPLETED ✅]: Home page full rewrite:
+28a.[COMPLETED ✅]: Home page full rewrite:
     - New headline + subheadline (largest new grad/entry-level
       tech job aggregator, all company types including startups)
     - Advertise job count (55k+), source count (25+), daily
@@ -591,6 +593,8 @@ This section is included as operational reference. In this checkout, scraper cod
     - Feature highlights: search, filters, tracker, pro scoring
     - Add social proof when available (users, applications
       tracked, etc.)
+28b.For the search bar feature, make sure you are able to search by job
+    source along with everyhting else. (Ex. search 'ZapplyJobs')
 29a.[COMPLETED ✅]: Pricing page text rewrite — clarify free vs pro tiers,
     update feature list, mark coming-soon features clearly
 29b.Add button to Tracker page that allows users to add custom job (with
