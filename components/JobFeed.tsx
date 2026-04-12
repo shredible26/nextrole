@@ -245,9 +245,9 @@ export default function JobFeed() {
       <UpgradeModal open={showUpgrade} reason={upgradeReason} onClose={() => setShowUpgrade(false)} />
 
       {/* h-14 = 56px navbar height; both columns scroll independently */}
-      <div className="flex flex-1 overflow-hidden mx-auto w-full max-w-7xl bg-[#0d0d12]">
+      <div className="flex flex-1 overflow-hidden mx-auto w-full max-w-7xl bg-[#0d0d12] h-full">
         {/* Sidebar — independent scroll */}
-        <aside className="hidden md:block w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6">
+        <aside className="hidden md:block w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6 h-full">
           <FilterSidebar
             filters={filters}
             onChange={handleFilterChange}
