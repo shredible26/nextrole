@@ -28,7 +28,7 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground overscroll-none">
         <ConditionalNavbar />
-        <main className="flex flex-col flex-1 overflow-hidden">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
         <Toaster richColors position="bottom-right" />
         <Analytics />
       </body>

@@ -241,13 +241,12 @@ export default function JobFeed() {
   const isSearching = loading && (searchInput.trim().length > 0 || filters.search.length > 0);
 
   return (
-    <div className="bg-[#0d0d12] h-full flex flex-col">
+    <div className="flex min-h-0 flex-1 flex-col bg-[#0d0d12]">
       <UpgradeModal open={showUpgrade} reason={upgradeReason} onClose={() => setShowUpgrade(false)} />
 
-      {/* h-14 = 56px navbar height; both columns scroll independently */}
-      <div className="flex flex-1 overflow-hidden mx-auto w-full max-w-7xl bg-[#0d0d12] h-full">
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 overflow-hidden bg-[#0d0d12]">
         {/* Sidebar — independent scroll */}
-        <aside className="hidden md:block w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6 h-full">
+        <aside className="hidden min-h-0 w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6 md:block">
           <FilterSidebar
             filters={filters}
             onChange={handleFilterChange}
@@ -256,7 +255,7 @@ export default function JobFeed() {
         </aside>
 
         {/* Feed — independent scroll */}
-        <div className="flex flex-1 flex-col min-w-0 overflow-y-auto px-6 py-6 sm:px-8 bg-[#0d0d12]">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#0d0d12] px-6 py-6 sm:px-8">
           <div className="mb-4 space-y-3">
             <div className="flex w-full items-center gap-2">
               <div className="relative w-full">

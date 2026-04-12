@@ -512,7 +512,9 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ### PRIORITY 2: NEW SOURCES & SOURCE EXPANSION
 
-6. Fix Workable — currently 10 jobs. 429 rate limiting on
+6a.Hide job source from the job card for free users (hide completely or 
+   categorize into the available free source filters: github, job board, or other, and use that)
+6b.Fix Workable — currently 10 jobs. 429 rate limiting on
    entry-level search terms. Add exponential backoff + retry,
    run failed terms again after delay. (workable scraper kept - email sent to support)
 7a.Expand Ashby slug list (currently 255 valid slugs, target
