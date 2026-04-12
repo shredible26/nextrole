@@ -130,19 +130,7 @@
   }
 }
 
-html:has([data-page="jobs"]) {
-  height: 100dvh;
-  overflow: hidden;
-  background-color: #0d0d12;
-  overscroll-behavior: none;
-}
-
+html:has([data-page="jobs"]),
 html:has([data-page="jobs"]) body {
-  height: 100dvh;
-  overflow: hidden;
   background-color: #0d0d12;
-}
-
-html:has([data-page="jobs"]) body > main {
-  min-height: 0;
 }

@@ -241,10 +241,10 @@ export default function JobFeed() {
   const isSearching = loading && (searchInput.trim().length > 0 || filters.search.length > 0);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#0d0d12]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0d0d12]">
       <UpgradeModal open={showUpgrade} reason={upgradeReason} onClose={() => setShowUpgrade(false)} />
 
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 overflow-hidden bg-[#0d0d12]">
+      <div className="mx-auto flex h-[calc(100vh-57px)] min-h-0 w-full max-w-7xl overflow-hidden bg-[#0d0d12] [contain:layout_paint_size]">
         {/* Sidebar — independent scroll */}
         <aside className="hidden min-h-0 w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6 md:block">
           <FilterSidebar
