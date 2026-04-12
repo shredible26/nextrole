@@ -32,6 +32,13 @@ interface FeedResponse {
   upgrade?: boolean;
 }
 
+interface ApplyResponse {
+  success?: boolean;
+  error?: string;
+  upgrade?: boolean;
+  reason?: 'tracker';
+}
+
 export default function JobFeed() {
   const supabase = createClient();
   const [filters, setFilters] = useState<JobFilters>(DEFAULT_FILTERS);
@@ -43,7 +50,7 @@ export default function JobFeed() {
   // Seed from localStorage immediately so cards render correct state before Supabase resolves
   const [trackedIds, setTrackedIds] = useState<Set<string>>(() => getTrackedIds());
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState<'search' | 'pagination'>('pagination');
+  const [upgradeReason, setUpgradeReason] = useState<'search' | 'pagination' | 'tracker'>('pagination');
   const [hasMore, setHasMore] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const requestIdRef = useRef(0);
@@ -156,11 +163,30 @@ export default function JobFeed() {
     setTrackedIds(prev => new Set([...prev, job.id]));
     addTrackedId(job.id);
 
-    fetch('/api/apply', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ job_id: job.id }),
-    }).catch(() => {
+    try {
+      const res = await fetch('/api/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: job.id }),
+      });
+      const data: ApplyResponse = await res.json();
+
+      if (data.upgrade && data.reason === 'tracker') {
+        setTrackedIds(prev => {
+          const next = new Set(prev);
+          next.delete(job.id);
+          return next;
+        });
+        removeTrackedId(job.id);
+        setUpgradeReason('tracker');
+        setShowUpgrade(true);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error ?? 'Failed to track application');
+      }
+    } catch {
       // Revert both on failure
       setTrackedIds(prev => {
         const next = new Set(prev);
@@ -169,7 +195,7 @@ export default function JobFeed() {
       });
       removeTrackedId(job.id);
       toast.error('Failed to track application');
-    });
+    }
   }
 
   function handleLoadMore() {
@@ -188,7 +214,7 @@ export default function JobFeed() {
     }
   }
 
-  function openUpgradeModal(reason: 'search' | 'pagination' = 'pagination') {
+  function openUpgradeModal(reason: 'search' | 'pagination' | 'tracker' = 'pagination') {
     setUpgradeReason(reason);
     window.setTimeout(() => {
       setShowUpgrade(true);

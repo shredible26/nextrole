@@ -21,7 +21,7 @@ const COMPARISON = [
 interface Props {
   open: boolean;
   onClose: () => void;
-  reason?: 'search' | 'pagination';
+  reason?: 'search' | 'pagination' | 'tracker';
 }
 
 export default function UpgradeModal({ open, onClose, reason }: Props) {
@@ -61,10 +61,14 @@ export default function UpgradeModal({ open, onClose, reason }: Props) {
           <DialogTitle className="text-xl text-[#f0f0fa]">
             {reason === 'search'
               ? 'Upgrade to Pro to unlock job search'
+              : reason === 'tracker'
+              ? "You've hit your tracking limit"
               : "You've seen your 30 jobs for today"}
           </DialogTitle>
           <DialogDescription className="text-[#aaaacc]">
-            Upgrade to Pro for unlimited access.
+            {reason === 'tracker'
+              ? 'Free users can track up to 100 jobs. Upgrade for unlimited tracking.'
+              : 'Upgrade to Pro for unlimited access.'}
           </DialogDescription>
         </DialogHeader>
 

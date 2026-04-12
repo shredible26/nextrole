@@ -8,6 +8,26 @@ export async function POST(req: NextRequest) {
 
   const { job_id } = await req.json();
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tier')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.tier === 'free') {
+    const { count } = await supabase
+      .from('applications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if ((count ?? 0) >= 100) {
+      return Response.json(
+        { error: 'Tracker limit reached', upgrade: true, reason: 'tracker' },
+        { status: 402 }
+      );
+    }
+  }
+
   const { error } = await supabase.from('applications').upsert({
     user_id: user.id,
     job_id,
