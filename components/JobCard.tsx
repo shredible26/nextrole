@@ -144,7 +144,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
           {/* Apply: opens the job URL, no tracking */}
           <Button
             size="sm"
-            className="h-7 text-xs gap-1 bg-white text-[#0d0d12] hover:bg-white/90 font-semibold border-0"
+            className="h-7 text-xs gap-1 bg-indigo-600 text-white hover:bg-indigo-500 font-semibold border-0"
             onClick={() => window.open(job.url, '_blank', 'noopener,noreferrer')}
           >
             Apply ↗
