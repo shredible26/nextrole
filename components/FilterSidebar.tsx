@@ -163,6 +163,7 @@ export default function FilterSidebar({
                   name="level"
                   value={value}
                   checked={checked}
+                  onMouseDown={e => e.preventDefault()}
                   onChange={() => onChange({ ...filters, level: value, page: 1 })}
                   className="sr-only"
                 />
@@ -213,6 +214,7 @@ export default function FilterSidebar({
                   name="location"
                   value={value}
                   checked={checked}
+                  onMouseDown={e => e.preventDefault()}
                   onChange={() => onChange({ ...filters, location: value, page: 1 })}
                   className="sr-only"
                 />
@@ -248,6 +250,7 @@ export default function FilterSidebar({
                   name="posted"
                   value={value}
                   checked={checked}
+                  onMouseDown={e => e.preventDefault()}
                   onChange={() => onChange({ ...filters, postedWithin: value, page: 1 })}
                   className="sr-only"
                 />
@@ -280,6 +283,7 @@ export default function FilterSidebar({
                 name="source"
                 value=""
                 checked={filters.sources.length === 0}
+                onMouseDown={e => e.preventDefault()}
                 onChange={() => toggleSource('')}
                 className="sr-only"
               />
@@ -302,6 +306,7 @@ export default function FilterSidebar({
                     name="source"
                     value={value}
                     checked={checked}
+                    onMouseDown={e => e.preventDefault()}
                     onChange={() => toggleSource(value)}
                     className="sr-only"
                   />
@@ -325,6 +330,7 @@ export default function FilterSidebar({
                 name="source"
                 value=""
                 checked={freeSourceSelection === 'all'}
+                onMouseDown={e => e.preventDefault()}
                 onChange={() => onChange({ ...filters, sources: [], page: 1 })}
                 className="sr-only"
               />
@@ -343,6 +349,7 @@ export default function FilterSidebar({
                 name="source"
                 value="github_repos"
                 checked={freeSourceSelection === 'github_repos'}
+                onMouseDown={e => e.preventDefault()}
                 onChange={() => onChange({ ...filters, sources: ['github_repos'], page: 1 })}
                 className="sr-only"
               />
@@ -361,6 +368,7 @@ export default function FilterSidebar({
                 name="source"
                 value="job_boards"
                 checked={freeSourceSelection === 'job_boards'}
+                onMouseDown={e => e.preventDefault()}
                 onChange={() => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 })}
                 className="sr-only"
               />
