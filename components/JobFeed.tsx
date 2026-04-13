@@ -56,6 +56,7 @@ export default function JobFeed() {
   const [isPro, setIsPro] = useState(false);
   const requestIdRef = useRef(0);
   const jobsRef = useRef<Job[]>([]);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Pre-populate tracked IDs and tier from Supabase
@@ -264,13 +265,14 @@ export default function JobFeed() {
 
       <div className="mx-auto flex h-[calc(100vh-57px)] min-h-0 w-full max-w-7xl overflow-hidden bg-[#0d0d12]">
         {/* Sidebar — independent scroll */}
-        <aside className="hidden min-h-0 w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6 md:block">
+        <div ref={sidebarRef} className="hidden min-h-0 w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6 md:block">
           <FilterSidebar
             filters={filters}
             onChange={handleFilterChange}
             isPro={isPro}
+            sidebarRef={sidebarRef}
           />
-        </aside>
+        </div>
 
         {/* Feed — independent scroll */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#0d0d12] px-6 py-6 sm:px-8">
