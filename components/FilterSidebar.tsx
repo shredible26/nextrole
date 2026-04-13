@@ -94,6 +94,10 @@ export default function FilterSidebar({
   const sectionLabelClassName =
     'mb-3 text-xs font-semibold uppercase tracking-wider text-[#9999bb]';
   const optionLabelClassName = 'flex items-center gap-2.5 cursor-pointer group';
+  const sourceOptionButtonClassName = cn(
+    optionLabelClassName,
+    'w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50'
+  );
 
   function toggleRole(role: Role | 'all') {
     if (role === 'all') {
@@ -109,6 +113,34 @@ export default function FilterSidebar({
     // Single-select: selecting '' means no filter; selecting the active source deselects it
     const sources = source === '' || filters.sources[0] === source ? [] : [source];
     onChange({ ...filters, sources, page: 1 });
+  }
+
+  function renderSourceOption({
+    checked,
+    label,
+    onClick,
+  }: {
+    checked: boolean;
+    label: string;
+    onClick: () => void;
+  }) {
+    return (
+      <button
+        type="button"
+        aria-pressed={checked}
+        className={sourceOptionButtonClassName}
+        onClick={onClick}
+      >
+        <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
+          checked ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
+        }`}>
+          {checked && (
+            <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
+          )}
+        </span>
+        <span className="text-sm text-[#f0f0fa]">{label}</span>
+      </button>
+    );
   }
 
   const freeSourceSelection = getFreeSourceSelection(filters.sources);
@@ -276,116 +308,43 @@ export default function FilterSidebar({
           Source
         </p>
         {isPro ? (
-          <div className="space-y-2">
-            <label className={optionLabelClassName}>
-              <input
-                type="radio"
-                name="source"
-                value=""
-                checked={filters.sources.length === 0}
-                tabIndex={-1}
-                onMouseDown={e => e.preventDefault()}
-                onChange={() => toggleSource('')}
-                className="sr-only"
-              />
-              <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
-                filters.sources.length === 0 ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
-              }`}>
-                {filters.sources.length === 0 && (
-                  <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
-                )}
-              </span>
-              <span className="text-sm text-[#f0f0fa]">All</span>
-            </label>
+          <div className="space-y-2" role="group" aria-label="Source">
+            {renderSourceOption({
+              checked: filters.sources.length === 0,
+              label: 'All',
+              onClick: () => toggleSource(''),
+            })}
             {SOURCES.map(({ value, label }) => {
               const checked = filters.sources[0] === value;
 
               return (
-                <label key={value} className={optionLabelClassName}>
-                  <input
-                    type="radio"
-                    name="source"
-                    value={value}
-                    checked={checked}
-                    tabIndex={-1}
-                    onMouseDown={e => e.preventDefault()}
-                    onChange={() => toggleSource(value)}
-                    className="sr-only"
-                  />
-                  <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
-                    checked ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
-                  }`}>
-                    {checked && (
-                      <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
-                    )}
-                  </span>
-                  <span className="text-sm text-[#f0f0fa]">{label}</span>
-                </label>
+                <div key={value}>
+                  {renderSourceOption({
+                    checked,
+                    label,
+                    onClick: () => toggleSource(value),
+                  })}
+                </div>
               );
             })}
           </div>
         ) : (
-          <div className="space-y-2">
-            <label className={optionLabelClassName}>
-              <input
-                type="radio"
-                name="source"
-                value=""
-                checked={freeSourceSelection === 'all'}
-                tabIndex={-1}
-                onMouseDown={e => e.preventDefault()}
-                onChange={() => onChange({ ...filters, sources: [], page: 1 })}
-                className="sr-only"
-              />
-              <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
-                freeSourceSelection === 'all' ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
-              }`}>
-                {freeSourceSelection === 'all' && (
-                  <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
-                )}
-              </span>
-              <span className="text-sm text-[#f0f0fa]">All Sources</span>
-            </label>
-            <label className={optionLabelClassName}>
-              <input
-                type="radio"
-                name="source"
-                value="github_repos"
-                checked={freeSourceSelection === 'github_repos'}
-                tabIndex={-1}
-                onMouseDown={e => e.preventDefault()}
-                onChange={() => onChange({ ...filters, sources: ['github_repos'], page: 1 })}
-                className="sr-only"
-              />
-              <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
-                freeSourceSelection === 'github_repos' ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
-              }`}>
-                {freeSourceSelection === 'github_repos' && (
-                  <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
-                )}
-              </span>
-              <span className="text-sm text-[#f0f0fa]">GitHub Repos</span>
-            </label>
-            <label className={optionLabelClassName}>
-              <input
-                type="radio"
-                name="source"
-                value="job_boards"
-                checked={freeSourceSelection === 'job_boards'}
-                tabIndex={-1}
-                onMouseDown={e => e.preventDefault()}
-                onChange={() => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 })}
-                className="sr-only"
-              />
-              <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
-                freeSourceSelection === 'job_boards' ? 'border-indigo-500 bg-indigo-500' : 'border-[#444455] bg-transparent group-hover:border-[#6666aa]'
-              }`}>
-                {freeSourceSelection === 'job_boards' && (
-                  <span className="m-auto h-1.5 w-1.5 rounded-full bg-[#0d0d12]" />
-                )}
-              </span>
-              <span className="text-sm text-[#f0f0fa]">Job Boards</span>
-            </label>
+          <div className="space-y-2" role="group" aria-label="Source">
+            {renderSourceOption({
+              checked: freeSourceSelection === 'all',
+              label: 'All Sources',
+              onClick: () => onChange({ ...filters, sources: [], page: 1 }),
+            })}
+            {renderSourceOption({
+              checked: freeSourceSelection === 'github_repos',
+              label: 'GitHub Repos',
+              onClick: () => onChange({ ...filters, sources: ['github_repos'], page: 1 }),
+            })}
+            {renderSourceOption({
+              checked: freeSourceSelection === 'job_boards',
+              label: 'Job Boards',
+              onClick: () => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 }),
+            })}
           </div>
         )}
       </div>
