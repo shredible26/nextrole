@@ -564,10 +564,16 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ### 3: FILTERING LOGIC
 
-22a.Per-source keyword tuning — audit each source's role
+22a.Update inferExperienceLevel(), inferRoles(), and
+    inferRemote() functions in scrapers/normalize.ts. Make
+    a LOT more detailed.
+22b.Train a small text classifier (e.g. fine-tuned distilbert
+    or even a simple sklearn TF-IDF + logistic regression) on labeled job title/description → experience level + role tags.
+22c.Add ML to roles with no keywords.
+22d.Per-source keyword tuning — audit each source's role
     classification accuracy. Ensure SWE/DS/ML/AI chips
     return correct results per source.
-29b.Make the 'remote' filter toggle in the jobs page dark themed / dark.
+22e.Make the 'remote' filter toggle in the jobs page dark themed / dark.
 23. Role classification improvements — expand inferRoles()
     keyword lists, add more title patterns for each role.
 24. Add more role filters beyond current 7 chips:
@@ -754,3 +760,19 @@ This section is included as operational reference. In this checkout, scraper cod
     (CS Career Hub, Blind, Levels.fyi Discord etc)
 59. ProductHunt launch — after UI polish + RAG scoring live.
     Prepare assets: logo, tagline, screenshots, demo GIF.
+
+### More details:
+22a: 
+- Add Regex patterns not just exact matches (/\bjr\.?\b/i, /\b0[\s-]?[–-][\s-]?[12]\s*(?:yr|year)/i)
+- Negative signals ("5+ years", "senior", "staff", "principal", "lead" → exclude)
+- Title-specific overrides by source (Greenhouse titles follow different conventions than LinkedIn)
+- Weighted scoring instead of binary (if 2+ signals match → high confidence)
+
+22b:
+- Accuracy: Better than keywords, slightly worse than GPT-4, but fast and free at inference
+- Cost: One-time training cost, then essentially free
+- Catch: You need labeled training data. You could bootstrap this by using LLM to label a few thousand jobs once, then train on those labels.
+- Complexity: This is a real ML project — 1-2 weeks to do properly
+
+22c:
+jobs that return [] from inferRoles. Right now those jobs have no role chips and essentially disappear from filtered views. A cheap middle ground that's better than full ML: after inferRoles runs, if it returns [], run a second pass using hasTechTitleSignal patterns and map those to a default swe tag. That way nothing falls through the cracks.
