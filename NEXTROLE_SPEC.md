@@ -495,8 +495,10 @@ This section is included as operational reference. In this checkout, scraper cod
    speedyapply-ai.ts (always 0 jobs, confirmed stubs), make sure to remove correct scrapers
 3. Fix careerjet (0 jobs every run — check if API key expired
    or endpoint changed). Right now, it gracefully fails, but returns 0 jobs (not fixed, but no longer crashes)
-4. [COMPLETED ✅]: Fix rippling if possible (do research) (2 jobs,
+4a. [COMPLETED ✅]: Fix rippling if possible (do research) (2 jobs,
    fragile next.js build ID). If absolutely not possible, then deactivate/remove
+4b.Create careerjet.ts file in nextrole-scrapers! File is non-existent. 
+   Currently 115 jobs from careerjet from an old nextrole scraper - recreate and get as many jobs as possible for all existing roles and experience levels. Make sure to take IP address into account. 
 5a.[COMPLETED ✅]: Potentially remove source filtering, or redesign it so 
    that users cannot easily just go to the sources and search there instead. 
    to design this / figure it out
@@ -512,7 +514,9 @@ This section is included as operational reference. In this checkout, scraper cod
 5f.Manually curate a seed list of ~50-100 tech companies that use
    Recruitee
 5g.TeamTailor - Figure out if I should add via manual seed slug
-   (check website) or if there is a better way      
+   (check website) or if there is a better way  
+5h.For each role filter, add up job count. Then figure out what the difference is between that and 'All'. What are the remaining jobs? How
+   can they be sorted/categorized?    
 
 ---
 
