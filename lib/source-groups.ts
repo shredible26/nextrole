@@ -8,6 +8,11 @@ export const GITHUB_REPO_SOURCES = [
   'speedyapply_ai_newgrad',
   'jobright_swe',
   'jobright_data',
+  'jobright_business',
+  'jobright_design',
+  'jobright_marketing',
+  'jobright_accounting',
+  'jobright_pm',
   'zapplyjobs',
   'hackernews',
 ] as const;
@@ -30,6 +35,7 @@ export const JOB_BOARD_SOURCES = [
   'usajobs',
   'careerjet',
   'ashby',
+  'recruitee',
 ] as const;
 
 export const GITHUB_REPO_SOURCE_SET = new Set<string>(GITHUB_REPO_SOURCES);

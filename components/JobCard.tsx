@@ -17,6 +17,12 @@ const SOURCE_LABELS: Record<string, string> = {
   remoteok: 'RemoteOK',
   arbeitnow: 'Arbeitnow',
   themuse: 'The Muse',
+  recruitee: 'Recruitee',
+  jobright_business: 'Jobright (Business)',
+  jobright_design: 'Jobright (Design)',
+  jobright_marketing: 'Jobright (Marketing)',
+  jobright_accounting: 'Jobright (Accounting)',
+  jobright_pm: 'Jobright (PM)',
 };
 
 const ROLE_BADGE_COLORS: Partial<Record<Role, string>> = {
