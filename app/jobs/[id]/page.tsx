@@ -120,26 +120,26 @@ export default async function JobPage({ params }: Props) {
   const validThrough = getValidThroughDate(job.posted_at, job.scraped_at)
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
+    <main className="max-w-3xl mx-auto px-4 py-8" data-page="jobs">
         <Link
           href="/jobs"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+          className="inline-flex items-center gap-2 text-sm text-[#a0a0b0] hover:text-white mb-6 transition-colors"
         >
           ← Back to jobs
         </Link>
 
-        <div className="bg-card border rounded-xl p-6 mb-6">
+        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-xl p-6 mb-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-2xl font-semibold mb-1">{job.title}</h1>
-              <p className="text-lg text-muted-foreground">{job.company}</p>
+              <h1 className="text-2xl font-semibold mb-1 text-white">{job.title}</h1>
+              <p className="text-lg text-[#e0e0f0] font-medium">{job.company}</p>
             </div>
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
+            <div className="w-12 h-12 rounded-lg bg-indigo-500/20 flex items-center justify-center text-lg font-bold text-indigo-300 shrink-0">
               {job.company?.[0]?.toUpperCase()}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mb-6">
+          <div className="flex flex-wrap gap-3 text-sm text-[#a0a0b0] mb-6">
             {job.location && <span>📍 {job.location}</span>}
             {job.remote && <span>🌐 Remote</span>}
             {postedDate && <span>📅 {postedDate}</span>}
@@ -149,15 +149,15 @@ export default async function JobPage({ params }: Props) {
           </div>
 
           <div className="flex flex-wrap gap-2 mb-6">
-            <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+            <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-full">
               {experienceBadge}
             </span>
             {(job.roles as string[] | null)?.map(role => (
-              <span key={role} className="px-3 py-1 bg-secondary text-secondary-foreground text-xs font-medium rounded-full">
+              <span key={role} className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-full">
                 {ROLE_LABELS[role as Role] ?? role}
               </span>
             ))}
-            <span className="px-3 py-1 bg-muted text-muted-foreground text-xs rounded-full capitalize">
+            <span className="px-3 py-1 bg-[#2a2a35] text-[#a0a0b0] border border-[#444455] text-xs rounded-full capitalize">
               {job.source?.replace(/_/g, ' ')}
             </span>
           </div>
@@ -166,17 +166,17 @@ export default async function JobPage({ params }: Props) {
             href={job.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-foreground text-background px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-500 transition-colors"
           >
             {applyLabel}
           </a>
         </div>
 
         {description && (
-          <div className="bg-card border rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">About this role</h2>
+          <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-xl p-6">
+            <h2 className="text-lg font-semibold mb-4 text-white">About this role</h2>
             <div
-              className="prose prose-sm max-w-none text-muted-foreground leading-relaxed prose-headings:text-foreground prose-headings:font-semibold prose-strong:text-foreground prose-a:text-primary"
+              className="prose prose-sm prose-invert max-w-none text-[#c0c0d0] leading-relaxed prose-headings:text-white prose-headings:font-semibold prose-strong:text-white prose-a:text-indigo-400"
               dangerouslySetInnerHTML={{
                 __html: cleanDescription(truncatedDescription),
               }}
@@ -186,7 +186,7 @@ export default async function JobPage({ params }: Props) {
                 href={job.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-4"
+                className="inline-flex items-center gap-1 text-sm text-indigo-400 hover:underline mt-4"
               >
                 Read full description ↗
               </a>
