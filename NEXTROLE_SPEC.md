@@ -483,7 +483,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### PRIORITY 1: SCRAPER STABILITY
+### 1: SCRAPER STABILITY
 
 1a.[COMPLETED ✅]: Fix lever/workday/workable concurrent timeout — run
    heavy scrapers in a prioritized early sequential batch before the
@@ -508,11 +508,15 @@ This section is included as operational reference. In this checkout, scraper cod
 5d.When a user signs in and it automatically goes to the job page, it
    always shows 0 jobs until the user refreshes the page. Then the jobs load. Fix this- the jobs should load immediately after signing in/signing up.
 5e.In the search bar (in jobs page), the 'x' button doesn't work. It 
-   should clear all the text and unselect the search bar.     
+   should clear all the text and unselect the search bar.
+5f.Manually curate a seed list of ~50-100 tech companies that use
+   Recruitee
+5g.TeamTailor - Figure out if I should add via manual seed slug
+   (check website) or if there is a better way      
 
 ---
 
-### PRIORITY 2: NEW SOURCES & SOURCE EXPANSION
+### 2: NEW SOURCES & SOURCE EXPANSION
 
 6a.Hide job source from the job card for free users (hide completely or 
    categorize into the available free source filters: github, job board, or other, and use that)
@@ -558,7 +562,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### PRIORITY 3: FILTERING LOGIC
+### 3: FILTERING LOGIC
 
 22a.Per-source keyword tuning — audit each source's role
     classification accuracy. Ensure SWE/DS/ML/AI chips
@@ -583,7 +587,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### PRIORITY 4: UI & DESIGN
+### 4: UI & DESIGN
 
 28a.[COMPLETED ✅]: Home page full rewrite:
     - New headline + subheadline (largest new grad/entry-level
@@ -619,7 +623,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### PRIORITY 5: FEATURE COMPLETENESS
+### 5: FEATURE COMPLETENESS
 
 36. [COMPLETED ✅]: Job view limit for free users — free users see page 1
     only (30 jobs per filter configuration, already implemented). Confirm
@@ -662,7 +666,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### PRIORITY 6: RAG PIPELINE (Build in order)
+### 6: RAG PIPELINE (Build in order)
 
 43. Embeddings setup:
     - Enable pgvector extension in Supabase
@@ -710,7 +714,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### PRIORITY 7: TESTING
+### 7: TESTING
 
 48. End-to-end Stripe purchase test — buy a Pro subscription
     with a real card, verify webhook fires, tier updates,
@@ -726,7 +730,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### PRIORITY 8: ANALYTICS & MONITORING
+### 8: ANALYTICS & MONITORING
 
 53. Verify Vercel Analytics is capturing data (already added)
     — check dashboard for drop-off points
@@ -738,7 +742,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### PRIORITY 9: MARKETING
+### 9: MARKETING
 
 56. SEO — verify Google Search Console is indexing job pages,
     check coverage report, fix any crawl errors. Already have
