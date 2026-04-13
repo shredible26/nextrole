@@ -605,6 +605,8 @@ This section is included as operational reference. In this checkout, scraper cod
       tracked, etc.)
 28b.For the search bar feature, make sure you are able to search by job
     source along with everyhting else. (Ex. search 'ZapplyJobs')
+28c.Fix the back button (UI and logic) to become more prominent and make sure
+    it actually works. Right now it resets all filters when clicked. Back button for jobs page, wheen you click on a job and it shows the description etc. 
 29a.[COMPLETED ✅]: Pricing page text rewrite — clarify free vs pro tiers,
     update feature list, mark coming-soon features clearly
 29b.Add button to Tracker page that allows users to add custom job (with
