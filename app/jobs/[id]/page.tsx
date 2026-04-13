@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import sanitizeHtml from 'sanitize-html'
@@ -65,6 +66,15 @@ async function getJob(id: string) {
   return data
 }
 
+function getValidThroughDate(postedAt?: string | null, scrapedAt?: string | null) {
+  const baseDate = postedAt ?? scrapedAt
+  if (!baseDate) return undefined
+
+  const validThrough = new Date(baseDate)
+  validThrough.setDate(validThrough.getDate() + 30)
+  return validThrough.toISOString()
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const job = await getJob(id)
@@ -107,15 +117,16 @@ export default async function JobPage({ params }: Props) {
   const truncatedDescription = description.length > 5000
     ? description.slice(0, 5000) + '...'
     : description
+  const validThrough = getValidThroughDate(job.posted_at, job.scraped_at)
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
-        <a
+        <Link
           href="/jobs"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
           ← Back to jobs
-        </a>
+        </Link>
 
         <div className="bg-card border rounded-xl p-6 mb-6">
           <div className="flex items-start justify-between gap-4 mb-4">
@@ -203,7 +214,7 @@ export default async function JobPage({ params }: Props) {
               },
               employmentType: 'FULL_TIME',
               datePosted: job.posted_at,
-              validThrough: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              validThrough,
               url: `https://nextrole-phi.vercel.app/jobs/${job.id}`,
               ...(job.salary_min && {
                 baseSalary: {

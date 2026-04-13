@@ -295,7 +295,11 @@ export async function GET(req: NextRequest) {
 
     const pagedJobs = jobs
       .slice(offset, offset + perPage)
-      .map(({ rank, ...job }) => job);
+      .map(job =>
+        Object.fromEntries(
+          Object.entries(job).filter(([key]) => key !== 'rank')
+        ) as Omit<RankedJob, 'rank'>
+      );
 
     return NextResponse.json({
       jobs: pagedJobs,

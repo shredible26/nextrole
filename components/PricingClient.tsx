@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -145,12 +146,12 @@ export default function PricingClient() {
             </ul>
           </CardContent>
           <CardFooter>
-            <a
+            <Link
               href="/jobs"
               className={cn(buttonVariants({ variant: 'outline' }), 'w-full border-[#2a2a35] bg-[#0d0d12] text-[#f0f0fa] hover:bg-[#2a2a35] hover:text-white')}
             >
               Get started →
-            </a>
+            </Link>
           </CardFooter>
         </Card>
 

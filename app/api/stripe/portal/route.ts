@@ -1,7 +1,7 @@
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 function adminClient() {
   return createClient(
@@ -10,7 +10,7 @@ function adminClient() {
   )
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {

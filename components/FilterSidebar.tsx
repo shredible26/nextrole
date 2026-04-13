@@ -17,6 +17,10 @@ export const ROLE_OPTIONS: { value: Role | 'all'; label: string }[] = [
   { value: 'ds', label: 'DS' },
   { value: 'ml', label: 'ML' },
   { value: 'ai', label: 'AI' },
+  { value: 'security', label: 'Security' },
+  { value: 'devops', label: 'DevOps' },
+  { value: 'consulting', label: 'Consulting' },
+  { value: 'finance', label: 'Finance' },
   { value: 'analyst', label: 'Analyst' },
   { value: 'pm', label: 'PM' },
 ];

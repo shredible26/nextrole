@@ -30,6 +30,10 @@ const ROLE_BADGE_COLORS: Partial<Record<Role, string>> = {
   ds: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
   ml: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
   ai: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+  security: 'bg-red-500/20 text-red-300 border border-red-500/30',
+  devops: 'bg-orange-500/20 text-orange-300 border border-orange-500/30',
+  consulting: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
+  finance: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
   pm: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
   analyst: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
 };
