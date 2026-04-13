@@ -7,6 +7,7 @@ import { Role, ROLE_LABELS } from '@/lib/types'
 
 interface Props {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ from?: string }>
 }
 
 function decodeDescription(raw: string): string {
@@ -95,8 +96,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function JobPage({ params }: Props) {
+export default async function JobPage({ params, searchParams }: Props) {
   const { id } = await params
+  const { from } = await searchParams
+  const backUrl = from && from.startsWith('/jobs') ? from : '/jobs'
   const job = await getJob(id)
   if (!job) notFound()
 
@@ -122,7 +125,7 @@ export default async function JobPage({ params }: Props) {
   return (
     <main className="max-w-3xl mx-auto px-4 py-8" data-page="jobs">
         <Link
-          href="/jobs"
+          href={backUrl}
           className="inline-flex items-center gap-2 text-sm text-[#a0a0b0] hover:text-white mb-6 transition-colors"
         >
           ← Back to jobs

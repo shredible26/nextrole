@@ -1,6 +1,7 @@
 'use client';
 
 import { type FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import FilterSidebar from './FilterSidebar';
 import JobCard from './JobCard';
@@ -41,6 +42,7 @@ interface ApplyResponse {
 
 export default function JobFeed() {
   const supabase = createClient();
+  const pathname = usePathname();
   const [filters, setFilters] = useState<JobFilters>(DEFAULT_FILTERS);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
@@ -331,6 +333,7 @@ export default function JobFeed() {
                   job={job}
                   tracked={trackedIds.has(job.id)}
                   onTrack={handleTrack}
+                  fromUrl={pathname}
                 />
               ))}
             </div>

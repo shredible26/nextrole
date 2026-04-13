@@ -76,9 +76,10 @@ interface Props {
   job: Job;
   tracked: boolean;
   onTrack: (job: Job) => void;
+  fromUrl?: string;
 }
 
-export default function JobCard({ job, tracked, onTrack }: Props) {
+export default function JobCard({ job, tracked, onTrack, fromUrl }: Props) {
   const postedAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
@@ -102,7 +103,7 @@ export default function JobCard({ job, tracked, onTrack }: Props) {
         <CompanyLogo company={job.company} />
         <div className="min-w-0 flex-1">
           <Link
-            href={`/jobs/${job.id}`}
+            href={`/jobs/${job.id}?from=${encodeURIComponent(fromUrl ?? '/jobs')}`}
             className="block truncate font-semibold text-sm leading-snug text-white hover:underline"
           >
             {job.title}
