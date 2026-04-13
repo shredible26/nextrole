@@ -239,6 +239,7 @@ export default function JobFeed() {
   }
 
   const isSearching = loading && (searchInput.trim().length > 0 || filters.search.length > 0);
+  const showBlockingLoader = loading && jobs.length === 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0d0d12]">
@@ -292,7 +293,7 @@ export default function JobFeed() {
             </p>
           </div>
 
-          {loading ? (
+          {showBlockingLoader ? (
             <div className="flex flex-1 items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
