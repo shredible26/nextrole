@@ -45,6 +45,7 @@ export default function JobFeed() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   // Seed from localStorage immediately so cards render correct state before Supabase resolves
@@ -54,6 +55,7 @@ export default function JobFeed() {
   const [hasMore, setHasMore] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const requestIdRef = useRef(0);
+  const jobsRef = useRef<Job[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Pre-populate tracked IDs and tier from Supabase
@@ -99,7 +101,13 @@ export default function JobFeed() {
   const fetchJobs = useCallback(async (f: JobFilters, append = false) => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
-    append ? setLoadingMore(true) : setLoading(true);
+    if (append) {
+      setLoadingMore(true);
+    } else if (jobsRef.current.length === 0) {
+      setLoading(true);
+    } else {
+      setIsRefetching(true);
+    }
     try {
       const res = await fetch(`/api/jobs?${buildQuery(f)}`);
       const data: FeedResponse = await res.json();
@@ -117,9 +125,17 @@ export default function JobFeed() {
       }
 
       if (append) {
-        setJobs(prev => [...prev, ...(data.jobs ?? [])]);
+        setJobs(prev => {
+          const next = [...prev, ...(data.jobs ?? [])];
+          jobsRef.current = next;
+          return next;
+        });
       } else {
-        setJobs(data.jobs ?? []);
+        setJobs(() => {
+          const next = data.jobs ?? [];
+          jobsRef.current = next;
+          return next;
+        });
       }
       setTotal(data.total ?? 0);
       setHasMore((data.jobs?.length ?? 0) === data.perPage && data.total > f.page * data.perPage);
@@ -129,6 +145,7 @@ export default function JobFeed() {
     } finally {
       if (requestId !== requestIdRef.current) return;
       setLoading(false);
+      setIsRefetching(false);
       setLoadingMore(false);
     }
   }, [buildQuery]);
@@ -289,7 +306,7 @@ export default function JobFeed() {
             </div>
 
             <p className="text-sm text-white">
-              {isSearching ? 'Searching...' : loading ? 'Loading…' : `${total.toLocaleString()} jobs found`}
+              {isSearching ? 'Searching...' : (loading || isRefetching) ? 'Loading…' : `${total.toLocaleString()} jobs found`}
             </p>
           </div>
 
