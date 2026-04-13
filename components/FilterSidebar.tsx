@@ -1,6 +1,5 @@
 'use client';
 
-import type { RefObject } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -77,7 +76,6 @@ interface FilterSidebarProps {
   filters: JobFilters;
   onChange: (f: JobFilters) => void;
   isPro?: boolean;
-  sidebarRef?: RefObject<HTMLDivElement | null>;
 }
 
 function getFreeSourceSelection(sources: string[]): FreeSourceOption | null {
@@ -92,7 +90,6 @@ export default function FilterSidebar({
   filters,
   onChange,
   isPro = false,
-  sidebarRef,
 }: FilterSidebarProps) {
   const sectionLabelClassName =
     'mb-3 text-xs font-semibold uppercase tracking-wider text-[#9999bb]';
@@ -112,17 +109,6 @@ export default function FilterSidebar({
     // Single-select: selecting '' means no filter; selecting the active source deselects it
     const sources = source === '' || filters.sources[0] === source ? [] : [source];
     onChange({ ...filters, sources, page: 1 });
-  }
-
-  function withScrollLock(fn: () => void) {
-    const sidebar = sidebarRef?.current;
-    const scrollTop = sidebar?.scrollTop ?? 0;
-    fn();
-    if (sidebar) {
-      requestAnimationFrame(() => {
-        sidebar.scrollTop = scrollTop;
-      });
-    }
   }
 
   const freeSourceSelection = getFreeSourceSelection(filters.sources);
@@ -297,8 +283,9 @@ export default function FilterSidebar({
                 name="source"
                 value=""
                 checked={filters.sources.length === 0}
+                tabIndex={-1}
                 onMouseDown={e => e.preventDefault()}
-                onChange={() => withScrollLock(() => toggleSource(''))}
+                onChange={() => toggleSource('')}
                 className="sr-only"
               />
               <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
@@ -320,8 +307,9 @@ export default function FilterSidebar({
                     name="source"
                     value={value}
                     checked={checked}
+                    tabIndex={-1}
                     onMouseDown={e => e.preventDefault()}
-                    onChange={() => withScrollLock(() => toggleSource(value))}
+                    onChange={() => toggleSource(value)}
                     className="sr-only"
                   />
                   <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
@@ -344,8 +332,9 @@ export default function FilterSidebar({
                 name="source"
                 value=""
                 checked={freeSourceSelection === 'all'}
+                tabIndex={-1}
                 onMouseDown={e => e.preventDefault()}
-                onChange={() => withScrollLock(() => onChange({ ...filters, sources: [], page: 1 }))}
+                onChange={() => onChange({ ...filters, sources: [], page: 1 })}
                 className="sr-only"
               />
               <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
@@ -363,8 +352,9 @@ export default function FilterSidebar({
                 name="source"
                 value="github_repos"
                 checked={freeSourceSelection === 'github_repos'}
+                tabIndex={-1}
                 onMouseDown={e => e.preventDefault()}
-                onChange={() => withScrollLock(() => onChange({ ...filters, sources: ['github_repos'], page: 1 }))}
+                onChange={() => onChange({ ...filters, sources: ['github_repos'], page: 1 })}
                 className="sr-only"
               />
               <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${
@@ -382,8 +372,9 @@ export default function FilterSidebar({
                 name="source"
                 value="job_boards"
                 checked={freeSourceSelection === 'job_boards'}
+                tabIndex={-1}
                 onMouseDown={e => e.preventDefault()}
-                onChange={() => withScrollLock(() => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 }))}
+                onChange={() => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 })}
                 className="sr-only"
               />
               <span className={`flex h-3.5 w-3.5 shrink-0 rounded-full border transition-colors ${

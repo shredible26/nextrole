@@ -4,7 +4,7 @@ export default function JobsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0d0d12]">
+    <div className="flex flex-1 flex-col overflow-hidden bg-[#0d0d12] min-h-0">
       {children}
     </div>
   );
