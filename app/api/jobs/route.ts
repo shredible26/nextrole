@@ -114,7 +114,47 @@ const US_STATE_ABBREV_REGEX_SOURCE =
   `,\\s(${US_STATE_ABBREV_CODES.map(escapeRegExp).join('|')})(,|\\s|\\)|/|$)`;
 const USA_SUBSTRING_REGEX = new RegExp(USA_SUBSTRING_REGEX_SOURCE, 'i');
 const US_STATE_ABBREV_REGEX = new RegExp(US_STATE_ABBREV_REGEX_SOURCE, 'i');
+const NON_US_COUNTRY_PATTERNS = [
+  'Germany', 'Austria', 'Switzerland', 'Netherlands', 'France', 'Spain',
+  'Italy', 'Poland', 'Portugal', 'Sweden', 'Norway', 'Denmark', 'Finland',
+  'Belgium', 'Czech Republic', 'Romania', 'Hungary', 'Ireland',
+  'United Kingdom', 'UK', 'Canada', 'Australia', 'India', 'Singapore',
+  'Brazil', 'Mexico', 'Japan', 'China', 'South Korea',
+];
+const NON_US_CITY_PATTERNS = [
+  'Berlin', 'Munich', 'M\u00fcnchen', 'Hamburg', 'Frankfurt', 'Cologne',
+  'K\u00f6ln', 'Stuttgart', 'D\u00fcsseldorf', 'Dortmund', 'Leipzig',
+  'Dresden', 'Nuremberg', 'N\u00fcrnberg', 'Hanover', 'Hannover',
+  'Bremen', 'Bochum', 'Wuppertal', 'Bonn', 'Mannheim', 'Karlsruhe',
+  'Augsburg', 'Wiesbaden', 'M\u00f6nchengladbach', 'Gelsenkirchen',
+  'Aachen', 'Kiel', 'Freiburg', 'Erfurt', 'Mainz', 'Rostock', 'Kassel',
+  'Halle', 'Magdeburg', 'Saarbr\u00fccken', 'Potsdam', 'L\u00fcbeck',
+  'Oldenburg', 'Osnabr\u00fcck', 'Heidelberg', 'Darmstadt', 'Regensburg',
+  'Ingolstadt', 'W\u00fcrzburg', 'Amsterdam', 'Rotterdam', 'Utrecht',
+  'The Hague', 'Eindhoven', 'Vienna', 'Wien', 'Zurich', 'Z\u00fcrich',
+  'Basel', 'Geneva', 'Genf', 'Bern', 'Paris', 'Lyon', 'Marseille',
+  'Barcelona', 'Madrid', 'Milan', 'Milano', 'Rome', 'Roma', 'Warsaw',
+  'Warszawa', 'Prague', 'Praha', 'Budapest', 'Bucharest', 'Stockholm',
+  'Oslo', 'Copenhagen', 'Helsinki', 'Brussels', 'Bruxelles', 'Dublin',
+  'Lisbon', 'Lisboa', 'Athens', 'London', 'Manchester', 'Birmingham',
+  'Leeds', 'Glasgow', 'Edinburgh', 'Bristol', 'Liverpool', 'Sheffield',
+  'Newcastle',
+];
+const NON_US_SUFFIX_CODES = [
+  'DE', 'AT', 'CH', 'NL', 'FR', 'ES', 'IT', 'PL', 'PT', 'SE', 'NO',
+  'DK', 'FI', 'BE', 'CZ', 'RO', 'HU', 'IE', 'GB', 'UK', 'CA', 'AU',
+  'IN', 'SG', 'BR', 'MX', 'JP', 'CN', 'KR',
+];
+const NON_US_COUNTRY_REGEX_SOURCE =
+  `(^|[^A-Za-z])(${NON_US_COUNTRY_PATTERNS.map(escapeRegExp).join('|')})(?=$|[^A-Za-z])`;
+const NON_US_CITY_REGEX_SOURCE =
+  `(^|[,(/-]\\s*)(${NON_US_CITY_PATTERNS.map(escapeRegExp).join('|')})(?=$|\\s*[,)/-])`;
+const NON_US_SUFFIX_REGEX_SOURCE =
+  `,\\s(${NON_US_SUFFIX_CODES.map(escapeRegExp).join('|')})(,|\\s|\\)|/|$)`;
 const NON_US_LOCATION_REGEXES = [
+  new RegExp(NON_US_COUNTRY_REGEX_SOURCE, 'i'),
+  new RegExp(NON_US_CITY_REGEX_SOURCE, 'i'),
+  new RegExp(NON_US_SUFFIX_REGEX_SOURCE, 'i'),
   /\bPerth,\sWA(?:$|,|\s|\)|\/)/i,
 ];
 
@@ -291,16 +331,24 @@ function buildUsaLocationOrFilter() {
   ].join(',');
 }
 
-function isUsaJob(job: { remote?: boolean; location?: string | null }): boolean {
-  if (job.remote) return true;
-  const rawLocation = job.location;
-  if (!rawLocation) return true;
-  const loc = rawLocation.trim();
+function isNonUSLocation(location: string): boolean {
+  const loc = location.trim();
 
-  if (NON_US_LOCATION_REGEXES.some(regex => regex.test(rawLocation))) {
+  if (!loc) return false;
+
+  return NON_US_LOCATION_REGEXES.some(regex => regex.test(loc));
+}
+
+function isUsaJob(job: { remote?: boolean; location?: string | null }): boolean {
+  const rawLocation = job.location;
+  const loc = rawLocation?.trim() ?? '';
+
+  if (loc && isNonUSLocation(loc)) {
     return false;
   }
 
+  if (job.remote) return true;
+  if (!rawLocation) return true;
   if (WORKDAY_MULTI_LOCATION_REGEX.test(loc)) return true;
   if (WORKDAY_US_PREFIX_REGEX.test(loc)) return true;
   if (REMOTE_US_PATTERNS.some(pattern =>
