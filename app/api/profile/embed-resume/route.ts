@@ -26,13 +26,6 @@ export async function POST() {
 
     const admin = createAdminClient();
 
-    // Get the user's profile to find their resume path
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('resume_url')
-      .eq('id', user.id)
-      .maybeSingle();
-
     // Download the PDF from storage — path is always userId/resume.pdf
     const storagePath = `${user.id}/resume.pdf`;
     const { data: fileData, error: downloadError } = await admin
@@ -100,9 +93,6 @@ export async function POST() {
       console.error('[embed-resume] profile update error:', updateError.message);
       return NextResponse.json({ error: 'Failed to save embedding' }, { status: 500 });
     }
-
-    // Suppress unused variable warning
-    void profile;
 
     return NextResponse.json({ success: true, textLength: truncatedText.length });
   } catch (err) {

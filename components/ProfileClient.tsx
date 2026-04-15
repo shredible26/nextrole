@@ -260,6 +260,16 @@ export default function ProfileClient({
         return;
       }
 
+      // Write storage path back to profile so embed-resume and other callers can rely on it
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ resume_url: `${userId}/resume.pdf` })
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('[profile] failed to update resume_url:', profileError.message);
+      }
+
       await refreshResume();
       toast.success('Resume uploaded successfully');
 
