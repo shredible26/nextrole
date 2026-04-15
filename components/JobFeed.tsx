@@ -13,6 +13,8 @@ import { createClient } from '@/lib/supabase/client';
 import { getTrackedIds, addTrackedId, removeTrackedId, writeTrackedIds } from '@/lib/trackedStorage';
 import { Loader2, Lock, Search, X } from 'lucide-react';
 
+const GRADE_ORDER: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, F: 4 };
+
 const DEFAULT_FILTERS: JobFilters = {
   roles: [],
   search: '',
@@ -79,6 +81,10 @@ export default function JobFeed() {
   const [upgradeReason, setUpgradeReason] = useState<'search' | 'pagination' | 'tracker'>('pagination');
   const [hasMore, setHasMore] = useState(false);
   const [isPro, setIsPro] = useState(false);
+  const [matchScores, setMatchScores] = useState<Record<string, { grade: string; similarity: number }>>({});
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [resumePromptDismissed, setResumePromptDismissed] = useState(false);
+  const [sortBy, setSortBy] = useState<'default' | 'best_match'>('default');
   const requestIdRef = useRef(0);
   const jobsRef = useRef<Job[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -179,21 +185,44 @@ export default function JobFeed() {
           return;
         }
 
+        const newJobs = data.jobs ?? [];
+        let allJobs: Job[];
         if (append) {
           setJobs(prev => {
-            const next = [...prev, ...(data.jobs ?? [])];
+            const next = [...prev, ...newJobs];
             jobsRef.current = next;
+            allJobs = next;
             return next;
           });
         } else {
+          allJobs = newJobs;
           setJobs(() => {
-            const next = data.jobs ?? [];
-            jobsRef.current = next;
-            return next;
+            jobsRef.current = newJobs;
+            return newJobs;
           });
         }
         setTotal(data.total ?? 0);
         setHasMore((data.jobs?.length ?? 0) === data.perPage && data.total > f.page * data.perPage);
+
+        // Fetch match scores for Pro users
+        if (isPro && newJobs.length > 0) {
+          const ids = newJobs.map(j => j.id);
+          fetch('/api/jobs/match-scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobIds: ids }),
+          })
+            .then(r => r.json())
+            .then((result: { scores?: Record<string, { grade: string; similarity: number }>; noResume?: boolean }) => {
+              if (result.noResume) {
+                setShowResumePrompt(true);
+              } else if (result.scores) {
+                setMatchScores(prev => ({ ...prev, ...result.scores }));
+              }
+            })
+            .catch(() => { /* non-blocking */ });
+        }
+
         return;
       }
 
@@ -368,10 +397,36 @@ export default function JobFeed() {
               </div>
             </div>
 
-            <p className="text-sm text-white">
-              {isSearching ? 'Searching...' : (loading || isRefetching) ? 'Loading…' : `${total.toLocaleString()} jobs found`}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm text-white">
+                {isSearching ? 'Searching...' : (loading || isRefetching) ? 'Loading…' : `${total.toLocaleString()} jobs found`}
+              </p>
+              {isPro && Object.keys(matchScores).length > 0 && (
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value as 'default' | 'best_match')}
+                  className="h-7 rounded-md border border-[#2a2a35] bg-[#1a1a24] px-2 text-xs text-[#f0f0fa] focus:outline-none focus:border-indigo-500/50"
+                >
+                  <option value="default">Sort: Latest</option>
+                  <option value="best_match">Sort: Best Match</option>
+                </select>
+              )}
+            </div>
           </div>
+
+          {/* Resume prompt banner */}
+          {isPro && showResumePrompt && !resumePromptDismissed && (
+            <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-[#2a2a35] bg-[#1a1a24] px-4 py-2.5 text-sm text-[#aaaacc]">
+              <span>Upload your resume on the <a href="/profile" className="text-indigo-400 hover:underline">Profile page</a> to see AI match scores for each job</span>
+              <button
+                onClick={() => setResumePromptDismissed(true)}
+                className="shrink-0 text-[#555566] hover:text-[#aaaacc] transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
 
           {showBlockingLoader ? (
             <div className="flex flex-1 items-center justify-center py-20">
@@ -384,15 +439,24 @@ export default function JobFeed() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {jobs.map(job => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  tracked={trackedIds.has(job.id)}
-                  onTrack={handleTrack}
-                  fromUrl={pathname}
-                />
-              ))}
+              {[...jobs]
+                .sort((a, b) => {
+                  if (sortBy !== 'best_match') return 0;
+                  const gradeA = GRADE_ORDER[matchScores[a.id]?.grade ?? ''] ?? 99;
+                  const gradeB = GRADE_ORDER[matchScores[b.id]?.grade ?? ''] ?? 99;
+                  if (gradeA !== gradeB) return gradeA - gradeB;
+                  return new Date(b.posted_at ?? 0).getTime() - new Date(a.posted_at ?? 0).getTime();
+                })
+                .map(job => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    tracked={trackedIds.has(job.id)}
+                    onTrack={handleTrack}
+                    fromUrl={pathname}
+                    matchScore={matchScores[job.id]}
+                  />
+                ))}
             </div>
           )}
 

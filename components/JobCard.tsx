@@ -73,14 +73,23 @@ function CompanyLogo({ company }: { company: string }) {
   );
 }
 
+const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
+  A: { bg: '#22c55e', text: '#ffffff' },
+  B: { bg: '#14b8a6', text: '#ffffff' },
+  C: { bg: '#eab308', text: '#000000' },
+  D: { bg: '#f97316', text: '#ffffff' },
+  F: { bg: '#ef4444', text: '#ffffff' },
+};
+
 interface Props {
   job: Job;
   tracked: boolean;
   onTrack: (job: Job) => void;
   fromUrl?: string;
+  matchScore?: { grade: string; similarity: number };
 }
 
-export default function JobCard({ job, tracked, onTrack, fromUrl }: Props) {
+export default function JobCard({ job, tracked, onTrack, fromUrl, matchScore }: Props) {
   const postedAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
@@ -97,8 +106,20 @@ export default function JobCard({ job, tracked, onTrack, fromUrl }: Props) {
       ? `$${Math.round(job.salary_min / 1000)}k+`
       : null;
 
+  const gradeColors = matchScore ? (GRADE_COLORS[matchScore.grade] ?? GRADE_COLORS['F']) : null;
+
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-[#2a2a35] bg-[#1a1a24] p-4 shadow-sm transition-shadow hover:border-[#3a3a45]">
+    <div className="relative flex flex-col gap-3 rounded-xl border border-[#2a2a35] bg-[#1a1a24] p-4 shadow-sm transition-shadow hover:border-[#3a3a45]">
+      {/* Grade badge */}
+      {matchScore && gradeColors && (
+        <div
+          className="absolute -top-2 -right-2 z-10 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-none shadow-sm"
+          style={{ backgroundColor: gradeColors.bg, color: gradeColors.text }}
+          title={`Match score: ${matchScore.grade} (${(matchScore.similarity * 100).toFixed(0)}%)`}
+        >
+          {matchScore.grade}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start gap-3">
         <CompanyLogo company={job.company} />

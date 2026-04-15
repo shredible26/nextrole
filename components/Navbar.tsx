@@ -20,6 +20,9 @@ const NAV_LINKS = [
   { href: '/tracker', label: 'Tracker' },
 ];
 
+// Chat link only shown when authenticated
+const CHAT_HREF = '/chat';
+
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -124,6 +127,21 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
+            {mounted && user && (
+              <Link
+                href={CHAT_HREF}
+                className={`flex items-center gap-1.5 transition-colors ${
+                  pathname.startsWith(CHAT_HREF)
+                    ? 'text-[#f0f0fa]'
+                    : 'text-[#8888aa] hover:text-[#f0f0fa]'
+                }`}
+              >
+                Chat
+                <Badge className="bg-indigo-500 text-white text-[10px] px-1.5 py-0 h-4 hover:bg-indigo-500">
+                  Pro
+                </Badge>
+              </Link>
+            )}
           </nav>
         </div>
 

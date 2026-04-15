@@ -262,6 +262,19 @@ export default function ProfileClient({
 
       await refreshResume();
       toast.success('Resume uploaded successfully');
+
+      // Analyze resume in background — non-blocking
+      toast.loading('Analyzing resume...', { id: 'resume-embed' });
+      try {
+        const embedRes = await fetch('/api/profile/embed-resume', { method: 'POST' });
+        if (embedRes.ok) {
+          toast.success('Resume analyzed ✓ — match scores are now active', { id: 'resume-embed' });
+        } else {
+          toast.warning('Resume uploaded but analysis failed — try re-uploading', { id: 'resume-embed' });
+        }
+      } catch {
+        toast.warning('Resume uploaded but analysis failed — try re-uploading', { id: 'resume-embed' });
+      }
     } catch {
       toast.error('Failed to upload resume');
     } finally {
