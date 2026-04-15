@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
-import { PDFParse } from 'pdf-parse';
+import { extractText } from 'unpdf';
 
 function createAdminClient() {
   return createClient(
@@ -37,16 +37,12 @@ export async function POST() {
       return NextResponse.json({ error: 'Could not download resume' }, { status: 404 });
     }
 
-    // Convert Blob to Buffer
-    const arrayBuffer = await fileData.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     // Parse PDF text
     let extractedText: string;
     try {
-      const parser = new PDFParse({ data: buffer });
-      const result = await parser.getText();
-      extractedText = result.text;
+      const buffer = await fileData.arrayBuffer();
+      const { text } = await extractText(new Uint8Array(buffer), { mergePages: true });
+      extractedText = text;
     } catch {
       return NextResponse.json({ error: 'Could not parse PDF' }, { status: 422 });
     }
