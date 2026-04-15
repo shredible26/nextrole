@@ -18,6 +18,7 @@ const SOURCE_LABELS: Record<string, string> = {
   arbeitnow: 'Arbeitnow',
   themuse: 'The Muse',
   recruitee: 'Recruitee',
+  personio: 'Personio',
   jobright_business: 'Jobright (Business)',
   jobright_design: 'Jobright (Design)',
   jobright_marketing: 'Jobright (Marketing)',

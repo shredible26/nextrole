@@ -65,6 +65,7 @@ const SOURCES = [
   { value: 'workday',                label: 'Workday' },
   { value: 'workable',               label: 'Workable' },
   { value: 'smartrecruiters',        label: 'SmartRecruiters' },
+  { value: 'personio',               label: 'Personio' },
   { value: 'adzuna',                 label: 'Adzuna' },
   { value: 'arbeitnow',              label: 'Arbeitnow' },
   { value: 'remoteok',               label: 'RemoteOK' },

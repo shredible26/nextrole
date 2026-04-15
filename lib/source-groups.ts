@@ -23,6 +23,7 @@ export const JOB_BOARD_SOURCES = [
   'workday',
   'workable',
   'smartrecruiters',
+  'personio',
   'adzuna',
   'remoteok',
   'arbeitnow',
