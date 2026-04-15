@@ -22,6 +22,23 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / denom;
 }
 
+function assignGrades(entries: Array<{ id: string; similarity: number }>): Map<string, string> {
+  const gradeMap = new Map<string, string>();
+  const n = entries.length;
+  if (n === 0) return gradeMap;
+  const sorted = [...entries].sort((a, b) => b.similarity - a.similarity);
+  sorted.forEach(({ id }, i) => {
+    const pct = i / n;
+    let grade: string;
+    if (pct < 0.10)      grade = 'A';
+    else if (pct < 0.25) grade = 'B';
+    else if (pct < 0.50) grade = 'C';
+    else if (pct < 0.75) grade = 'D';
+    else                 grade = 'F';
+    gradeMap.set(id, grade);
+  });
+  return gradeMap;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,10 +51,10 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient();
 
-    // Check tier
+    // Fetch profile — need updated_at to detect resume changes
     const { data: profile } = await admin
       .from('profiles')
-      .select('tier, resume_embedding')
+      .select('tier, resume_embedding, updated_at')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -78,42 +95,101 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ scores: {} });
     }
 
-    // Fetch job embeddings
+    // Treat missing updated_at as epoch 0 — any cached score will be considered fresh
+    const profileUpdatedAt = profile.updated_at
+      ? new Date(profile.updated_at as string)
+      : new Date(0);
+
+    // ── Step 1: Check which requested jobs already have fresh cached scores ──
+    const { data: cachedRows } = await admin
+      .from('job_scores')
+      .select('job_id, similarity, grade, computed_at')
+      .eq('user_id', user.id)
+      .in('job_id', jobIds);
+
+    const validCached = new Map<string, { similarity: number; grade: string }>();
+    const needsCompute = new Set(jobIds);
+
+    for (const row of cachedRows ?? []) {
+      if (new Date(row.computed_at as string) > profileUpdatedAt) {
+        validCached.set(row.job_id as string, {
+          similarity: row.similarity as number,
+          grade: row.grade as string,
+        });
+        needsCompute.delete(row.job_id as string);
+      }
+    }
+
+    // Early return: every requested job is already cached and fresh
+    if (needsCompute.size === 0) {
+      const scores: Record<string, { grade: string; similarity: number }> = {};
+      for (const [id, s] of validCached) scores[id] = s;
+      return NextResponse.json({ scores });
+    }
+
+    // ── Step 2: Compute similarities for stale / missing jobs ──
     const { data: jobs } = await admin
       .from('jobs')
       .select('id, embedding')
-      .in('id', jobIds);
+      .in('id', [...needsCompute]);
 
-    const scores: Record<string, { grade: string; similarity: number }> = {};
-
-    // First pass: compute all similarities for jobs that have embeddings
-    const computed: Array<{ id: string; similarity: number }> = [];
+    const newlyComputed: Array<{ id: string; similarity: number }> = [];
     for (const job of jobs ?? []) {
       if (!job.embedding) continue;
       let jobEmbedding: number[];
       try {
         const raw = job.embedding as string | number[];
         jobEmbedding = typeof raw === 'string' ? JSON.parse(raw) as number[] : raw;
-      } catch {
-        continue;
-      }
-      computed.push({ id: job.id as string, similarity: cosineSimilarity(resumeEmbedding, jobEmbedding) });
+      } catch { continue; }
+      newlyComputed.push({
+        id: job.id as string,
+        similarity: cosineSimilarity(resumeEmbedding, jobEmbedding),
+      });
     }
 
-    // Second pass: assign grades by percentile rank within this batch
-    const n = computed.length;
-    if (n > 0) {
-      const sorted = [...computed].sort((a, b) => b.similarity - a.similarity);
-      sorted.forEach(({ id, similarity }, i) => {
-        const pct = i / n;
-        let grade: 'A' | 'B' | 'C' | 'D' | 'F';
-        if (pct < 0.10) grade = 'A';
-        else if (pct < 0.25) grade = 'B';
-        else if (pct < 0.50) grade = 'C';
-        else if (pct < 0.75) grade = 'D';
-        else grade = 'F';
+    // ── Step 3: Fetch ALL existing similarities for this user ──
+    const { data: allExisting } = await admin
+      .from('job_scores')
+      .select('job_id, similarity')
+      .eq('user_id', user.id);
+
+    // Build combined map — newly computed takes precedence over cached
+    const allSimilarities = new Map<string, number>();
+    for (const row of allExisting ?? []) {
+      allSimilarities.set(row.job_id as string, row.similarity as number);
+    }
+    for (const { id, similarity } of newlyComputed) {
+      allSimilarities.set(id, similarity);
+    }
+
+    // ── Step 4: Re-grade across the full combined set ──
+    const allEntries = [...allSimilarities.entries()].map(([id, similarity]) => ({ id, similarity }));
+    const gradeMap = assignGrades(allEntries);
+
+    // ── Step 5: Upsert ALL rows — grades may have shifted for existing jobs ──
+    const now = new Date().toISOString();
+    const upsertRows = allEntries.map(({ id, similarity }) => ({
+      user_id: user.id,
+      job_id: id,
+      similarity,
+      grade: gradeMap.get(id) ?? 'F',
+      computed_at: now,
+    }));
+
+    if (upsertRows.length > 0) {
+      await admin
+        .from('job_scores')
+        .upsert(upsertRows, { onConflict: 'user_id,job_id' });
+    }
+
+    // ── Step 6: Return scores for the requested job IDs ──
+    const scores: Record<string, { grade: string; similarity: number }> = {};
+    for (const id of jobIds) {
+      const similarity = allSimilarities.get(id);
+      const grade = gradeMap.get(id);
+      if (similarity !== undefined && grade !== undefined) {
         scores[id] = { grade, similarity };
-      });
+      }
     }
 
     return NextResponse.json({ scores });
