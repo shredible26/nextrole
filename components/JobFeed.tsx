@@ -204,25 +204,6 @@ export default function JobFeed() {
         setTotal(data.total ?? 0);
         setHasMore((data.jobs?.length ?? 0) === data.perPage && data.total > f.page * data.perPage);
 
-        // Fetch match scores for Pro users
-        if (isPro && newJobs.length > 0) {
-          const ids = newJobs.map(j => j.id);
-          fetch('/api/jobs/match-scores', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jobIds: ids }),
-          })
-            .then(r => r.json())
-            .then((result: { scores?: Record<string, { grade: string; similarity: number }>; noResume?: boolean }) => {
-              if (result.noResume) {
-                setShowResumePrompt(true);
-              } else if (result.scores) {
-                setMatchScores(prev => ({ ...prev, ...result.scores }));
-              }
-            })
-            .catch(() => { /* non-blocking */ });
-        }
-
         return;
       }
 
@@ -262,6 +243,28 @@ export default function JobFeed() {
     fetchJobs(nextFilters, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.roles.join(), filters.search, filters.level, filters.remote, filters.location, filters.postedWithin, filters.sources.join()]);
+
+  // Fetch match scores whenever isPro resolves (jobs already loaded) or jobs change (isPro already true).
+  // Kept separate from fetchJobs so isPro is never captured in a stale closure.
+  useEffect(() => {
+    if (!isPro || jobs.length === 0) return;
+    const ids = jobs.map(j => j.id);
+    console.log(`fetching match scores for ${ids.length} jobs`);
+    fetch('/api/jobs/match-scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobIds: ids }),
+    })
+      .then(r => r.json())
+      .then((result: { scores?: Record<string, { grade: string; similarity: number }>; noResume?: boolean }) => {
+        if (result.noResume) {
+          setShowResumePrompt(true);
+        } else if (result.scores) {
+          setMatchScores(prev => ({ ...prev, ...result.scores }));
+        }
+      })
+      .catch(() => { /* non-blocking */ });
+  }, [isPro, jobs]);
 
   async function handleTrack(job: Job) {
     // Optimistic update — both React state and localStorage
