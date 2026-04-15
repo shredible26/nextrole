@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { GITHUB_REPO_SOURCES } from '@/lib/source-groups';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseDescription } from '@/lib/parse-description';
 
 const FREE_PER_PAGE = 30;
 const PRO_PER_PAGE = 50;
@@ -228,6 +229,17 @@ function escapeRegExp(value: string) {
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function toCardSnippet(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const parsed = parseDescription(raw);
+  const plain = parsed
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return plain.length > 200 ? plain.slice(0, 200) + '...' : plain;
 }
 
 function looksLikeHtml(value: string) {
@@ -508,11 +520,10 @@ export async function GET(req: NextRequest) {
 
     const pagedJobs = jobs
       .slice(offset, offset + perPage)
-      .map(job =>
-        Object.fromEntries(
-          Object.entries(job).filter(([key]) => key !== 'rank')
-        ) as Omit<RankedJob, 'rank'>
-      );
+      .map(job => {
+        const { rank: _rank, ...rest } = job;
+        return { ...rest, description: toCardSnippet(rest.description) };
+      });
 
     return NextResponse.json({
       jobs: pagedJobs,
@@ -592,7 +603,10 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    jobs: jobsResult.data ?? [],
+    jobs: (jobsResult.data ?? []).map(job => ({
+      ...job,
+      description: toCardSnippet(job.description as string | null | undefined),
+    })),
     total: jobsResult.count ?? 0,
     page,
     perPage,

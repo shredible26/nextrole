@@ -165,6 +165,13 @@ export default function JobCard({ job, tracked, onTrack, fromUrl, matchScore }: 
         </div>
       )}
 
+      {/* Description snippet */}
+      {job.description && (
+        <p className="text-xs text-[#a0a0b0] leading-relaxed line-clamp-2">
+          {job.description}
+        </p>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between mt-auto pt-1">
         <div className="flex items-center gap-3 text-[13px] font-medium text-[#e0e0f0]">

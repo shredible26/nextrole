@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import sanitizeHtml from 'sanitize-html'
 import { Role, ROLE_LABELS } from '@/lib/types'
+import { parseDescription } from '@/lib/parse-description'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -80,7 +81,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const job = await getJob(id)
   if (!job) return { title: 'Job Not Found | NextRole' }
-  const metadataDescription = plainDescription(job.description).slice(0, 120)
+  const metadataDescription = plainDescription(parseDescription(job.description)).slice(0, 120)
   return {
     title: `${job.title} at ${job.company} | NextRole`,
     description: `${job.experience_level === 'new_grad' ? 'New grad' : 'Entry level'} ${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ''}. ${metadataDescription}`,
@@ -116,10 +117,7 @@ export default async function JobPage({ params, searchParams }: Props) {
     : null
 
   const applyLabel = 'Apply Now ↗'
-  const description = job.description ?? ''
-  const truncatedDescription = description.length > 5000
-    ? description.slice(0, 5000) + '...'
-    : description
+  const description = parseDescription(job.description)
   const validThrough = getValidThroughDate(job.posted_at, job.scraped_at)
 
   return (
@@ -181,19 +179,9 @@ export default async function JobPage({ params, searchParams }: Props) {
             <div
               className="prose prose-sm prose-invert max-w-none text-[#c0c0d0] leading-relaxed prose-headings:text-white prose-headings:font-semibold prose-strong:text-white prose-a:text-indigo-400"
               dangerouslySetInnerHTML={{
-                __html: cleanDescription(truncatedDescription),
+                __html: cleanDescription(description),
               }}
             />
-            {description.length > 5000 && (
-              <a
-                href={job.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-indigo-400 hover:underline mt-4"
-              >
-                Read full description ↗
-              </a>
-            )}
           </div>
         )}
 
@@ -204,7 +192,7 @@ export default async function JobPage({ params, searchParams }: Props) {
               '@context': 'https://schema.org',
               '@type': 'JobPosting',
               title: job.title,
-              description: plainDescription(job.description).slice(0, 500),
+              description: plainDescription(description).slice(0, 500),
               hiringOrganization: {
                 '@type': 'Organization',
                 name: job.company,
