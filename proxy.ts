@@ -2,8 +2,15 @@ import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const path = request.nextUrl.pathname
+  const protectedRoutes = ['/tracker', '/settings']
+  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
 
+  if (!isProtectedRoute) {
+    return NextResponse.next({ request })
+  }
+
+  let supabaseResponse = NextResponse.next({ request })
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,14 +32,8 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
-
-  const path = request.nextUrl.pathname
-  const protectedRoutes = ['/tracker', '/settings']
-
   const { data: { user } } = await supabase.auth.getUser()
-
-  if (protectedRoutes.some(r => path.startsWith(r)) && !user) {
+  if (!user) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
@@ -41,6 +42,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

@@ -31,6 +31,7 @@ interface FeedResponse {
   perPage: number;
   error?: string;
   upgrade?: boolean;
+  retryable?: boolean;
 }
 
 interface ApplyResponse {
@@ -38,6 +39,28 @@ interface ApplyResponse {
   error?: string;
   upgrade?: boolean;
   reason?: 'tracker';
+}
+
+function looksLikeHtml(value: string) {
+  return /<!doctype html|<html|<body|<head|Cloudflare Ray ID/i.test(value);
+}
+
+function normalizeFeedErrorMessage(value?: string) {
+  if (!value) return 'Jobs service temporarily unavailable. Please try again.';
+  if (looksLikeHtml(value)) return 'Jobs service temporarily unavailable. Please try again.';
+
+  const lower = value.toLowerCase();
+  if (
+    lower.includes('bad gateway') ||
+    lower.includes('service unavailable') ||
+    lower.includes('gateway timeout') ||
+    lower.includes('cloudflare') ||
+    lower.includes('upstream')
+  ) {
+    return 'Jobs service temporarily unavailable. Please try again.';
+  }
+
+  return value;
 }
 
 export default function JobFeed() {
@@ -111,36 +134,70 @@ export default function JobFeed() {
       setIsRefetching(true);
     }
     try {
-      const res = await fetch(`/api/jobs?${buildQuery(f)}`);
-      const data: FeedResponse = await res.json();
+      let lastError = 'Failed to load jobs. Please try again.';
 
-      if (requestId !== requestIdRef.current) return;
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        const res = await fetch(`/api/jobs?${buildQuery(f)}`, { cache: 'no-store' });
+        const contentType = res.headers.get('content-type') ?? '';
+        let data: FeedResponse;
 
-      if (data.upgrade) {
-        setUpgradeReason('pagination');
-        setShowUpgrade(true);
+        if (contentType.includes('application/json')) {
+          data = await res.json() as FeedResponse;
+        } else {
+          const text = await res.text();
+          data = {
+            jobs: [],
+            total: 0,
+            page: f.page,
+            perPage: 0,
+            error: normalizeFeedErrorMessage(text),
+            retryable: res.status >= 500 || looksLikeHtml(text),
+          };
+        }
+
+        if (requestId !== requestIdRef.current) return;
+
+        if (data.error) {
+          data.error = normalizeFeedErrorMessage(data.error);
+          lastError = data.error;
+        }
+
+        const shouldRetry = Boolean(data.retryable || res.status >= 500) && attempt < 2;
+        if (shouldRetry) {
+          await new Promise(resolve => window.setTimeout(resolve, attempt * 400));
+          if (requestId !== requestIdRef.current) return;
+          continue;
+        }
+
+        if (data.upgrade) {
+          setUpgradeReason('pagination');
+          setShowUpgrade(true);
+          return;
+        }
+        if (data.error) {
+          toast.error(data.error);
+          return;
+        }
+
+        if (append) {
+          setJobs(prev => {
+            const next = [...prev, ...(data.jobs ?? [])];
+            jobsRef.current = next;
+            return next;
+          });
+        } else {
+          setJobs(() => {
+            const next = data.jobs ?? [];
+            jobsRef.current = next;
+            return next;
+          });
+        }
+        setTotal(data.total ?? 0);
+        setHasMore((data.jobs?.length ?? 0) === data.perPage && data.total > f.page * data.perPage);
         return;
       }
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
 
-      if (append) {
-        setJobs(prev => {
-          const next = [...prev, ...(data.jobs ?? [])];
-          jobsRef.current = next;
-          return next;
-        });
-      } else {
-        setJobs(() => {
-          const next = data.jobs ?? [];
-          jobsRef.current = next;
-          return next;
-        });
-      }
-      setTotal(data.total ?? 0);
-      setHasMore((data.jobs?.length ?? 0) === data.perPage && data.total > f.page * data.perPage);
+      toast.error(lastError);
     } catch {
       if (requestId !== requestIdRef.current) return;
       toast.error('Failed to load jobs. Please try again.');

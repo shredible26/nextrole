@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { GITHUB_REPO_SOURCES } from '@/lib/source-groups';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -138,6 +139,32 @@ type RankedJob = {
   rank: number | null;
 };
 
+type SupabaseErrorLike = {
+  message: string;
+  code?: string | null;
+  details?: string | null;
+  hint?: string | null;
+};
+
+type SupabaseResult<T> = {
+  data: T | null;
+  error: SupabaseErrorLike | null;
+  count?: number | null;
+};
+
+function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+}
+
 function expandSources(sources: string[]) {
   if (!sources.includes('github_repos')) return sources;
 
@@ -157,6 +184,98 @@ function buildPostgrestCondition(column: string, operator: string, value: string
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function looksLikeHtml(value: string) {
+  return /<!doctype html|<html|<body|<head|Cloudflare Ray ID/i.test(value);
+}
+
+function compactErrorMessage(value?: string | null) {
+  if (!value) return '';
+
+  return value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isRetryableSupabaseError(error?: SupabaseErrorLike | null) {
+  const combined = [
+    error?.message,
+    error?.details,
+    error?.hint,
+    error?.code,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return (
+    looksLikeHtml(combined) ||
+    /(^|[^0-9])(502|503|504)([^0-9]|$)/.test(combined) ||
+    combined.includes('bad gateway') ||
+    combined.includes('service unavailable') ||
+    combined.includes('gateway timeout') ||
+    combined.includes('cloudflare') ||
+    combined.includes('cf-ray') ||
+    combined.includes('upstream') ||
+    combined.includes('fetch failed') ||
+    combined.includes('connection terminated') ||
+    combined.includes('timed out')
+  );
+}
+
+function toPublicSupabaseError(error?: SupabaseErrorLike | null) {
+  const message = compactErrorMessage(
+    [error?.message, error?.details, error?.hint].filter(Boolean).join(' ')
+  );
+
+  if (!message || looksLikeHtml(message) || isRetryableSupabaseError(error)) {
+    return 'Jobs service temporarily unavailable. Please try again.';
+  }
+
+  return message;
+}
+
+function logSupabaseError(label: string, error?: SupabaseErrorLike | null) {
+  if (!error) return;
+
+  console.error(`[jobs/route] ${label}`, {
+    code: error.code ?? null,
+    message: compactErrorMessage(error.message).slice(0, 300),
+    details: compactErrorMessage(error.details).slice(0, 300),
+    hint: compactErrorMessage(error.hint).slice(0, 300),
+  });
+}
+
+async function withSupabaseRetry<T extends SupabaseResult<unknown>>(
+  label: string,
+  operation: () => PromiseLike<T>,
+  maxAttempts = 2
+): Promise<T> {
+  let lastResult: T | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const result = await operation();
+    lastResult = result;
+
+    if (!result.error) {
+      return result;
+    }
+
+    if (!isRetryableSupabaseError(result.error) || attempt === maxAttempts) {
+      return result;
+    }
+
+    logSupabaseError(`${label} failed on attempt ${attempt}, retrying`, result.error);
+    await delay(attempt * 250);
+  }
+
+  return lastResult as T;
 }
 
 function buildUsaLocationOrFilter() {
@@ -193,21 +312,54 @@ function isUsaJob(job: { remote?: boolean; location?: string | null }): boolean 
 
 export async function GET(req: NextRequest) {
   const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const admin = createAdminClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) {
+    logSupabaseError('auth.getUser failed', { message: authError.message });
+    return NextResponse.json(
+      {
+        error: 'Authentication service temporarily unavailable. Please refresh and try again.',
+        retryable: true,
+      },
+      { status: 503 }
+    );
+  }
+
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   // Only need tier — no more daily counter reads or writes
-  let { data: profile } = await supabase
-    .from('profiles')
-    .select('tier')
-    .eq('id', user.id)
-    .single();
+  const profileResult = await withSupabaseRetry<SupabaseResult<{ tier: string }>>(
+    'profile lookup',
+    () =>
+      admin
+        .from('profiles')
+        .select('tier')
+        .eq('id', user.id)
+        .maybeSingle()
+  );
+  let profile = profileResult.data;
 
   if (!profile) {
-    // First sign-in — profile may not have been created yet by the auth callback.
-    await supabase
-      .from('profiles')
-      .insert({ id: user.id, email: user.email ?? '' });
+    if (profileResult.error) {
+      logSupabaseError('profile lookup failed, defaulting to free tier', profileResult.error);
+    } else {
+      // First sign-in — profile may not have been created yet by the auth callback.
+      const insertResult = await withSupabaseRetry<SupabaseResult<null>>(
+        'profile insert',
+        () =>
+          admin
+            .from('profiles')
+            .insert({ id: user.id, email: user.email ?? '' })
+      );
+
+      if (insertResult.error) {
+        logSupabaseError('profile insert failed, defaulting to free tier', insertResult.error);
+      }
+    }
 
     profile = { tier: 'free' };
   }
@@ -257,14 +409,27 @@ export async function GET(req: NextRequest) {
   }
 
   if (search) {
-    const { data, error } = await supabase.rpc('search_jobs_ranked', {
-      search_query: search,
-      is_active_filter: true,
-    });
+    const searchResult = await withSupabaseRetry<SupabaseResult<RankedJob[]>>(
+      'search_jobs_ranked',
+      () =>
+        admin.rpc('search_jobs_ranked', {
+          search_query: search,
+          is_active_filter: true,
+        })
+    );
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (searchResult.error) {
+      logSupabaseError('search_jobs_ranked failed', searchResult.error);
+      return NextResponse.json(
+        {
+          error: toPublicSupabaseError(searchResult.error),
+          retryable: isRetryableSupabaseError(searchResult.error),
+        },
+        { status: isRetryableSupabaseError(searchResult.error) ? 503 : 500 }
+      );
+    }
 
-    let jobs = (data ?? []) as RankedJob[];
+    let jobs = (searchResult.data ?? []) as RankedJob[];
 
     if (roles.length > 0) {
       jobs = jobs.filter(job => roles.every(role => job.roles?.includes(role) ?? false));
@@ -309,57 +474,78 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Build query
-  let query = supabase
-    .from('jobs')
-    .select('*', { count: 'exact' })
-    .eq('is_active', true);
+  const runJobsQuery = (countMode: 'exact' | 'planned') => {
+    let query = admin
+      .from('jobs')
+      .select('*', { count: countMode })
+      .eq('is_active', true);
 
-  if (roles.length > 0) {
-    for (const role of roles) {
-      query = query.contains('roles', [role]);
+    if (roles.length > 0) {
+      for (const role of roles) {
+        query = query.contains('roles', [role]);
+      }
     }
-  }
-  if (remote)             query = query.eq('remote', true);
-  if (level)              query = query.eq('experience_level', level);
+    if (remote)             query = query.eq('remote', true);
+    if (level)              query = query.eq('experience_level', level);
 
-  if (expandedSources.length > 0) {
-    query = query.in('source', expandedSources);
-  }
-
-  if (cutoffIso) {
-    query = query.gte('posted_at', cutoffIso);
-  }
-
-  if (locationFilter === 'usa') {
-    query = query
-      .or(buildUsaLocationOrFilter())
-      .not('location', 'ilike', '%Perth, WA%');
-  } else if (locationFilter === 'other') {
-    query = query
-      .eq('remote', false)
-      .not('location', 'is', null)
-      .not('location', 'eq', '');
-
-    for (const pattern of USA_LOCATION_ILIKE_PATTERNS) {
-      query = query.not('location', 'ilike', pattern);
+    if (expandedSources.length > 0) {
+      query = query.in('source', expandedSources);
     }
 
-    query = query
-      .not('location', 'imatch', USA_SUBSTRING_REGEX_SOURCE)
-      .not('location', 'imatch', US_STATE_ABBREV_REGEX_SOURCE);
+    if (cutoffIso) {
+      query = query.gte('posted_at', cutoffIso);
+    }
+
+    if (locationFilter === 'usa') {
+      query = query
+        .or(buildUsaLocationOrFilter())
+        .not('location', 'ilike', '%Perth, WA%');
+    } else if (locationFilter === 'other') {
+      query = query
+        .eq('remote', false)
+        .not('location', 'is', null)
+        .not('location', 'eq', '');
+
+      for (const pattern of USA_LOCATION_ILIKE_PATTERNS) {
+        query = query.not('location', 'ilike', pattern);
+      }
+
+      query = query
+        .not('location', 'imatch', USA_SUBSTRING_REGEX_SOURCE)
+        .not('location', 'imatch', US_STATE_ABBREV_REGEX_SOURCE);
+    }
+
+    return query
+      .order('posted_at', { ascending: false, nullsFirst: false })
+      .range(offset, offset + perPage - 1);
+  };
+
+  let jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
+    'jobs query (exact count)',
+    () => runJobsQuery('exact')
+  );
+
+  if (jobsResult.error && isRetryableSupabaseError(jobsResult.error)) {
+    jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
+      'jobs query (planned count fallback)',
+      () => runJobsQuery('planned')
+    );
   }
 
-  query = query
-    .order('posted_at', { ascending: false, nullsFirst: false })
-    .range(offset, offset + perPage - 1);
-
-  const { data: jobs, count, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (jobsResult.error) {
+    logSupabaseError('jobs query failed', jobsResult.error);
+    return NextResponse.json(
+      {
+        error: toPublicSupabaseError(jobsResult.error),
+        retryable: isRetryableSupabaseError(jobsResult.error),
+      },
+      { status: isRetryableSupabaseError(jobsResult.error) ? 503 : 500 }
+    );
+  }
 
   return NextResponse.json({
-    jobs,
-    total: count ?? 0,
+    jobs: jobsResult.data ?? [],
+    total: jobsResult.count ?? 0,
     page,
     perPage,
   });
