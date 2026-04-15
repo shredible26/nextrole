@@ -22,13 +22,6 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / denom;
 }
 
-function similarityToGrade(sim: number): 'A' | 'B' | 'C' | 'D' | 'F' {
-  if (sim >= 0.82) return 'A';
-  if (sim >= 0.72) return 'B';
-  if (sim >= 0.62) return 'C';
-  if (sim >= 0.52) return 'D';
-  return 'F';
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -93,9 +86,10 @@ export async function POST(req: NextRequest) {
 
     const scores: Record<string, { grade: string; similarity: number }> = {};
 
+    // First pass: compute all similarities for jobs that have embeddings
+    const computed: Array<{ id: string; similarity: number }> = [];
     for (const job of jobs ?? []) {
       if (!job.embedding) continue;
-
       let jobEmbedding: number[];
       try {
         const raw = job.embedding as string | number[];
@@ -103,12 +97,23 @@ export async function POST(req: NextRequest) {
       } catch {
         continue;
       }
+      computed.push({ id: job.id as string, similarity: cosineSimilarity(resumeEmbedding, jobEmbedding) });
+    }
 
-      const similarity = cosineSimilarity(resumeEmbedding, jobEmbedding);
-      scores[job.id as string] = {
-        grade: similarityToGrade(similarity),
-        similarity,
-      };
+    // Second pass: assign grades by percentile rank within this batch
+    const n = computed.length;
+    if (n > 0) {
+      const sorted = [...computed].sort((a, b) => b.similarity - a.similarity);
+      sorted.forEach(({ id, similarity }, i) => {
+        const pct = i / n;
+        let grade: 'A' | 'B' | 'C' | 'D' | 'F';
+        if (pct < 0.10) grade = 'A';
+        else if (pct < 0.25) grade = 'B';
+        else if (pct < 0.50) grade = 'C';
+        else if (pct < 0.75) grade = 'D';
+        else grade = 'F';
+        scores[id] = { grade, similarity };
+      });
     }
 
     return NextResponse.json({ scores });

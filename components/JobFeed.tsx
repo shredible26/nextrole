@@ -88,6 +88,7 @@ export default function JobFeed() {
   const requestIdRef = useRef(0);
   const jobsRef = useRef<Job[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scoredJobIdsRef = useRef<Set<string>>(new Set());
 
   // Pre-populate tracked IDs and tier from Supabase
   useEffect(() => {
@@ -246,17 +247,19 @@ export default function JobFeed() {
 
   // Fetch match scores whenever isPro resolves (jobs already loaded) or jobs change (isPro already true).
   // Kept separate from fetchJobs so isPro is never captured in a stale closure.
+  // Only sends IDs not yet scored to avoid re-scoring jobs already in matchScores.
   useEffect(() => {
     if (!isPro || jobs.length === 0) return;
-    const ids = jobs.map(j => j.id);
-    console.log(`fetching match scores for ${ids.length} jobs`);
+    const unseenIds = jobs.map(j => j.id).filter(id => !scoredJobIdsRef.current.has(id));
+    if (unseenIds.length === 0) return;
     fetch('/api/jobs/match-scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobIds: ids }),
+      body: JSON.stringify({ jobIds: unseenIds }),
     })
       .then(r => r.json())
       .then((result: { scores?: Record<string, { grade: string; similarity: number }>; noResume?: boolean }) => {
+        unseenIds.forEach(id => scoredJobIdsRef.current.add(id));
         if (result.noResume) {
           setShowResumePrompt(true);
         } else if (result.scores) {
