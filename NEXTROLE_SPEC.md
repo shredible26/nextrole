@@ -516,8 +516,15 @@ This section is included as operational reference. In this checkout, scraper cod
 5g.TeamTailor - Figure out if I should add via manual seed slug
    (check website) or if there is a better way  
 5h.For each role filter, add up job count. Then figure out what the difference is between that and 'All'. What are the remaining jobs? How
-   can they be sorted/categorized?    
-
+   can they be sorted/categorized? 
+5i.Fix back button (on About this role page and browser back button 
+   on jobs page)
+5j.Add the claude re-read step for the RAG grade matching.    
+5k.'About this role' section should be displayed perfectly (not at one 
+    big paragraph). The description should not show on the the jobs card
+    (which it currently does), it should only show if you click on the job title and it should appear in the 'About this role' section. Maybe add a 'view description' button for jobs with them?
+5l.Add 'best match' filter (pro only) - ranks all jobs from best to
+   worst.
 ---
 
 ### 2: NEW SOURCES & SOURCE EXPANSION
