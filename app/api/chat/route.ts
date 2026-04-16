@@ -106,15 +106,31 @@ export async function POST(req: NextRequest) {
     }
 
     // RAG: find relevant jobs via pgvector
-    const { data: matchedJobs } = await admin.rpc('match_jobs', {
+    const primaryResult = await admin.rpc('match_jobs', {
       query_embedding: searchEmbedding,
       match_count: 10,
     });
+    let matchedJobs = primaryResult.data;
+
+    // Fallback: if no results, retry with no threshold filter
+    if (!matchedJobs || !Array.isArray(matchedJobs) || matchedJobs.length === 0) {
+      console.warn('[chat] match_jobs returned 0 results — retrying with match_threshold: 0.0');
+      const fallbackResult = await admin.rpc('match_jobs', {
+        query_embedding: searchEmbedding,
+        match_count: 15,
+        match_threshold: 0.0,
+      });
+      if (fallbackResult.error) {
+        console.warn('[chat] fallback match_jobs failed:', fallbackResult.error.message);
+      } else {
+        matchedJobs = fallbackResult.data;
+      }
+    }
 
     const resumeText = (profile.resume_text as string | null) ?? null;
 
     // Format job context
-    const jobContext = (matchedJobs ?? [])
+    const jobContext = (Array.isArray(matchedJobs) ? matchedJobs : [])
       .map((job: { company: string; title: string; location?: string | null; url: string; salary_min?: number | null; salary_max?: number | null }) => {
         let line = `${job.company} | ${job.title} | ${job.location ?? 'Remote'} | ${job.url}`;
         if (job.salary_min) {
@@ -124,27 +140,35 @@ export async function POST(req: NextRequest) {
       })
       .join('\n');
 
-    const systemPrompt = `You are NextRole AI, an expert career assistant built into NextRole — the largest new grad and entry-level tech job aggregator. You help recent CS/DS graduates and new grad tech candidates find jobs, optimize their resumes, and navigate their job search.
+    console.log(`[chat] jobContext length: ${jobContext.length} chars, jobs matched: ${Array.isArray(matchedJobs) ? matchedJobs.length : 0}`);
+
+    const hasJobs = jobContext.length > 0;
+
+    const systemPrompt = `You are NextRole AI, an expert career assistant built into NextRole — the largest new grad and entry-level tech job aggregator.
 
 You have two powerful inputs:
 1. The user's actual resume text (if uploaded)
-2. The top 10 most semantically relevant jobs from our database of 63,000+ active new grad and entry-level tech positions, retrieved specifically for this query
+2. Real job listings from NextRole's database of 63,000+ active new grad and entry-level tech positions, retrieved for this query
 
 User's resume:
 ${resumeText ?? 'No resume uploaded yet'}
 
-Most relevant jobs for this query:
-${jobContext || 'No matching jobs found for this query.'}
+Relevant jobs from NextRole's database:
+${hasJobs ? jobContext : 'No matching jobs found for this query.'}
 
-Guidelines:
-- Be direct, specific, and actionable. No generic advice.
-- When recommending jobs, always include the full application URL on its own line
-- When analyzing resumes, reference specific details from their actual resume text
-- For 'why am I not getting interviews' — give honest, constructive feedback based on their resume
-- For skill gap questions — identify specific missing skills by comparing resume to the job descriptions above
-- Keep responses under 400 words unless a detailed resume analysis is explicitly requested
-- Format job recommendations as a numbered list with company, title, and URL
-- You only know about jobs in NextRole's database — don't suggest applying elsewhere`;
+RESPONSE RULES — follow exactly:
+${hasJobs ? `- Begin your response with exactly this sentence: "Based on NextRole's database of 63,000+ active jobs, here are the best matches for you:"
+- After that line, list ONLY the jobs. No preamble, no tips, no filler.
+- Format each job as:
+  **[Company]** — **[Job Title]** | [Location] | [Salary if available]
+  [Full URL on its own line]
+- Separate each job with a blank line.
+- Cap the list at 300 words total.` : `- Respond with exactly: "I couldn't find strong matches in NextRole's database for this query. Try adjusting your filters on the Jobs page or search for a specific role."`}
+- For resume analysis: reference specific details from the resume. Keep under 500 words.
+- For "why am I not getting interviews": give honest, constructive feedback based on their resume. No generic advice.
+- For skill gaps: compare resume against the job descriptions above.
+- Never suggest jobs or companies outside of NextRole's database.
+- No generic career advice. Be direct, specific, and actionable.`;
 
     // Call Claude with streaming
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -172,7 +196,7 @@ Guidelines:
       return NextResponse.json({ error: 'AI service unavailable' }, { status: 503 });
     }
 
-    // Stream response back to client
+    // Stream SSE from Anthropic → plain text chunks to client
     const stream = new ReadableStream({
       async start(controller) {
         const reader = claudeRes.body!.getReader();
@@ -191,7 +215,7 @@ Guidelines:
             for (const line of lines) {
               if (!line.startsWith('data: ')) continue;
               const dataStr = line.slice(6).trim();
-              if (dataStr === '[DONE]') continue;
+              if (!dataStr || dataStr === '[DONE]') continue;
 
               try {
                 const event = JSON.parse(dataStr) as {
@@ -210,6 +234,28 @@ Guidelines:
               }
             }
           }
+
+          // Flush any remaining buffered SSE lines
+          if (buffer.startsWith('data: ')) {
+            const dataStr = buffer.slice(6).trim();
+            if (dataStr && dataStr !== '[DONE]') {
+              try {
+                const event = JSON.parse(dataStr) as {
+                  type: string;
+                  delta?: { type: string; text?: string };
+                };
+                if (
+                  event.type === 'content_block_delta' &&
+                  event.delta?.type === 'text_delta' &&
+                  event.delta.text
+                ) {
+                  controller.enqueue(new TextEncoder().encode(event.delta.text));
+                }
+              } catch {
+                // ignore
+              }
+            }
+          }
         } catch (err) {
           console.error('[chat] stream error:', err);
         } finally {
@@ -221,7 +267,6 @@ Guidelines:
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked',
         'X-Content-Type-Options': 'nosniff',
       },
     });

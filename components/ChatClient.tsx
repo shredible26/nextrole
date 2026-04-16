@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 interface Message {
@@ -50,6 +50,69 @@ function TypingIndicator() {
   );
 }
 
+// Render inline markdown: **bold** and bare URLs as clickable links
+function renderInline(text: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const pattern = /(\*\*[^*\n]+\*\*|https?:\/\/[^\s]+)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('**')) {
+      parts.push(
+        <strong key={match.index} className="font-semibold text-[#f0f0fa]">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else {
+      // Trim trailing punctuation that's not part of the URL
+      const url = token.replace(/[.,;:!?)\]]+$/, '');
+      const trailing = token.slice(url.length);
+      parts.push(
+        <a
+          key={match.index}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-400 hover:text-indigo-300 underline break-all"
+        >
+          {url}
+        </a>
+      );
+      if (trailing) parts.push(trailing);
+    }
+    lastIndex = match.index + token.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+function MessageContent({ content }: { content: string }) {
+  const lines = content.split('\n');
+  return (
+    <div className="leading-7">
+      {lines.map((line, i) => {
+        if (line === '') {
+          return <div key={i} className="h-3" />;
+        }
+        return (
+          <p key={i} className="text-sm text-[#f0f0fa]">
+            {renderInline(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatClient({ hasResume }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -80,6 +143,8 @@ export default function ChatClient({ hasResume }: Props) {
 
     const controller = new AbortController();
     abortRef.current = controller;
+
+    let accumulated = '';
 
     try {
       const res = await fetch('/api/chat', {
@@ -114,16 +179,40 @@ export default function ChatClient({ hasResume }: Props) {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let accumulated = '';
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-        const snap = accumulated;
+        if (done) {
+          // Flush any remaining bytes in the decoder
+          const flushed = decoder.decode();
+          if (flushed) {
+            accumulated += flushed;
+            const snap = accumulated;
+            setMessages(prev => {
+              const next = [...prev];
+              next[next.length - 1] = { role: 'assistant', content: snap };
+              return next;
+            });
+          }
+          break;
+        }
+        const chunk = decoder.decode(value, { stream: true });
+        if (chunk) {
+          accumulated += chunk;
+          const snap = accumulated;
+          setMessages(prev => {
+            const next = [...prev];
+            next[next.length - 1] = { role: 'assistant', content: snap };
+            return next;
+          });
+        }
+      }
+
+      // If the stream completed with no content, show an error
+      if (!accumulated) {
         setMessages(prev => {
           const next = [...prev];
-          next[next.length - 1] = { role: 'assistant', content: snap };
+          next[next.length - 1] = { role: 'assistant', content: 'No response received. Please try again.' };
           return next;
         });
       }
@@ -131,7 +220,10 @@ export default function ChatClient({ hasResume }: Props) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setMessages(prev => {
         const next = [...prev];
-        next[next.length - 1] = { role: 'assistant', content: 'Failed to get a response. Please try again.' };
+        next[next.length - 1] = {
+          role: 'assistant',
+          content: accumulated || 'Failed to get a response. Please try again.',
+        };
         return next;
       });
     } finally {
@@ -245,13 +337,15 @@ export default function ChatClient({ hasResume }: Props) {
                       className={
                         isUser
                           ? 'rounded-2xl rounded-tr-sm bg-indigo-600 px-4 py-2.5 text-sm text-white'
-                          : 'rounded-2xl rounded-tl-sm border border-[#2a2a35] bg-[#1a1a24] px-4 py-2.5 text-sm text-[#f0f0fa]'
+                          : 'rounded-2xl rounded-tl-sm border border-[#2a2a35] bg-[#1a1a24] px-4 py-3 text-sm text-[#f0f0fa]'
                       }
                     >
-                      {isLastAssistant && showTypingIndicator ? (
+                      {isUser ? (
+                        <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
+                      ) : isLastAssistant && showTypingIndicator ? (
                         <TypingIndicator />
                       ) : (
-                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        <MessageContent content={msg.content} />
                       )}
                     </div>
                   </div>
