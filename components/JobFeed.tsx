@@ -197,6 +197,8 @@ export default function JobFeed() {
           });
         } else {
           allJobs = newJobs;
+          scoredJobIdsRef.current = new Set();
+          setMatchScores({});
           setJobs(() => {
             jobsRef.current = newJobs;
             return newJobs;
