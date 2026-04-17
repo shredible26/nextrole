@@ -85,11 +85,12 @@ interface Props {
   job: Job;
   tracked: boolean;
   onTrack: (job: Job) => void;
+  onOpen?: () => void;
   fromUrl?: string;
   matchScore?: { grade: string; similarity: number };
 }
 
-export default function JobCard({ job, tracked, onTrack, fromUrl, matchScore }: Props) {
+export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchScore }: Props) {
   const postedAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
@@ -126,6 +127,7 @@ export default function JobCard({ job, tracked, onTrack, fromUrl, matchScore }: 
         <div className="min-w-0 flex-1">
           <Link
             href={`/jobs/${job.id}?from=${encodeURIComponent(fromUrl ?? '/jobs')}`}
+            onClick={onOpen}
             className="block truncate font-semibold text-sm leading-snug text-white hover:underline"
           >
             {job.title}
@@ -165,18 +167,11 @@ export default function JobCard({ job, tracked, onTrack, fromUrl, matchScore }: 
         </div>
       )}
 
-      {/* Description snippet */}
-      {job.description && (
-        <p className="text-xs text-[#a0a0b0] leading-relaxed line-clamp-2">
-          {job.description}
-        </p>
-      )}
-
       {/* Footer */}
       <div className="flex items-center justify-between mt-auto pt-1">
         <div className="flex items-center gap-3 text-[13px] font-medium text-[#e0e0f0]">
           {salary && <span className="font-medium text-[#f0f0fa]">{salary}</span>}
-          <span>{SOURCE_LABELS[job.source] ?? job.source}</span>
+          <span className="font-semibold text-[#f7f7ff]">{SOURCE_LABELS[job.source] ?? job.source}</span>
           {postedAgoFormatted && <span>{postedAgoFormatted}</span>}
         </div>
 

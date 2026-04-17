@@ -14,6 +14,8 @@ import { getTrackedIds, addTrackedId, removeTrackedId, writeTrackedIds } from '@
 import { Loader2, Lock, Search, X } from 'lucide-react';
 
 const GRADE_ORDER: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, F: 4 };
+const FEED_SNAPSHOT_KEY = 'nextrole.jobs.feed-snapshot';
+const FEED_RESTORE_KEY = 'nextrole.jobs.restore-feed';
 
 const DEFAULT_FILTERS: JobFilters = {
   roles: [],
@@ -25,6 +27,8 @@ const DEFAULT_FILTERS: JobFilters = {
   sources: [],
   page: 1,
 };
+
+type MatchScore = { grade: string; similarity: number };
 
 interface FeedResponse {
   jobs: Job[];
@@ -41,6 +45,23 @@ interface ApplyResponse {
   error?: string;
   upgrade?: boolean;
   reason?: 'tracker';
+}
+
+interface FeedSnapshot {
+  version: 1;
+  hasFetched: boolean;
+  filters: JobFilters;
+  jobs: Job[];
+  total: number;
+  hasMore: boolean;
+  searchInput: string;
+  sortBy: 'default' | 'best_match';
+  matchScores: Record<string, MatchScore>;
+  isPro: boolean;
+  showResumePrompt: boolean;
+  resumePromptDismissed: boolean;
+  scrollTop: number;
+  sidebarScrollTop: number;
 }
 
 function looksLikeHtml(value: string) {
@@ -65,30 +86,221 @@ function normalizeFeedErrorMessage(value?: string) {
   return value;
 }
 
+function hasFeedRestorePending() {
+  if (typeof window === 'undefined') return false;
+  return window.sessionStorage.getItem(FEED_RESTORE_KEY) === '1';
+}
+
+function markFeedForRestore() {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(FEED_RESTORE_KEY, '1');
+}
+
+function clearFeedRestoreFlag() {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.removeItem(FEED_RESTORE_KEY);
+}
+
+function isSnapshotFilters(value: unknown): value is JobFilters {
+  if (!value || typeof value !== 'object') return false;
+
+  const candidate = value as Partial<JobFilters>;
+  return (
+    Array.isArray(candidate.roles) &&
+    typeof candidate.search === 'string' &&
+    typeof candidate.level === 'string' &&
+    typeof candidate.remote === 'boolean' &&
+    typeof candidate.location === 'string' &&
+    typeof candidate.postedWithin === 'string' &&
+    Array.isArray(candidate.sources) &&
+    typeof candidate.page === 'number'
+  );
+}
+
+function readFeedSnapshot(): FeedSnapshot | null {
+  if (!hasFeedRestorePending()) return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(FEED_SNAPSHOT_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<FeedSnapshot> | null;
+    if (!parsed || parsed.version !== 1 || !parsed.hasFetched || !isSnapshotFilters(parsed.filters)) {
+      return null;
+    }
+    if (!Array.isArray(parsed.jobs) || typeof parsed.total !== 'number' || typeof parsed.hasMore !== 'boolean') {
+      return null;
+    }
+    if (typeof parsed.searchInput !== 'string' || (parsed.sortBy !== 'default' && parsed.sortBy !== 'best_match')) {
+      return null;
+    }
+    if (!parsed.matchScores || typeof parsed.matchScores !== 'object') {
+      return null;
+    }
+
+    return {
+      version: 1,
+      hasFetched: true,
+      filters: parsed.filters,
+      jobs: parsed.jobs,
+      total: parsed.total,
+      hasMore: parsed.hasMore,
+      searchInput: parsed.searchInput,
+      sortBy: parsed.sortBy,
+      matchScores: parsed.matchScores as Record<string, MatchScore>,
+      isPro: typeof parsed.isPro === 'boolean' ? parsed.isPro : false,
+      showResumePrompt: typeof parsed.showResumePrompt === 'boolean' ? parsed.showResumePrompt : false,
+      resumePromptDismissed: typeof parsed.resumePromptDismissed === 'boolean' ? parsed.resumePromptDismissed : false,
+      scrollTop: typeof parsed.scrollTop === 'number' ? parsed.scrollTop : 0,
+      sidebarScrollTop: typeof parsed.sidebarScrollTop === 'number' ? parsed.sidebarScrollTop : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeFeedSnapshot(snapshot: FeedSnapshot) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.sessionStorage.setItem(FEED_SNAPSHOT_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Ignore storage write failures.
+  }
+}
+
 export default function JobFeed() {
   const supabase = createClient();
   const pathname = usePathname();
-  const [filters, setFilters] = useState<JobFilters>(DEFAULT_FILTERS);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [total, setTotal] = useState(0);
+  const initialSnapshotRef = useRef<FeedSnapshot | null>(null);
+  if (typeof window !== 'undefined' && initialSnapshotRef.current === null) {
+    initialSnapshotRef.current = readFeedSnapshot();
+  }
+  const initialSnapshot = initialSnapshotRef.current;
+  const [filters, setFilters] = useState<JobFilters>(initialSnapshot?.filters ?? DEFAULT_FILTERS);
+  const [jobs, setJobs] = useState<Job[]>(initialSnapshot?.jobs ?? []);
+  const [total, setTotal] = useState(initialSnapshot?.total ?? 0);
   const [loading, setLoading] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState(initialSnapshot?.searchInput ?? '');
   // Seed from localStorage immediately so cards render correct state before Supabase resolves
   const [trackedIds, setTrackedIds] = useState<Set<string>>(() => getTrackedIds());
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'search' | 'pagination' | 'tracker'>('pagination');
-  const [hasMore, setHasMore] = useState(false);
-  const [isPro, setIsPro] = useState(false);
-  const [matchScores, setMatchScores] = useState<Record<string, { grade: string; similarity: number }>>({});
-  const [showResumePrompt, setShowResumePrompt] = useState(false);
-  const [resumePromptDismissed, setResumePromptDismissed] = useState(false);
-  const [sortBy, setSortBy] = useState<'default' | 'best_match'>('default');
+  const [hasMore, setHasMore] = useState(initialSnapshot?.hasMore ?? false);
+  const [isPro, setIsPro] = useState(initialSnapshot?.isPro ?? false);
+  const [matchScores, setMatchScores] = useState<Record<string, MatchScore>>(initialSnapshot?.matchScores ?? {});
+  const [showResumePrompt, setShowResumePrompt] = useState(initialSnapshot?.showResumePrompt ?? false);
+  const [resumePromptDismissed, setResumePromptDismissed] = useState(initialSnapshot?.resumePromptDismissed ?? false);
+  const [sortBy, setSortBy] = useState<'default' | 'best_match'>(initialSnapshot?.sortBy ?? 'default');
   const requestIdRef = useRef(0);
-  const jobsRef = useRef<Job[]>([]);
+  const jobsRef = useRef<Job[]>(initialSnapshot?.jobs ?? []);
   const inputRef = useRef<HTMLInputElement>(null);
-  const scoredJobIdsRef = useRef<Set<string>>(new Set());
+  const scoredJobIdsRef = useRef<Set<string>>(new Set(Object.keys(initialSnapshot?.matchScores ?? {})));
+  const hasFetchedRef = useRef(Boolean(initialSnapshot?.hasFetched));
+  const skipInitialFetchRef = useRef(Boolean(initialSnapshot?.hasFetched));
+  const feedContainerRef = useRef<HTMLDivElement>(null);
+  const sidebarContainerRef = useRef<HTMLDivElement>(null);
+  const feedScrollTopRef = useRef(initialSnapshot?.scrollTop ?? 0);
+  const sidebarScrollTopRef = useRef(initialSnapshot?.sidebarScrollTop ?? 0);
+  const snapshotStateRef = useRef({
+    filters: initialSnapshot?.filters ?? DEFAULT_FILTERS,
+    jobs: initialSnapshot?.jobs ?? [],
+    total: initialSnapshot?.total ?? 0,
+    hasMore: initialSnapshot?.hasMore ?? false,
+    searchInput: initialSnapshot?.searchInput ?? '',
+    sortBy: (initialSnapshot?.sortBy ?? 'default') as 'default' | 'best_match',
+    matchScores: initialSnapshot?.matchScores ?? {},
+    isPro: initialSnapshot?.isPro ?? false,
+    showResumePrompt: initialSnapshot?.showResumePrompt ?? false,
+    resumePromptDismissed: initialSnapshot?.resumePromptDismissed ?? false,
+  });
+
+  const persistFeedState = useCallback(() => {
+    if (!hasFetchedRef.current) return;
+
+    writeFeedSnapshot({
+      version: 1,
+      hasFetched: true,
+      filters: snapshotStateRef.current.filters,
+      jobs: snapshotStateRef.current.jobs,
+      total: snapshotStateRef.current.total,
+      hasMore: snapshotStateRef.current.hasMore,
+      searchInput: snapshotStateRef.current.searchInput,
+      sortBy: snapshotStateRef.current.sortBy,
+      matchScores: snapshotStateRef.current.matchScores,
+      isPro: snapshotStateRef.current.isPro,
+      showResumePrompt: snapshotStateRef.current.showResumePrompt,
+      resumePromptDismissed: snapshotStateRef.current.resumePromptDismissed,
+      scrollTop: feedContainerRef.current?.scrollTop ?? feedScrollTopRef.current,
+      sidebarScrollTop: sidebarContainerRef.current?.scrollTop ?? sidebarScrollTopRef.current,
+    });
+  }, []);
+
+  useEffect(() => {
+    snapshotStateRef.current = {
+      filters,
+      jobs,
+      total,
+      hasMore,
+      searchInput,
+      sortBy,
+      matchScores,
+      isPro,
+      showResumePrompt,
+      resumePromptDismissed,
+    };
+
+    persistFeedState();
+  }, [
+    filters,
+    jobs,
+    total,
+    hasMore,
+    searchInput,
+    sortBy,
+    matchScores,
+    isPro,
+    showResumePrompt,
+    resumePromptDismissed,
+    persistFeedState,
+  ]);
+
+  useEffect(() => {
+    if (!hasFeedRestorePending()) return;
+
+    if (!initialSnapshot) {
+      clearFeedRestoreFlag();
+      return;
+    }
+
+    clearFeedRestoreFlag();
+
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        if (feedContainerRef.current) {
+          feedContainerRef.current.scrollTop = initialSnapshot.scrollTop;
+        }
+        if (sidebarContainerRef.current) {
+          sidebarContainerRef.current.scrollTop = initialSnapshot.sidebarScrollTop;
+        }
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) {
+        window.cancelAnimationFrame(secondFrame);
+      }
+    };
+  }, [initialSnapshot]);
+
+  useEffect(() => {
+    window.addEventListener('pagehide', persistFeedState);
+    return () => window.removeEventListener('pagehide', persistFeedState);
+  }, [persistFeedState]);
 
   // Pre-populate tracked IDs and tier from Supabase
   useEffect(() => {
@@ -187,16 +399,13 @@ export default function JobFeed() {
         }
 
         const newJobs = data.jobs ?? [];
-        let allJobs: Job[];
         if (append) {
           setJobs(prev => {
             const next = [...prev, ...newJobs];
             jobsRef.current = next;
-            allJobs = next;
             return next;
           });
         } else {
-          allJobs = newJobs;
           scoredJobIdsRef.current = new Set();
           setMatchScores({});
           setJobs(() => {
@@ -204,6 +413,7 @@ export default function JobFeed() {
             return newJobs;
           });
         }
+        hasFetchedRef.current = true;
         setTotal(data.total ?? 0);
         setHasMore((data.jobs?.length ?? 0) === data.perPage && data.total > f.page * data.perPage);
 
@@ -237,6 +447,11 @@ export default function JobFeed() {
 
   // On filter change, reset to page 1 and fetch fresh results
   useEffect(() => {
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      return;
+    }
+
     const nextFilters = filters.page === 1 ? filters : { ...filters, page: 1 };
 
     if (nextFilters !== filters) {
@@ -321,6 +536,11 @@ export default function JobFeed() {
     setFilters(f);
   }
 
+  function handleOpenJob() {
+    markFeedForRestore();
+    persistFeedState();
+  }
+
   function handleClearSearch() {
     if (inputRef.current) {
       inputRef.current.blur();
@@ -361,8 +581,12 @@ export default function JobFeed() {
       <div className="mx-auto flex h-[calc(100vh-57px)] min-h-0 w-full max-w-7xl overflow-hidden bg-[#0d0d12]">
         {/* Sidebar — independent scroll */}
         <div
+          ref={sidebarContainerRef}
           className="hidden min-h-0 w-64 shrink-0 overflow-y-auto overflow-x-hidden border-r border-[#1e1e28] bg-[#0f0f12] px-6 py-6 md:block"
           onScrollCapture={e => e.stopPropagation()}
+          onScroll={e => {
+            sidebarScrollTopRef.current = e.currentTarget.scrollTop;
+          }}
           style={{ scrollBehavior: 'auto' }}
         >
           <FilterSidebar
@@ -373,7 +597,13 @@ export default function JobFeed() {
         </div>
 
         {/* Feed — independent scroll */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#0d0d12] px-6 py-6 sm:px-8">
+        <div
+          ref={feedContainerRef}
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#0d0d12] px-6 py-6 sm:px-8"
+          onScroll={e => {
+            feedScrollTopRef.current = e.currentTarget.scrollTop;
+          }}
+        >
           <div className="mb-4 space-y-3">
             <div className="flex w-full items-center gap-2">
               <div className="relative w-full">
@@ -461,6 +691,7 @@ export default function JobFeed() {
                     job={job}
                     tracked={trackedIds.has(job.id)}
                     onTrack={handleTrack}
+                    onOpen={handleOpenJob}
                     fromUrl={pathname}
                     matchScore={matchScores[job.id]}
                   />

@@ -21,19 +21,134 @@ function decodeDescription(raw: string): string {
     .replace(/&nbsp;/g, ' ')
 }
 
-function cleanDescription(raw: string): string {
-  const decoded = decodeDescription(raw)
+const BULLET_LINE_REGEX = /^([*-]|\u2022|\u25E6|\u25AA|\d+[\.\)])\s+/
+const ORDERED_BULLET_REGEX = /^\d+[\.\)]\s+/
+const COMMON_SECTION_HEADINGS = new Set([
+  'about the role',
+  'about this role',
+  'overview',
+  'responsibilities',
+  'key responsibilities',
+  'what you will do',
+  "what you'll do",
+  'what we are looking for',
+  "what we're looking for",
+  'what you will bring',
+  "what you'll bring",
+  'qualifications',
+  'required qualifications',
+  'minimum qualifications',
+  'preferred qualifications',
+  'requirements',
+  'nice to have',
+  'benefits',
+  'compensation',
+  'who you are',
+  'about you',
+  'day to day',
+])
 
-  return sanitizeHtml(decoded, {
+function hasHtmlMarkup(value: string) {
+  return /<\/?[a-z][\s\S]*>/i.test(value)
+}
+
+function escapeHtmlText(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function isHeadingLine(value: string) {
+  const normalized = value.replace(/:$/, '').trim()
+  if (!normalized) return false
+  if (COMMON_SECTION_HEADINGS.has(normalized.toLowerCase())) return true
+  if (normalized.length > 72 || /[.!?]$/.test(normalized)) return false
+
+  const words = normalized.split(/\s+/)
+  if (words.length > 7) return false
+
+  return /^[A-Z0-9][A-Za-z0-9 '&/(),+-]+$/.test(normalized)
+}
+
+function formatPlainTextDescription(raw: string) {
+  const lines = raw.replace(/\r\n?/g, '\n').split('\n')
+  const blocks: string[] = []
+  const paragraphLines: string[] = []
+  const listItems: string[] = []
+  let listTag: 'ul' | 'ol' | null = null
+
+  function flushParagraph() {
+    if (paragraphLines.length === 0) return
+    blocks.push(`<p>${escapeHtmlText(paragraphLines.join(' '))}</p>`)
+    paragraphLines.length = 0
+  }
+
+  function flushList() {
+    if (!listTag || listItems.length === 0) return
+    blocks.push(`<${listTag}>${listItems.join('')}</${listTag}>`)
+    listItems.length = 0
+    listTag = null
+  }
+
+  for (const line of lines) {
+    const normalizedLine = line.replace(/\u00a0/g, ' ').trim()
+
+    if (!normalizedLine) {
+      flushParagraph()
+      flushList()
+      continue
+    }
+
+    if (BULLET_LINE_REGEX.test(normalizedLine)) {
+      flushParagraph()
+
+      const nextListTag = ORDERED_BULLET_REGEX.test(normalizedLine) ? 'ol' : 'ul'
+      if (listTag && listTag !== nextListTag) {
+        flushList()
+      }
+      listTag = nextListTag
+      listItems.push(`<li>${escapeHtmlText(normalizedLine.replace(BULLET_LINE_REGEX, ''))}</li>`)
+      continue
+    }
+
+    if (isHeadingLine(normalizedLine)) {
+      flushParagraph()
+      flushList()
+      blocks.push(`<h3>${escapeHtmlText(normalizedLine.replace(/:$/, ''))}</h3>`)
+      continue
+    }
+
+    flushList()
+    paragraphLines.push(normalizedLine)
+  }
+
+  flushParagraph()
+  flushList()
+
+  if (blocks.length === 0) {
+    return `<p>${escapeHtmlText(raw)}</p>`
+  }
+
+  return blocks.join('\n')
+}
+
+function cleanDescription(raw: string): string {
+  const decoded = decodeDescription(raw).trim()
+  const normalized = hasHtmlMarkup(decoded)
+    ? decoded.replace(/\r\n?/g, '\n').replace(/\n/g, '<br />')
+    : formatPlainTextDescription(decoded)
+
+  return sanitizeHtml(normalized, {
     allowedTags: [
       'p', 'br', 'strong', 'em', 'b', 'i', 'u',
-      'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4',
-      'div', 'span', 'a',
+      'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'div', 'span', 'a', 'blockquote',
     ],
     allowedAttributes: {
       a: ['href', 'target', 'rel'],
-      span: ['style'],
-      p: ['style'],
     },
     transformTags: {
       a: sanitizeHtml.simpleTransform('a', {
@@ -118,12 +233,14 @@ export default async function JobPage({ params, searchParams }: Props) {
 
   const applyLabel = 'Apply Now ↗'
   const description = parseDescription(job.description)
+  const formattedDescription = description ? cleanDescription(description) : ''
   const validThrough = getValidThroughDate(job.posted_at, job.scraped_at)
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8" data-page="jobs">
         <Link
           href={backUrl}
+          scroll={false}
           className="inline-flex items-center gap-2 text-sm text-[#a0a0b0] hover:text-white mb-6 transition-colors"
         >
           ← Back to jobs
@@ -177,9 +294,9 @@ export default async function JobPage({ params, searchParams }: Props) {
           <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-4 text-white">About this role</h2>
             <div
-              className="prose prose-sm prose-invert max-w-none text-[#c0c0d0] leading-relaxed prose-headings:text-white prose-headings:font-semibold prose-strong:text-white prose-a:text-indigo-400"
+              className="prose prose-invert max-w-none text-[15px] leading-7 text-[#d7d7e6] sm:text-[16px] prose-p:my-4 prose-p:leading-7 prose-p:text-[#d7d7e6] prose-headings:mt-8 prose-headings:mb-3 prose-headings:text-white prose-headings:font-semibold prose-headings:tracking-[-0.01em] prose-strong:text-white prose-a:text-indigo-300 prose-a:no-underline prose-a:transition-colors prose-ul:my-4 prose-ul:pl-6 prose-ol:my-4 prose-ol:pl-6 prose-li:my-1.5 prose-li:leading-7 prose-li:text-[#d7d7e6] prose-blockquote:border-l-indigo-400/50 prose-blockquote:text-[#c8c8da]"
               dangerouslySetInnerHTML={{
-                __html: cleanDescription(description),
+                __html: formattedDescription,
               }}
             />
           </div>
