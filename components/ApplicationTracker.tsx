@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Application, ApplicationStatus, Role, ROLE_LABELS, STATUS_LABELS } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { ExternalLink, Loader2, LayoutGrid, Table2, X, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { removeTrackedId } from '@/lib/trackedStorage';
 
 const KANBAN_COLUMNS: ApplicationStatus[] = [
@@ -60,18 +59,6 @@ const ROLE_OPTIONS: Role[] = [
   'pm',
 ];
 
-const ROLE_CHIP_COLORS: Record<Role, string> = {
-  swe:     'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30',
-  ds:      'bg-sky-500/20 text-sky-300 border border-sky-500/30',
-  ml:      'bg-violet-500/20 text-violet-300 border border-violet-500/30',
-  ai:      'bg-violet-500/20 text-violet-300 border border-violet-500/30',
-  security: 'bg-red-500/20 text-red-300 border border-red-500/30',
-  devops:   'bg-orange-500/20 text-orange-300 border border-orange-500/30',
-  consulting: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
-  finance:  'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-  analyst: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
-  pm:      'bg-violet-500/20 text-violet-300 border border-violet-500/30',
-};
 
 async function patchApplication(id: string, status?: ApplicationStatus, notes?: string) {
   const body: Record<string, unknown> = {};
@@ -154,9 +141,9 @@ export default function ApplicationTracker() {
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   // Filters
-  const [filterRoles, setFilterRoles] = useState<Role[]>([]);
+  const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterDate, setFilterDate] = useState('any');
+  const [filterDate, setFilterDate] = useState('all');
 
   useEffect(() => {
     (async () => {
@@ -178,13 +165,13 @@ export default function ApplicationTracker() {
 
   // Client-side filtering
   const filteredApps = apps.filter(app => {
-    if (filterRoles.length > 0) {
+    if (filterRole !== 'all') {
       const jobRoles = (app.job?.roles ?? []) as string[];
-      if (!filterRoles.some(r => jobRoles.includes(r))) return false;
+      if (!jobRoles.includes(filterRole)) return false;
     }
     if (filterStatus !== 'all' && app.status !== filterStatus) return false;
-    if (filterDate !== 'any') {
-      const hoursMap: Record<string, number> = { '1': 24, '3': 72, '7': 168, '30': 720 };
+    if (filterDate !== 'all') {
+      const hoursMap: Record<string, number> = { '7': 168, '30': 720, '90': 2160 };
       const maxHours = hoursMap[filterDate];
       if (maxHours) {
         const diffHours = (Date.now() - new Date(app.applied_at).getTime()) / 3600000;
@@ -194,18 +181,12 @@ export default function ApplicationTracker() {
     return true;
   });
 
-  const hasActiveFilters = filterRoles.length > 0 || filterStatus !== 'all' || filterDate !== 'any';
+  const hasActiveFilters = filterRole !== 'all' || filterStatus !== 'all' || filterDate !== 'all';
 
   function clearFilters() {
-    setFilterRoles([]);
+    setFilterRole('all');
     setFilterStatus('all');
-    setFilterDate('any');
-  }
-
-  function toggleRole(role: Role) {
-    setFilterRoles(prev =>
-      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
-    );
+    setFilterDate('all');
   }
 
   async function handleStatusChange(app: Application, status: ApplicationStatus) {
@@ -369,63 +350,66 @@ export default function ApplicationTracker() {
         </div>
 
         {/* Filter bar */}
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#2a2a35] bg-[#1a1a24]/30 px-4 py-3">
-          {/* Role chips */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {ROLE_OPTIONS.map(role => (
+        <div className="flex justify-center py-1">
+          <div className="flex items-end gap-8">
+            {/* Role filter */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Role</span>
+              <Select value={filterRole} onValueChange={v => setFilterRole(v ?? 'all')}>
+                <SelectTrigger className="h-9 w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {ROLE_OPTIONS.map(r => (
+                    <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status filter */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Status</span>
+              <Select value={filterStatus} onValueChange={v => setFilterStatus(v ?? 'all')}>
+                <SelectTrigger className="h-9 w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {ALL_STATUSES.map(s => (
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Applied Date filter */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Applied Date</span>
+              <Select value={filterDate} onValueChange={v => setFilterDate(v ?? 'all')}>
+                <SelectTrigger className="h-9 w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="7">Last 7 Days</SelectItem>
+                  <SelectItem value="30">Last 30 Days</SelectItem>
+                  <SelectItem value="90">Last 90 Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {hasActiveFilters && (
               <button
-                key={role}
-                onClick={() => toggleRole(role)}
-                className={cn(
-                  'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
-                  filterRoles.includes(role)
-                    ? ROLE_CHIP_COLORS[role]
-                    : 'border-[#2a2a35] bg-transparent text-[#f0f0fa] hover:border-[#3a3a45]'
-                )}
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-xs text-[#c0c0d8] hover:text-[#f0f0fa] transition-colors mb-2"
               >
-                {ROLE_LABELS[role]}
+                <X className="h-3 w-3" />
+                Clear
               </button>
-            ))}
+            )}
           </div>
-
-          <div className="h-4 w-px bg-[#2a2a35] hidden sm:block" />
-
-          {/* Status dropdown */}
-          <Select value={filterStatus} onValueChange={v => setFilterStatus(v ?? 'all')}>
-            <SelectTrigger className="h-7 w-36 text-xs bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">All statuses</SelectItem>
-              {ALL_STATUSES.map(s => (
-                <SelectItem key={s} value={s} className="text-xs">{STATUS_LABELS[s]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Date applied dropdown */}
-          <Select value={filterDate} onValueChange={v => setFilterDate(v ?? 'any')}>
-            <SelectTrigger className="h-7 w-36 text-xs bg-[#1a1a24] border-[#2a2a35] text-[#f0f0fa]">
-              <SelectValue placeholder="Date applied" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any" className="text-xs">Any time</SelectItem>
-              <SelectItem value="1" className="text-xs">Last 24h</SelectItem>
-              <SelectItem value="3" className="text-xs">Last 3 days</SelectItem>
-              <SelectItem value="7" className="text-xs">Last week</SelectItem>
-              <SelectItem value="30" className="text-xs">Last month</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-1 text-xs text-[#c0c0d8] hover:text-[#f0f0fa] transition-colors"
-            >
-              <X className="h-3 w-3" />
-              Clear
-            </button>
-          )}
         </div>
 
         {/* Application count */}
