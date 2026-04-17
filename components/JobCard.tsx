@@ -132,8 +132,8 @@ export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchS
           >
             {job.title}
           </Link>
-          <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#e0e0f0] font-medium truncate">
-            <span>{job.company}</span>
+          <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#d8d9e6] font-medium truncate">
+            <span className="text-[#b7c7ff]">{job.company}</span>
             {job.location && (
               <>
                 <span>·</span>
@@ -167,13 +167,13 @@ export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchS
         </div>
       )}
 
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-auto pt-1">
-        <div className="flex items-center gap-3 text-[13px] font-medium text-[#e0e0f0]">
-          {salary && <span className="font-medium text-[#f0f0fa]">{salary}</span>}
-          <span className="font-semibold text-[#f7f7ff]">{SOURCE_LABELS[job.source] ?? job.source}</span>
-          {postedAgoFormatted && <span>{postedAgoFormatted}</span>}
-        </div>
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-auto pt-1">
+          <div className="flex items-center gap-3 text-[13px] font-medium text-[#e0e0f0]">
+            {salary && <span className="font-medium text-[#f0f0fa]">{salary}</span>}
+            <span>{SOURCE_LABELS[job.source] ?? job.source}</span>
+            {postedAgoFormatted && <span>{postedAgoFormatted}</span>}
+          </div>
 
         <div className="flex items-center gap-1.5">
           {/* Apply: opens the job URL, no tracking */}

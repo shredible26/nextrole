@@ -526,6 +526,11 @@ This section is included as operational reference. In this checkout, scraper cod
 5l.Add 'best match' filter (pro only) - ranks all jobs from best to worst.
 5m.Limit pro users to 5 chat total (same / other chat) questions 
    per day.
+5n. On job cards, make the source bold. 
+5o. Auto-embedding for any new job that gets scraped (I should not have 
+   to do this manually)
+5p. Handle long chat memory - when users send many messages to the same 
+   chat conversation (without clicking new chat) - should not cost much
 ---
 
 ### 2: NEW SOURCES & SOURCE EXPANSION
