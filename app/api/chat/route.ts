@@ -15,22 +15,52 @@ interface ChatMessage {
   content: string;
 }
 
+interface JobContextJob {
+  id?: string;
+  title: string;
+  company: string;
+  location?: string | null;
+  url: string;
+  salary_min?: number | null;
+  salary_max?: number | null;
+}
+
 async function getEmbedding(text: string): Promise<number[] | null> {
-  const res = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: text,
-      dimensions: 1536,
-    }),
-  });
-  if (!res.ok) return null;
-  const data = await res.json() as { data: Array<{ embedding: number[] }> };
-  return data.data[0]?.embedding ?? null;
+  try {
+    const res = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text,
+        dimensions: 1536,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => '');
+      console.error('[chat] OpenAI embeddings request failed:', {
+        status: res.status,
+        body: errorText,
+      });
+      return null;
+    }
+
+    const data = await res.json() as { data: Array<{ embedding: number[] }> };
+    const embedding = data.data[0]?.embedding ?? null;
+
+    if (!embedding) {
+      console.error('[chat] OpenAI embeddings response missing embedding data');
+    }
+
+    return embedding;
+  } catch (err) {
+    console.error('[chat] OpenAI embeddings request threw:', err);
+    return null;
+  }
 }
 
 function normalizeVector(vec: number[]): number[] {
@@ -45,29 +75,44 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.error('[chat] auth failed:', {
+        authError,
+        hasUser: Boolean(user),
+      });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const admin = createAdminClient();
 
-    const { data: profile } = await admin
+    const { data: profile, error: profileError } = await admin
       .from('profiles')
       .select('tier, resume_embedding, resume_text')
       .eq('id', user.id)
       .maybeSingle();
 
+    if (profileError) {
+      console.error('[chat] profile lookup failed:', profileError);
+      return NextResponse.json({ error: 'Failed to load profile' }, { status: 500 });
+    }
+
     if (profile?.tier !== 'pro') {
+      console.error('[chat] non-pro access denied:', {
+        userId: user.id,
+        tier: profile?.tier ?? null,
+      });
       return NextResponse.json({ error: 'Pro required' }, { status: 402 });
     }
 
     let body: { messages?: unknown; query?: unknown };
     try {
       body = await req.json() as { messages?: unknown; query?: unknown };
-    } catch {
+    } catch (err) {
+      console.error('[chat] invalid JSON body:', err);
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
     if (!Array.isArray(body.messages) || typeof body.query !== 'string') {
+      console.error('[chat] invalid request payload:', body);
       return NextResponse.json({ error: 'messages (array) and query (string) required' }, { status: 400 });
     }
 
@@ -75,16 +120,25 @@ export async function POST(req: NextRequest) {
     const query = (body.query as string).trim();
 
     if (messages.length >= 20) {
+      console.error('[chat] conversation limit reached:', {
+        userId: user.id,
+        messageCount: messages.length,
+      });
       return NextResponse.json({ error: 'Conversation limit reached' }, { status: 429 });
     }
 
     if (!process.env.OPENAI_API_KEY || !process.env.ANTHROPIC_API_KEY) {
+      console.error('[chat] missing AI service credentials:', {
+        hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
+        hasAnthropicKey: Boolean(process.env.ANTHROPIC_API_KEY),
+      });
       return NextResponse.json({ error: 'AI services unavailable' }, { status: 503 });
     }
 
     // Embed the query
     const queryEmbedding = await getEmbedding(query);
     if (!queryEmbedding) {
+      console.error('[chat] query embedding unavailable');
       return NextResponse.json({ error: 'Embedding service unavailable' }, { status: 503 });
     }
 
@@ -95,7 +149,8 @@ export async function POST(req: NextRequest) {
       try {
         const raw = profile.resume_embedding as string | number[];
         resumeEmbedding = typeof raw === 'string' ? JSON.parse(raw) as number[] : raw;
-      } catch {
+      } catch (err) {
+        console.error('[chat] failed to parse resume embedding:', err);
         resumeEmbedding = null;
       }
     }
@@ -103,35 +158,86 @@ export async function POST(req: NextRequest) {
     if (resumeEmbedding && resumeEmbedding.length === queryEmbedding.length) {
       const hybrid = queryEmbedding.map((v, i) => v * 0.7 + (resumeEmbedding as number[])[i] * 0.3);
       searchEmbedding = normalizeVector(hybrid);
+    } else if (resumeEmbedding && resumeEmbedding.length !== queryEmbedding.length) {
+      console.error('[chat] resume embedding length mismatch:', {
+        resumeEmbeddingLength: resumeEmbedding.length,
+        queryEmbeddingLength: queryEmbedding.length,
+      });
     }
 
     // RAG: find relevant jobs via pgvector
+    const primaryMatchThreshold = 0.2;
     const primaryResult = await admin.rpc('match_jobs', {
       query_embedding: searchEmbedding,
       match_count: 10,
+      match_threshold: primaryMatchThreshold,
     });
-    let matchedJobs = primaryResult.data;
+    console.log('[chat] primary match_jobs raw response:', {
+      data: primaryResult.data,
+      error: primaryResult.error,
+      match_count: 10,
+      match_threshold: primaryMatchThreshold,
+    });
+
+    if (primaryResult.error) {
+      console.error('[chat] primary match_jobs failed:', primaryResult.error);
+    }
+
+    let matchedJobs: JobContextJob[] = Array.isArray(primaryResult.data)
+      ? primaryResult.data as JobContextJob[]
+      : [];
 
     // Fallback: if no results, retry with no threshold filter
-    if (!matchedJobs || !Array.isArray(matchedJobs) || matchedJobs.length === 0) {
-      console.warn('[chat] match_jobs returned 0 results — retrying with match_threshold: 0.0');
+    if (matchedJobs.length === 0) {
+      console.error('[chat] primary match_jobs returned 0 jobs; retrying fallback with match_threshold: 0.0');
       const fallbackResult = await admin.rpc('match_jobs', {
         query_embedding: searchEmbedding,
         match_count: 15,
         match_threshold: 0.0,
       });
+      console.log('[chat] fallback match_jobs raw response:', {
+        data: fallbackResult.data,
+        error: fallbackResult.error,
+        match_count: 15,
+        match_threshold: 0.0,
+      });
+
       if (fallbackResult.error) {
-        console.warn('[chat] fallback match_jobs failed:', fallbackResult.error.message);
+        console.error('[chat] fallback match_jobs failed:', fallbackResult.error);
+      }
+
+      if (Array.isArray(fallbackResult.data)) {
+        matchedJobs = fallbackResult.data as JobContextJob[];
+      }
+    }
+
+    if (matchedJobs.length === 0) {
+      console.error('[chat] match_jobs still empty after fallback; querying jobs table directly');
+      const directJobsResult = await admin
+        .from('jobs')
+        .select('id, title, company, location, url, salary_min, salary_max')
+        .eq('is_active', true)
+        .not('embedding', 'is', null)
+        .limit(10);
+
+      if (directJobsResult.error) {
+        console.error('[chat] direct jobs fallback failed:', directJobsResult.error);
+      } else if (!directJobsResult.data || directJobsResult.data.length === 0) {
+        console.error('[chat] direct jobs fallback returned 0 rows');
       } else {
-        matchedJobs = fallbackResult.data;
+        matchedJobs = directJobsResult.data as JobContextJob[];
+        console.log('[chat] direct jobs fallback succeeded:', {
+          count: matchedJobs.length,
+          jobIds: matchedJobs.map(job => job.id).filter(Boolean),
+        });
       }
     }
 
     const resumeText = (profile.resume_text as string | null) ?? null;
 
     // Format job context
-    const jobContext = (Array.isArray(matchedJobs) ? matchedJobs : [])
-      .map((job: { company: string; title: string; location?: string | null; url: string; salary_min?: number | null; salary_max?: number | null }) => {
+    const jobContext = matchedJobs
+      .map((job) => {
         let line = `${job.company} | ${job.title} | ${job.location ?? 'Remote'} | ${job.url}`;
         if (job.salary_min) {
           line += ` | $${Math.round(job.salary_min / 1000)}k${job.salary_max ? `-$${Math.round(job.salary_max / 1000)}k` : '+'}`;
@@ -140,7 +246,12 @@ export async function POST(req: NextRequest) {
       })
       .join('\n');
 
-    console.log(`[chat] jobContext length: ${jobContext.length} chars, jobs matched: ${Array.isArray(matchedJobs) ? matchedJobs.length : 0}`);
+    console.log(`[chat] jobContext length before Claude: ${jobContext.length} chars, jobs matched: ${matchedJobs.length}`);
+
+    if (jobContext.length === 0) {
+      console.error('[chat] jobContext is empty after all retrieval attempts');
+      return NextResponse.json({ error: 'Unable to load job context' }, { status: 503 });
+    }
 
     const hasJobs = jobContext.length > 0;
 
