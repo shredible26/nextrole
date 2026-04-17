@@ -531,6 +531,7 @@ This section is included as operational reference. In this checkout, scraper cod
    to do this manually)
 5p. Handle long chat memory - when users send many messages to the same 
    chat conversation (without clicking new chat) - should not cost much
+5q. In the user profile page, remove the 'current plan' section (where it just says Pro for pro users).
 ---
 
 ### 2: NEW SOURCES & SOURCE EXPANSION

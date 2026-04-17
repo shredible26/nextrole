@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { Briefcase, Loader2, Pencil, Trash2, Upload, X } from 'lucide-react';
+import { Briefcase, Loader2, Pencil, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -67,30 +67,6 @@ function getInitials(displayName: string | null, email: string) {
   return email.split('@')[0]?.[0]?.toUpperCase() ?? 'U';
 }
 
-function formatSubscriptionStatus(status: string | null) {
-  if (!status) {
-    return null;
-  }
-
-  return status
-    .split('_')
-    .map((part) => part[0]?.toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
-function getSubscriptionStatusClass(status: string | null) {
-  switch (status) {
-    case 'active':
-      return 'text-emerald-600 dark:text-emerald-400';
-    case 'past_due':
-      return 'text-amber-600 dark:text-amber-400';
-    case 'canceled':
-      return 'text-destructive';
-    default:
-      return 'text-muted-foreground';
-  }
-}
-
 async function getResumeInfo(userId: string) {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -132,16 +108,16 @@ function formatUploadDate(value: string | null) {
   });
 }
 
-export default function ProfileClient({
-  userId,
-  email,
-  displayName,
-  tier,
-  subscriptionStatus,
-  applicationCount,
-  initialTargetLevels,
-  initialTargetRoles,
-}: ProfileClientProps) {
+export default function ProfileClient(props: ProfileClientProps) {
+  const {
+    userId,
+    email,
+    displayName,
+    tier,
+    applicationCount,
+    initialTargetLevels,
+    initialTargetRoles,
+  } = props;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
   const [draftDisplayName, setDraftDisplayName] = useState(displayName ?? '');
@@ -398,7 +374,6 @@ export default function ProfileClient({
 
   const initials = getInitials(currentDisplayName, email);
   const displayNameLabel = currentDisplayName?.trim() || 'Add your name';
-  const formattedSubscriptionStatus = formatSubscriptionStatus(subscriptionStatus);
   const canSaveName =
     !isSavingName &&
     draftDisplayName.trim().length >= 1 &&
@@ -413,14 +388,7 @@ export default function ProfileClient({
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
 
         {/* Card 1 — Profile identity */}
-        <div className="relative bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex items-center gap-5">
-          <button
-            onClick={() => window.history.back()}
-            aria-label="Go back"
-            className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[#2a2a35] hover:bg-[#3a3a45] flex items-center justify-center text-[#888899] hover:text-[#f0f0fa] transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
+        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex items-start gap-5">
           <div className="h-16 w-16 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-xl font-bold shrink-0">
             {initials}
           </div>
@@ -481,11 +449,22 @@ export default function ProfileClient({
               </>
             )}
           </div>
+          <div className="shrink-0 self-start">
+            {tier === 'pro' ? (
+              <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
+                Pro
+              </span>
+            ) : (
+              <Link href="/pricing" className="inline-flex rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-400">
+                Upgrade to Pro →
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Card 2 — Applications */}
         <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex flex-col gap-4">
-          <div className="bg-[#0d0d12] rounded-xl p-4 flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <div className="bg-indigo-500/20 rounded-full h-10 w-10 flex items-center justify-center shrink-0">
               <Briefcase className="text-indigo-400 h-5 w-5" />
             </div>
@@ -496,28 +475,7 @@ export default function ProfileClient({
           </div>
         </div>
 
-        {/* Card 3 — Plan */}
-        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex items-center justify-between">
-          <div>
-            <p className="text-[#888899] text-sm mb-1">Current plan</p>
-            {tier === 'pro' ? (
-              <span className="bg-emerald-500 text-white text-xs px-2.5 py-0.5 rounded-full font-medium">Pro</span>
-            ) : (
-              <span className="bg-[#2a2a35] text-[#aaaacc] text-xs px-2.5 py-0.5 rounded-full font-medium">Free</span>
-            )}
-          </div>
-          {tier === 'free' ? (
-            <Link href="/pricing" className="text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-400 transition-colors px-4 py-2 rounded-full">
-              Upgrade to Pro →
-            </Link>
-          ) : (
-            <p className={cn('text-sm font-medium', getSubscriptionStatusClass(subscriptionStatus))}>
-              {formattedSubscriptionStatus ? `Status: ${formattedSubscriptionStatus}` : 'Status unavailable'}
-            </p>
-          )}
-        </div>
-
-        {/* Card 4 — Resume */}
+        {/* Card 3 — Resume */}
         <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[#f0f0fa] text-lg font-semibold">Resume</h2>
@@ -587,7 +545,7 @@ export default function ProfileClient({
           )}
         </div>
 
-        {/* Card 5 — Job Preferences */}
+        {/* Card 4 — Job Preferences */}
         <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6">
           <div className="flex flex-col gap-2 border-b border-[#2a2a35] pb-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -604,7 +562,7 @@ export default function ProfileClient({
           </div>
 
           <div className="mt-6 flex flex-col gap-6">
-            <div className="rounded-2xl border border-[#2a2a35] bg-[#101018] p-4">
+            <div>
               <div className="mb-4">
                 <p className="text-sm font-medium text-[#f0f0fa]">Target Experience Level</p>
                 <p className="mt-1 text-sm text-[#888899]">
@@ -640,7 +598,7 @@ export default function ProfileClient({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#2a2a35] bg-[#101018] p-4">
+            <div>
               <div className="mb-4">
                 <p className="text-sm font-medium text-[#f0f0fa]">Target Roles</p>
                 <p className="mt-1 text-sm text-[#888899]">

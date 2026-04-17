@@ -22,6 +22,7 @@ const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs' },
   { href: '/tracker', label: 'Tracker' },
 ];
+const CHAT_HREF = '/chat';
 
 const SOURCES = [
   'Simplify', 'Greenhouse', 'Workday', '+ 22 more',
@@ -228,6 +229,19 @@ export default function HomePage() {
                     {label}
                   </Link>
                 ))}
+                <Link
+                  href={CHAT_HREF}
+                  className={`flex items-center gap-1.5 transition-colors ${
+                    pathname === CHAT_HREF || pathname.startsWith(CHAT_HREF)
+                      ? 'text-white font-semibold'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Chat
+                  <Badge className="bg-indigo-500 text-white text-[10px] px-1.5 py-0 h-4 hover:bg-indigo-500">
+                    Pro
+                  </Badge>
+                </Link>
               </nav>
             )}
           </div>
