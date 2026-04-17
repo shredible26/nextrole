@@ -114,24 +114,24 @@ export default function PricingClient() {
   const isPro = tier === 'pro';
 
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Header */}
-      <section className="px-4 pt-20 pb-12 text-center">
+      <section className="shrink-0 px-4 pt-9 pb-6 text-center md:pt-11 md:pb-7">
         <h1 className="text-4xl font-bold tracking-tight text-[#f0f0fa]">Simple, transparent pricing</h1>
-        <p className="mt-3 text-[#888899] text-lg">
+        <p className="mt-2.5 text-[#888899] text-lg">
           Start free. Upgrade when you need more.
         </p>
         {isPro && (
-          <Badge className="mt-4 bg-emerald-600 hover:bg-emerald-600 text-white px-3 py-1 text-sm">
+          <Badge className="mt-3 bg-emerald-600 hover:bg-emerald-600 text-white px-3 py-1 text-sm">
             ✓ You&apos;re on Pro
           </Badge>
         )}
       </section>
 
       {/* Cards */}
-      <section className="mx-auto w-full max-w-3xl px-4 pb-20 grid gap-6 sm:grid-cols-2">
+      <section className="mx-auto grid w-full max-w-3xl gap-5 px-4 pb-6 md:pb-8 sm:grid-cols-2">
         {/* Free */}
-        <Card className="flex flex-col bg-[#1a1a24] border-[#2a2a35]">
+        <Card className="flex flex-col gap-3 bg-[#1a1a24] border-[#2a2a35]">
           <CardHeader>
             <CardTitle className="text-[#f0f0fa]">Free</CardTitle>
             <CardDescription className="text-[#888899]">Everything you need to get started.</CardDescription>
@@ -141,11 +141,11 @@ export default function PricingClient() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <ul className="space-y-3">
+            <ul className="space-y-2.5">
               {FREE_FEATURES.map(f => <FeatureRow key={f} label={f} />)}
             </ul>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="p-3">
             <Link
               href="/jobs"
               className={cn(buttonVariants({ variant: 'outline' }), 'w-full border-[#2a2a35] bg-[#0d0d12] text-[#f0f0fa] hover:bg-[#2a2a35] hover:text-white')}
@@ -156,7 +156,7 @@ export default function PricingClient() {
         </Card>
 
         {/* Pro */}
-        <Card className="flex flex-col bg-[#1a1a24] border-indigo-500/40 shadow-md relative overflow-hidden">
+        <Card className="relative flex flex-col gap-3 overflow-hidden bg-[#1a1a24] border-indigo-500/40 shadow-md">
           <div className="absolute top-3 right-3">
             <Badge className="bg-indigo-500 text-white text-xs">Most popular</Badge>
           </div>
@@ -175,14 +175,14 @@ export default function PricingClient() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <ul className="space-y-3">
+            <ul className="space-y-2.5">
               {PRO_FEATURES.map(f => (
                 <FeatureRow key={f} label={f} coming={COMING_SOON.has(f)} />
               ))}
             </ul>
-            <p className="mt-4 text-xs text-[#555566] italic">Cancel anytime · Secure checkout via Stripe</p>
+            <p className="mt-3 text-xs text-[#555566] italic">Cancel anytime · Secure checkout via Stripe</p>
           </CardContent>
-          <CardFooter className="flex flex-col gap-2">
+          <CardFooter className="flex flex-col gap-2 p-3">
             {isPro ? (
               <Button
                 className="w-full border-[#2a2a35] bg-[#0d0d12] text-[#f0f0fa] hover:bg-[#2a2a35]"
@@ -198,7 +198,7 @@ export default function PricingClient() {
               </Button>
             ) : (
               <>
-                <div className="w-full grid grid-cols-2 gap-2 mt-4">
+                <div className="grid w-full grid-cols-2 gap-2">
                   {/* Monthly */}
                   <div className="flex flex-col gap-1">
                     <Button
@@ -238,7 +238,7 @@ export default function PricingClient() {
             )}
           </CardFooter>
         </Card>
-        <p className="sm:col-span-2 text-center text-sm text-[#555566]">
+        <p className="text-center text-sm text-[#555566] sm:col-span-2">
           NextRole aggregates internship, new grad, and entry-level tech roles from 25+ sources. Updated daily.
         </p>
       </section>
