@@ -22,19 +22,54 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / denom;
 }
 
-function assignGrades(entries: Array<{ id: string; score: number }>): Map<string, string> {
-  const gradeMap = new Map<string, string>();
+type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
+
+const GRADE_RANK: Record<Grade, number> = {
+  F: 0,
+  D: 1,
+  C: 2,
+  B: 3,
+  A: 4,
+};
+
+function getPercentileGrade(percentile: number): Grade {
+  if (percentile < 0.10) return 'A';
+  if (percentile < 0.25) return 'B';
+  if (percentile < 0.50) return 'C';
+  if (percentile < 0.75) return 'D';
+  return 'F';
+}
+
+function getSimilarityFloorGrade(similarity: number): Grade {
+  if (similarity >= 0.35) return 'C';
+  if (similarity >= 0.25) return 'D';
+  return 'F';
+}
+
+function maxGrade(a: Grade, b: Grade): Grade {
+  return GRADE_RANK[a] >= GRADE_RANK[b] ? a : b;
+}
+
+function hasEntryLevelTitleSignal(title: string): boolean {
+  return /\b(engineer\s*i|junior|early career|associate|entry level|new grad(?:uate)?)\b/i.test(title);
+}
+
+function assignGrades(
+  entries: Array<{ id: string; score: number; similarity: number }>
+): Map<string, Grade> {
+  const gradeMap = new Map<string, Grade>();
   const n = entries.length;
   if (n === 0) return gradeMap;
   const sorted = [...entries].sort((a, b) => b.score - a.score);
-  sorted.forEach(({ id }, i) => {
-    const pct = i / n;
-    let grade: string;
-    if (pct < 0.10)      grade = 'A';
-    else if (pct < 0.25) grade = 'B';
-    else if (pct < 0.50) grade = 'C';
-    else if (pct < 0.75) grade = 'D';
-    else                 grade = 'F';
+  sorted.forEach(({ id, similarity }, i) => {
+    if (similarity < 0.15) {
+      gradeMap.set(id, 'F');
+      return;
+    }
+
+    const percentileGrade = getPercentileGrade(i / n);
+    const floorGrade = getSimilarityFloorGrade(similarity);
+    const grade = maxGrade(percentileGrade, floorGrade);
     gradeMap.set(id, grade);
   });
   return gradeMap;
@@ -56,6 +91,9 @@ async function getClaudeScore(
   apiKey: string
 ): Promise<number | null> {
   try {
+    const entryLevelTitleSignal = hasEntryLevelTitleSignal(job.title);
+    const description = job.description?.trim();
+
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -67,17 +105,19 @@ async function getClaudeScore(
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 50,
         system:
-          'You are a job-resume matcher. Rate how well this candidate\'s resume matches this job on a scale of 0-100. Respond with ONLY a JSON object: {"score": <number>}. Consider: skills overlap, experience level appropriateness, role relevance. Be generous for entry-level/new-grad roles where potential matters more than exact experience.',
+          'You are a job-resume matcher. Rate how well this candidate\'s resume matches this job on a scale of 0-100. Respond with ONLY a JSON object: {"score": <number>}. Consider skills overlap, experience level appropriateness, role relevance, and title seniority signals. When a job description is missing, infer fit from the title, company, roles array, experience_level, and whether the title signals a new-grad or entry-level role such as Engineer I, Junior, Early Career, Associate, Entry Level, or New Grad. If the title clearly signals new-grad or entry-level, be more generous: use a baseline of 60+ and adjust mainly from experience-level fit and role relevance rather than exact prior experience.',
         messages: [
           {
             role: 'user',
             content:
               `Resume summary: ${resumeText}\n\n` +
               `Job: ${job.title} at ${job.company}\n` +
-              (job.description
-                ? `Description: ${job.description.slice(0, 500)}`
-                : 'No description available - judge by title and company only') +
-              `\nRoles: ${job.roles.join(', ')}\nExperience level: ${job.experience_level}`,
+              (description
+                ? `Description: ${description.slice(0, 500)}`
+                : 'No description available. Evaluate using the title, company, roles array, experience level, and title seniority signals rather than requiring description details.') +
+              `\nRoles: ${job.roles.length > 0 ? job.roles.join(', ') : 'None listed'}` +
+              `\nExperience level: ${job.experience_level || 'Not specified'}` +
+              `\nTitle has new-grad or entry-level signals: ${entryLevelTitleSignal ? 'yes' : 'no'}`,
           },
         ],
       }),
@@ -294,7 +334,7 @@ export async function POST(req: NextRequest) {
         claudeScore !== null && claudeScore !== undefined
           ? claudeScore / 100 * 0.6 + rawSim * 0.4
           : rawSim;
-      return { id, score: finalScore };
+      return { id, score: finalScore, similarity: rawSim };
     });
 
     const gradeMap = assignGrades(allEntries);
