@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Role } from '@/lib/types';
 import { createServerClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,18 +12,42 @@ function createAdminClient() {
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, magA = 0, magB = 0;
+  let dot = 0;
+  let magA = 0;
+  let magB = 0;
+
   for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i];
     magA += a[i] * a[i];
     magB += b[i] * b[i];
   }
+
   const denom = Math.sqrt(magA) * Math.sqrt(magB);
   if (denom === 0) return 0;
   return dot / denom;
 }
 
 type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
+type ParsedRole = Extract<
+  Role,
+  'swe' | 'ds' | 'ml' | 'ai' | 'devops' | 'security' | 'pm' | 'analyst' | 'finance'
+>;
+type ParsedLevel = 'new_grad' | 'entry_level' | 'experienced';
+
+type ParsedProfile = {
+  skills: string[];
+  roles: ParsedRole[];
+  level: ParsedLevel;
+  graduation_year: number | null;
+};
+
+type JobForScoring = {
+  id: string;
+  title: string;
+  description: string | null;
+  roles: string[];
+  experience_level: string;
+};
 
 const GRADE_RANK: Record<Grade, number> = {
   F: 0,
@@ -32,6 +57,80 @@ const GRADE_RANK: Record<Grade, number> = {
   A: 4,
 };
 
+const PROFILE_ROLE_TYPES = [
+  'swe',
+  'ds',
+  'ml',
+  'ai',
+  'devops',
+  'security',
+  'pm',
+  'analyst',
+  'finance',
+] as const;
+
+const PROFILE_ROLE_SET = new Set<ParsedRole>(PROFILE_ROLE_TYPES);
+
+const TECH_ROLE_TYPES = new Set<ParsedRole>([
+  'swe',
+  'ds',
+  'ml',
+  'ai',
+  'devops',
+  'security',
+  'analyst',
+]);
+
+const DEFAULT_PARSED_PROFILE: ParsedProfile = {
+  skills: [],
+  roles: ['swe', 'ds'],
+  level: 'new_grad',
+  graduation_year: null,
+};
+
+const ENTRY_LEVEL_TITLE_PATTERNS = [
+  /\bassociate\b/i,
+  /\bjunior\b/i,
+  /\bjr\b/i,
+  /\bi\b(?=[,\s]|$)/i,
+  /\bentry\b/i,
+  /early career/i,
+  /new grad/i,
+  /\bgraduate\b/i,
+];
+
+const SENIOR_TITLE_PATTERNS = [
+  /\bsenior\b/i,
+  /\bsr\b/i,
+  /\bstaff\b/i,
+  /\bprincipal\b/i,
+  /\blead\b/i,
+  /\bmanager\b/i,
+  /\bdirector\b/i,
+  /\bvp\b/i,
+  /head of/i,
+];
+
+const SPECIALIZED_TITLE_PATTERNS = [
+  /\bembedded\b/i,
+  /\bfirmware\b/i,
+  /\bfpga\b/i,
+  /\basic\b/i,
+  /\brf\b/i,
+  /\bmechanical\b/i,
+  /\bcivil\b/i,
+  /\bchemical\b/i,
+  /electrical engineer/i,
+];
+
+const RESUME_PARSE_SYSTEM_PROMPT = `Extract a candidate profile from this resume. Respond ONLY with JSON:
+{
+  'skills': string[],        // list of technical skills mentioned
+  'roles': string[],         // target role types: swe, ds, ml, ai, devops, security, pm, analyst, finance
+  'level': string,           // 'new_grad', 'entry_level', or 'experienced'
+  'graduation_year': number | null  // expected graduation year if mentioned
+}`;
+
 function getPercentileGrade(percentile: number): Grade {
   if (percentile < 0.10) return 'A';
   if (percentile < 0.25) return 'B';
@@ -40,9 +139,9 @@ function getPercentileGrade(percentile: number): Grade {
   return 'F';
 }
 
-function getSimilarityFloorGrade(similarity: number): Grade {
-  if (similarity >= 0.35) return 'C';
-  if (similarity >= 0.25) return 'D';
+function getSimilarityFloorGrade(score: number): Grade {
+  if (score >= 0.45) return 'C';
+  if (score >= 0.30) return 'D';
   return 'F';
 }
 
@@ -50,50 +149,137 @@ function maxGrade(a: Grade, b: Grade): Grade {
   return GRADE_RANK[a] >= GRADE_RANK[b] ? a : b;
 }
 
-function hasEntryLevelTitleSignal(title: string): boolean {
-  return /\b(engineer\s*i|junior|early career|associate|entry level|new grad(?:uate)?)\b/i.test(title);
-}
-
-function assignGrades(
-  entries: Array<{ id: string; score: number; similarity: number }>
-): Map<string, Grade> {
+function assignGrades(entries: Array<{ id: string; score: number }>): Map<string, Grade> {
   const gradeMap = new Map<string, Grade>();
   const n = entries.length;
   if (n === 0) return gradeMap;
+
   const sorted = [...entries].sort((a, b) => b.score - a.score);
-  sorted.forEach(({ id, similarity }, i) => {
-    if (similarity < 0.15) {
+  sorted.forEach(({ id, score }, i) => {
+    if (score < 0.15) {
       gradeMap.set(id, 'F');
       return;
     }
 
     const percentileGrade = getPercentileGrade(i / n);
-    const floorGrade = getSimilarityFloorGrade(similarity);
+    const floorGrade = getSimilarityFloorGrade(score);
     const grade = maxGrade(percentileGrade, floorGrade);
     gradeMap.set(id, grade);
   });
+
   return gradeMap;
 }
 
 interface ClaudeApiResponse {
-  content?: Array<{ type: string; text: string }>;
+  content?: Array<{ type: string; text?: string }>;
 }
 
-async function getClaudeScore(
-  resumeText: string,
-  job: {
-    title: string;
-    company: string;
-    description: string | null;
-    roles: string[];
-    experience_level: string;
-  },
-  apiKey: string
-): Promise<number | null> {
-  try {
-    const entryLevelTitleSignal = hasEntryLevelTitleSignal(job.title);
-    const description = job.description?.trim();
+function stripMarkdownCodeFence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('```')) return trimmed;
 
+  return trimmed
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+}
+
+function uniqueNormalizedStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
+function normalizeRole(role: string): ParsedRole | null {
+  const normalized = role.trim().toLowerCase();
+
+  if (PROFILE_ROLE_SET.has(normalized as ParsedRole)) {
+    return normalized as ParsedRole;
+  }
+
+  switch (normalized) {
+    case 'software engineer':
+    case 'software engineering':
+    case 'software developer':
+    case 'developer':
+    case 'engineering':
+      return 'swe';
+    case 'data science':
+    case 'data scientist':
+      return 'ds';
+    case 'machine learning':
+      return 'ml';
+    case 'artificial intelligence':
+      return 'ai';
+    case 'product manager':
+    case 'product management':
+      return 'pm';
+    case 'data analyst':
+    case 'business analyst':
+      return 'analyst';
+    default:
+      return null;
+  }
+}
+
+function coerceParsedProfile(raw: unknown): ParsedProfile | null {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const record = raw as Record<string, unknown>;
+  const skills = Array.isArray(record.skills)
+    ? uniqueNormalizedStrings(
+        record.skills.filter((skill): skill is string => typeof skill === 'string')
+      )
+    : [];
+
+  const roles = Array.isArray(record.roles)
+    ? Array.from(
+        new Set(
+          record.roles
+            .filter((role): role is string => typeof role === 'string')
+            .map(normalizeRole)
+            .filter((role): role is ParsedRole => role !== null)
+        )
+      )
+    : DEFAULT_PARSED_PROFILE.roles;
+
+  const level =
+    record.level === 'new_grad' ||
+    record.level === 'entry_level' ||
+    record.level === 'experienced'
+      ? record.level
+      : DEFAULT_PARSED_PROFILE.level;
+
+  const graduationYear =
+    typeof record.graduation_year === 'number' && Number.isFinite(record.graduation_year)
+      ? Math.trunc(record.graduation_year)
+      : null;
+
+  return {
+    skills,
+    roles,
+    level,
+    graduation_year: graduationYear,
+  };
+}
+
+async function parseResumeProfile(
+  resumeText: string,
+  apiKey: string | undefined
+): Promise<ParsedProfile> {
+  if (!apiKey || !resumeText.trim()) {
+    return DEFAULT_PARSED_PROFILE;
+  }
+
+  try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -102,38 +288,139 @@ async function getClaudeScore(
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 50,
-        system:
-          'You are a job-resume matcher. Rate how well this candidate\'s resume matches this job on a scale of 0-100. Respond with ONLY a JSON object: {"score": <number>}. Consider skills overlap, experience level appropriateness, role relevance, and title seniority signals. When a job description is missing, infer fit from the title, company, roles array, experience_level, and whether the title signals a new-grad or entry-level role such as Engineer I, Junior, Early Career, Associate, Entry Level, or New Grad. If the title clearly signals new-grad or entry-level, be more generous: use a baseline of 60+ and adjust mainly from experience-level fit and role relevance rather than exact prior experience.',
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 200,
+        system: RESUME_PARSE_SYSTEM_PROMPT,
         messages: [
           {
             role: 'user',
-            content:
-              `Resume summary: ${resumeText}\n\n` +
-              `Job: ${job.title} at ${job.company}\n` +
-              (description
-                ? `Description: ${description.slice(0, 500)}`
-                : 'No description available. Evaluate using the title, company, roles array, experience level, and title seniority signals rather than requiring description details.') +
-              `\nRoles: ${job.roles.length > 0 ? job.roles.join(', ') : 'None listed'}` +
-              `\nExperience level: ${job.experience_level || 'Not specified'}` +
-              `\nTitle has new-grad or entry-level signals: ${entryLevelTitleSignal ? 'yes' : 'no'}`,
+            content: resumeText,
           },
         ],
       }),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) return DEFAULT_PARSED_PROFILE;
 
     const data = await res.json() as ClaudeApiResponse;
-    const text = data.content?.[0]?.text ?? '';
-    const parsed = JSON.parse(text) as { score?: unknown };
-    const score = Number(parsed.score);
-    if (isNaN(score) || score < 0 || score > 100) return null;
-    return score;
+    const text =
+      data.content?.find((block) => block.type === 'text')?.text ??
+      data.content?.[0]?.text ??
+      '';
+    const parsed = JSON.parse(stripMarkdownCodeFence(text)) as unknown;
+
+    return coerceParsedProfile(parsed) ?? DEFAULT_PARSED_PROFILE;
   } catch {
-    return null;
+    return DEFAULT_PARSED_PROFILE;
   }
+}
+
+function titleMatchesAny(title: string, patterns: readonly RegExp[]): boolean {
+  return patterns.some((pattern) => pattern.test(title));
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hasSkillMatch(description: string, skill: string): boolean {
+  const normalizedSkill = skill.trim().toLowerCase();
+  if (!normalizedSkill) return false;
+
+  const skillPattern = normalizedSkill
+    .split(/\s+/)
+    .map((part) => escapeRegex(part))
+    .join('\\s+');
+
+  return new RegExp(`(^|[^a-z0-9])${skillPattern}(?=[^a-z0-9]|$)`, 'i').test(description);
+}
+
+function countSkillMatches(description: string, skills: string[]): number {
+  const matchedSkills = new Set<string>();
+
+  for (const skill of skills) {
+    if (hasSkillMatch(description, skill)) {
+      matchedSkills.add(skill);
+    }
+  }
+
+  return matchedSkills.size;
+}
+
+function clampCompatibilityScore(score: number): number {
+  return Math.max(0, Math.min(100, score));
+}
+
+function computeCompatibilityScore(
+  job: JobForScoring | undefined,
+  parsedProfile: ParsedProfile
+): number {
+  let score = 50;
+
+  if (!job) {
+    return score;
+  }
+
+  switch (job.experience_level) {
+    case 'new_grad':
+      score += 20;
+      break;
+    case 'entry_level':
+      score += 15;
+      break;
+    case 'internship':
+      score += 10;
+      break;
+    default:
+      break;
+  }
+
+  const jobRoles = new Set(
+    job.roles
+      .filter((role): role is string => typeof role === 'string')
+      .map(normalizeRole)
+      .filter((role): role is ParsedRole => role !== null)
+  );
+
+  const overlapCount = new Set(parsedProfile.roles.filter((role) => jobRoles.has(role))).size;
+
+  if (overlapCount >= 2) {
+    score += 20;
+  } else if (overlapCount === 1) {
+    score += 10;
+  } else if (
+    jobRoles.has('swe') &&
+    parsedProfile.roles.some((role) => TECH_ROLE_TYPES.has(role))
+  ) {
+    score += 5;
+  }
+
+  const title = job.title.toLowerCase();
+  if (titleMatchesAny(title, ENTRY_LEVEL_TITLE_PATTERNS)) score += 10;
+  if (titleMatchesAny(title, SENIOR_TITLE_PATTERNS)) score -= 30;
+  if (titleMatchesAny(title, SPECIALIZED_TITLE_PATTERNS)) score -= 25;
+
+  const description = job.description?.trim();
+  if (!description) {
+    score += 5;
+    if (job.experience_level === 'new_grad' || job.experience_level === 'entry_level') {
+      score += 10;
+    }
+    return clampCompatibilityScore(score);
+  }
+
+  const skillMatches = countSkillMatches(
+    description.slice(0, 800).toLowerCase(),
+    parsedProfile.skills
+  );
+
+  if (skillMatches >= 3) {
+    score += 15;
+  } else if (skillMatches >= 1) {
+    score += 8;
+  }
+
+  return clampCompatibilityScore(score);
 }
 
 export async function POST(req: NextRequest) {
@@ -147,7 +434,7 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient();
 
-    // Fetch profile — need resume_text for Claude scoring, resume_embedding for cosine similarity
+    // Fetch profile — need resume_text for parsing and resume_embedding for cosine similarity
     const { data: profile } = await admin
       .from('profiles')
       .select('tier, resume_embedding, resume_text, updated_at')
@@ -162,7 +449,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ scores: {}, noResume: true });
     }
 
-    // Parse resume embedding
     let resumeEmbedding: number[];
     try {
       const raw = profile.resume_embedding as string | number[];
@@ -171,7 +457,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ scores: {}, noResume: true });
     }
 
-    // Validate request body
     let body: { jobIds?: unknown };
     try {
       body = await req.json() as { jobIds?: unknown };
@@ -191,7 +476,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ scores: {} });
     }
 
-    // Treat missing updated_at as epoch 0 — any cached score will be considered fresh
+    const parsedProfile = await parseResumeProfile(
+      ((profile.resume_text as string | null) ?? '').slice(0, 1200),
+      process.env.ANTHROPIC_API_KEY
+    );
+
     const profileUpdatedAt = profile.updated_at
       ? new Date(profile.updated_at as string)
       : new Date(0);
@@ -199,7 +488,7 @@ export async function POST(req: NextRequest) {
     // ── Step 1: Check which requested jobs already have fresh cached scores ──
     const { data: cachedRows } = await admin
       .from('job_scores')
-      .select('job_id, similarity, grade, claude_score, computed_at')
+      .select('job_id, similarity, grade, computed_at')
       .eq('user_id', user.id)
       .in('job_id', jobIds);
 
@@ -216,140 +505,113 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Early return: every requested job is already cached and fresh
     if (needsCompute.size === 0) {
       const scores: Record<string, { grade: string; similarity: number }> = {};
-      for (const [id, s] of validCached) scores[id] = s;
+      for (const [id, value] of validCached) {
+        scores[id] = value;
+      }
       return NextResponse.json({ scores });
     }
 
-    // ── Step 2: Compute similarities for stale / missing jobs ──
-    // Also fetch metadata needed for Claude scoring
+    // ── Step 2: Compute raw similarities for stale / missing jobs ──
     const { data: jobs } = await admin
       .from('jobs')
-      .select('id, title, company, description, roles, experience_level, embedding')
+      .select('id, title, description, roles, experience_level, embedding')
       .in('id', [...needsCompute]);
 
-    type NewlyComputedJob = {
-      id: string;
-      similarity: number;
-      title: string;
-      company: string;
-      description: string | null;
-      roles: string[];
-      experience_level: string;
-    };
+    const jobsForScoring = new Map<string, JobForScoring>();
+    const recomputedSimilarities = new Map<string, number>();
 
-    const newlyComputed: NewlyComputedJob[] = [];
     for (const job of jobs ?? []) {
-      if (!job.embedding) continue;
-      let jobEmbedding: number[];
-      try {
-        const raw = job.embedding as string | number[];
-        jobEmbedding = typeof raw === 'string' ? JSON.parse(raw) as number[] : raw;
-      } catch { continue; }
-      newlyComputed.push({
-        id: job.id as string,
-        similarity: cosineSimilarity(resumeEmbedding, jobEmbedding),
+      const id = job.id as string;
+
+      jobsForScoring.set(id, {
+        id,
         title: (job.title as string | null) ?? '',
-        company: (job.company as string | null) ?? '',
         description: job.description as string | null,
         roles: Array.isArray(job.roles) ? (job.roles as string[]) : [],
         experience_level: (job.experience_level as string | null) ?? '',
       });
+
+      if (!job.embedding) continue;
+
+      let jobEmbedding: number[];
+      try {
+        const raw = job.embedding as string | number[];
+        jobEmbedding = typeof raw === 'string' ? JSON.parse(raw) as number[] : raw;
+      } catch {
+        continue;
+      }
+
+      recomputedSimilarities.set(id, cosineSimilarity(resumeEmbedding, jobEmbedding));
     }
 
-    // ── Step 3: Fetch ALL existing similarities + claude_scores for this user ──
+    // ── Step 3: Load all fresh cached similarities so percentile grading remains global ──
     const { data: allExisting } = await admin
       .from('job_scores')
-      .select('job_id, similarity, claude_score')
+      .select('job_id, similarity, computed_at')
       .eq('user_id', user.id);
 
-    // Build combined maps — newly computed takes precedence for similarity
     const allRawSimilarities = new Map<string, number>();
-    const allClaudeScores = new Map<string, number | null>();
 
     for (const row of allExisting ?? []) {
+      if (new Date(row.computed_at as string) <= profileUpdatedAt) continue;
       allRawSimilarities.set(row.job_id as string, row.similarity as number);
-      const cs = row.claude_score;
-      allClaudeScores.set(
-        row.job_id as string,
-        cs !== undefined && cs !== null ? (cs as number) : null
-      );
-    }
-    for (const { id, similarity } of newlyComputed) {
-      allRawSimilarities.set(id, similarity);
-      // Preserve any existing claude_score from DB — don't overwrite
     }
 
-    // Any requested job that has no embedding and no prior cached score gets
-    // similarity=0 so it still participates in percentile grading and every
-    // card receives a badge.  These placeholder entries are excluded from the
-    // upsert so the cache is never polluted with fake zeros.
+    for (const [id, similarity] of recomputedSimilarities) {
+      allRawSimilarities.set(id, similarity);
+    }
+
+    // Requested jobs without an embedding still get a zero raw similarity, but
+    // deterministic compatibility scoring can still lift them above an F.
     const placeholderIds = new Set<string>();
     for (const id of jobIds) {
       if (!allRawSimilarities.has(id)) {
         allRawSimilarities.set(id, 0);
-        allClaudeScores.set(id, null);
         placeholderIds.add(id);
       }
     }
 
-    // ── Step 4: Claude hybrid scoring for top newly-computed candidates ──
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    const resumeText = ((profile.resume_text as string | null) ?? '').slice(0, 1500);
+    // ── Step 4: Load job metadata for every score participating in percentile grading ──
+    const missingJobIds = [...allRawSimilarities.keys()].filter((id) => !jobsForScoring.has(id));
+    if (missingJobIds.length > 0) {
+      const { data: existingJobs } = await admin
+        .from('jobs')
+        .select('id, title, description, roles, experience_level')
+        .in('id', missingJobIds);
 
-    if (anthropicKey && resumeText) {
-      // Only score newly computed jobs that have no cached claude_score
-      const uncached = newlyComputed.filter(job => {
-        const existing = allClaudeScores.get(job.id);
-        return existing === undefined || existing === null;
-      });
-
-      // Take top 10 by cosine similarity
-      const candidates = uncached
-        .slice()
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, 10);
-
-      if (candidates.length > 0) {
-        const results = await Promise.allSettled(
-          candidates.map(job =>
-            getClaudeScore(resumeText, job, anthropicKey).then(score => ({ id: job.id, score }))
-          )
-        );
-
-        for (const result of results) {
-          if (result.status === 'fulfilled' && result.value.score !== null) {
-            allClaudeScores.set(result.value.id, result.value.score);
-          }
-        }
+      for (const job of existingJobs ?? []) {
+        const id = job.id as string;
+        jobsForScoring.set(id, {
+          id,
+          title: (job.title as string | null) ?? '',
+          description: job.description as string | null,
+          roles: Array.isArray(job.roles) ? (job.roles as string[]) : [],
+          experience_level: (job.experience_level as string | null) ?? '',
+        });
       }
     }
 
-    // ── Step 5: Compute blended final scores for percentile grading ──
-    const allEntries = [...allRawSimilarities.entries()].map(([id, rawSim]) => {
-      const claudeScore = allClaudeScores.get(id);
-      const finalScore =
-        claudeScore !== null && claudeScore !== undefined
-          ? claudeScore / 100 * 0.6 + rawSim * 0.4
-          : rawSim;
-      return { id, score: finalScore, similarity: rawSim };
+    // ── Step 5: Blend deterministic compatibility with cosine similarity ──
+    const allEntries = [...allRawSimilarities.entries()].map(([id, rawSimilarity]) => {
+      const compatibilityScore = computeCompatibilityScore(jobsForScoring.get(id), parsedProfile);
+      const finalScore = compatibilityScore / 100 * 0.55 + rawSimilarity * 0.45;
+      return { id, score: finalScore };
     });
 
     const gradeMap = assignGrades(allEntries);
 
-    // ── Step 6: Upsert ALL rows — grades may have shifted for existing jobs ──
+    // ── Step 6: Upsert all real rows — grades may shift when new jobs are scored ──
     const now = new Date().toISOString();
     const upsertRows = [...allRawSimilarities.entries()]
       .filter(([id]) => !placeholderIds.has(id))
-      .map(([id, rawSim]) => ({
+      .map(([id, rawSimilarity]) => ({
         user_id: user.id,
         job_id: id,
-        similarity: rawSim,
+        similarity: rawSimilarity,
         grade: gradeMap.get(id) ?? 'F',
         computed_at: now,
-        claude_score: allClaudeScores.get(id) ?? null,
       }));
 
     if (upsertRows.length > 0) {
@@ -361,10 +623,10 @@ export async function POST(req: NextRequest) {
     // ── Step 7: Return scores for the requested job IDs ──
     const scores: Record<string, { grade: string; similarity: number }> = {};
     for (const id of jobIds) {
-      const rawSim = allRawSimilarities.get(id);
+      const similarity = allRawSimilarities.get(id);
       const grade = gradeMap.get(id);
-      if (rawSim !== undefined && grade !== undefined) {
-        scores[id] = { grade, similarity: rawSim };
+      if (similarity !== undefined && grade !== undefined) {
+        scores[id] = { grade, similarity };
       }
     }
 
