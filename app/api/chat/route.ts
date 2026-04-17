@@ -25,6 +25,40 @@ interface JobContextJob {
   salary_max?: number | null;
 }
 
+interface ProfileRecord {
+  tier: 'free' | 'pro' | null;
+  resume_embedding: string | number[] | null;
+  resume_text: string | null;
+  target_levels?: string[] | null;
+  target_roles?: string[] | null;
+}
+
+function parseTextArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const items: string[] = [];
+
+  for (const entry of value) {
+    if (typeof entry !== 'string') {
+      continue;
+    }
+
+    const trimmed = entry.trim();
+
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+
+    seen.add(trimmed);
+    items.push(trimmed);
+  }
+
+  return items;
+}
+
 async function getEmbedding(text: string): Promise<number[] | null> {
   try {
     const res = await fetch('https://api.openai.com/v1/embeddings', {
@@ -84,15 +118,31 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient();
 
-    const { data: profile, error: profileError } = await admin
+    let profile: ProfileRecord | null = null;
+
+    const { data: profileWithPreferences, error: profileError } = await admin
       .from('profiles')
       .select('tier, resume_embedding, resume_text, target_levels, target_roles')
       .eq('id', user.id)
       .maybeSingle();
 
     if (profileError) {
-      console.error('[chat] profile lookup failed:', profileError);
-      return NextResponse.json({ error: 'Failed to load profile' }, { status: 500 });
+      console.error('[chat] profile lookup with preferences failed:', profileError);
+
+      const { data: fallbackProfile, error: fallbackError } = await admin
+        .from('profiles')
+        .select('tier, resume_embedding, resume_text')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (fallbackError) {
+        console.error('[chat] fallback profile lookup failed:', fallbackError);
+        return NextResponse.json({ error: 'Failed to load profile' }, { status: 500 });
+      }
+
+      profile = fallbackProfile as ProfileRecord | null;
+    } else {
+      profile = profileWithPreferences as ProfileRecord | null;
     }
 
     if (profile?.tier !== 'pro') {
@@ -116,13 +166,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'messages (array) and query (string) required' }, { status: 400 });
     }
 
-    const messages = body.messages as ChatMessage[];
+    const messages = (body.messages as unknown[]).filter((message): message is ChatMessage => {
+      if (!message || typeof message !== 'object') {
+        return false;
+      }
+
+      const role = 'role' in message ? message.role : undefined;
+      const content = 'content' in message ? message.content : undefined;
+
+      return (
+        (role === 'user' || role === 'assistant') &&
+        typeof content === 'string'
+      );
+    });
+
+    if (messages.length !== body.messages.length) {
+      console.error('[chat] invalid message objects received');
+      return NextResponse.json({ error: 'Invalid message history' }, { status: 400 });
+    }
+
     const query = (body.query as string).trim();
 
-    if (messages.length >= 20) {
+    if (!query) {
+      return NextResponse.json({ error: 'query cannot be empty' }, { status: 400 });
+    }
+
+    const userMessageCount = messages.filter((message) => message.role === 'user').length;
+
+    if (userMessageCount >= 20) {
       console.error('[chat] conversation limit reached:', {
         userId: user.id,
-        messageCount: messages.length,
+        messageCount: userMessageCount,
       });
       return NextResponse.json({ error: 'Conversation limit reached' }, { status: 429 });
     }
@@ -233,9 +307,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const resumeText = (profile.resume_text as string | null) ?? null;
-    const targetLevels = Array.isArray(profile.target_levels) ? (profile.target_levels as string[]) : [];
-    const targetRoles = Array.isArray(profile.target_roles) ? (profile.target_roles as string[]) : [];
+    const resumeText = profile?.resume_text ?? null;
+    const targetLevels = parseTextArray(profile?.target_levels);
+    const targetRoles = parseTextArray(profile?.target_roles);
     const hasPreferences = targetLevels.length > 0 || targetRoles.length > 0;
     const preferencesSection = hasPreferences
       ? `\nUser's job search preferences:\n- Target experience levels: ${targetLevels.length > 0 ? targetLevels.join(', ') : 'not specified'}\n- Target role types: ${targetRoles.length > 0 ? targetRoles.join(', ') : 'not specified'}\nUse these preferences to personalize all job recommendations and advice.`

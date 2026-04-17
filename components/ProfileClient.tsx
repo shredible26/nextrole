@@ -18,6 +18,9 @@ type ResumeInfo = {
   uploadedAt: string | null;
 };
 
+type LevelOption = (typeof LEVEL_OPTIONS)[number];
+type RoleOption = (typeof ROLE_OPTIONS)[number];
+
 export interface ProfileClientProps {
   userId: string;
   email: string;
@@ -25,6 +28,24 @@ export interface ProfileClientProps {
   tier: 'free' | 'pro';
   subscriptionStatus: string | null;
   applicationCount: number;
+  initialTargetLevels: string[];
+  initialTargetRoles: string[];
+}
+
+function sortSelections<T extends string>(values: string[], options: readonly T[]) {
+  const uniqueValidValues = Array.from(new Set(values)).filter((value): value is T => (
+    options.includes(value as T)
+  ));
+
+  return [...uniqueValidValues].sort((left, right) => options.indexOf(left) - options.indexOf(right));
+}
+
+function areSelectionsEqual(left: string[], right: string[]) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
 }
 
 function getInitials(displayName: string | null, email: string) {
@@ -118,6 +139,8 @@ export default function ProfileClient({
   tier,
   subscriptionStatus,
   applicationCount,
+  initialTargetLevels,
+  initialTargetRoles,
 }: ProfileClientProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
@@ -128,9 +151,10 @@ export default function ProfileClient({
   const [isLoadingResume, setIsLoadingResume] = useState(true);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
   const [isDeletingResume, setIsDeletingResume] = useState(false);
-  const [targetLevels, setTargetLevels] = useState<string[]>([]);
-  const [targetRoles, setTargetRoles] = useState<string[]>([]);
-  const [isLoadingPrefs, setIsLoadingPrefs] = useState(true);
+  const [targetLevels, setTargetLevels] = useState(() => sortSelections(initialTargetLevels, LEVEL_OPTIONS));
+  const [targetRoles, setTargetRoles] = useState(() => sortSelections(initialTargetRoles, ROLE_OPTIONS));
+  const [savedTargetLevels, setSavedTargetLevels] = useState(() => sortSelections(initialTargetLevels, LEVEL_OPTIONS));
+  const [savedTargetRoles, setSavedTargetRoles] = useState(() => sortSelections(initialTargetRoles, ROLE_OPTIONS));
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
 
   useEffect(() => {
@@ -159,31 +183,14 @@ export default function ProfileClient({
   }, [userId]);
 
   useEffect(() => {
-    let active = true;
+    const nextLevels = sortSelections(initialTargetLevels, LEVEL_OPTIONS);
+    const nextRoles = sortSelections(initialTargetRoles, ROLE_OPTIONS);
 
-    async function loadPrefs() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('profiles')
-        .select('target_levels, target_roles')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (!active) return;
-
-      if (data) {
-        if (Array.isArray(data.target_levels)) setTargetLevels(data.target_levels as string[]);
-        if (Array.isArray(data.target_roles)) setTargetRoles(data.target_roles as string[]);
-      }
-      setIsLoadingPrefs(false);
-    }
-
-    void loadPrefs();
-
-    return () => {
-      active = false;
-    };
-  }, [userId]);
+    setTargetLevels(nextLevels);
+    setTargetRoles(nextRoles);
+    setSavedTargetLevels(nextLevels);
+    setSavedTargetRoles(nextRoles);
+  }, [initialTargetLevels, initialTargetRoles, userId]);
 
   async function refreshResume() {
     const { resume: existingResume, error } = await getResumeInfo(userId);
@@ -254,12 +261,20 @@ export default function ProfileClient({
     }
   }
 
-  function toggleLevel(level: string) {
-    setTargetLevels(prev => prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]);
+  function toggleLevel(level: LevelOption) {
+    setTargetLevels((prev) => (
+      prev.includes(level)
+        ? prev.filter((item) => item !== level)
+        : sortSelections([...prev, level], LEVEL_OPTIONS)
+    ));
   }
 
-  function toggleRole(role: string) {
-    setTargetRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+  function toggleRole(role: RoleOption) {
+    setTargetRoles((prev) => (
+      prev.includes(role)
+        ? prev.filter((item) => item !== role)
+        : sortSelections([...prev, role], ROLE_OPTIONS)
+    ));
   }
 
   async function handleSavePreferences() {
@@ -275,6 +290,8 @@ export default function ProfileClient({
         toast.error(typeof data.error === 'string' ? data.error : 'Failed to save preferences');
         return;
       }
+      setSavedTargetLevels(targetLevels);
+      setSavedTargetRoles(targetRoles);
       toast.success('Preferences saved');
     } catch {
       toast.error('Failed to save preferences');
@@ -386,10 +403,14 @@ export default function ProfileClient({
     !isSavingName &&
     draftDisplayName.trim().length >= 1 &&
     draftDisplayName.trim().length <= 50;
+  const hasUnsavedPreferences =
+    !areSelectionsEqual(targetLevels, savedTargetLevels) ||
+    !areSelectionsEqual(targetRoles, savedTargetRoles);
+  const totalPreferencesSelected = targetLevels.length + targetRoles.length;
 
   return (
-    <div className="min-h-screen bg-[#0d0d12] py-10 px-4">
-      <div className="max-w-2xl mx-auto flex flex-col gap-5">
+    <div className="w-full bg-[#0d0d12] px-4 py-10 sm:px-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
 
         {/* Card 1 — Profile identity */}
         <div className="relative bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex items-center gap-5">
@@ -568,66 +589,101 @@ export default function ProfileClient({
 
         {/* Card 5 — Job Preferences */}
         <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-[#f0f0fa] text-lg font-semibold">Job Preferences</h2>
-            <p className="text-[#888899] text-sm">Personalizes your AI recommendations.</p>
+          <div className="flex flex-col gap-2 border-b border-[#2a2a35] pb-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-[#f0f0fa] text-lg font-semibold">Job Preferences</h2>
+              <p className="mt-1 text-sm text-[#888899]">
+                Optional filters for how NextRole AI should personalize recommendations.
+              </p>
+            </div>
+            <p className="text-sm text-[#66667a]">
+              {totalPreferencesSelected > 0
+                ? `${totalPreferencesSelected} preference${totalPreferencesSelected === 1 ? '' : 's'} selected`
+                : 'Leave blank if you are open to all roles'}
+            </p>
           </div>
 
-          {isLoadingPrefs ? (
-            <div className="flex items-center gap-2 text-[#555566] text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading...
+          <div className="mt-6 flex flex-col gap-6">
+            <div className="rounded-2xl border border-[#2a2a35] bg-[#101018] p-4">
+              <div className="mb-4">
+                <p className="text-sm font-medium text-[#f0f0fa]">Target Experience Level</p>
+                <p className="mt-1 text-sm text-[#888899]">
+                  Pick any that fit your current search.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {LEVEL_OPTIONS.map((level) => {
+                  const checked = targetLevels.includes(level);
+
+                  return (
+                    <label
+                      key={level}
+                      className={cn(
+                        'flex items-start gap-3 rounded-xl border px-4 py-3 transition-colors',
+                        checked
+                          ? 'border-indigo-500/45 bg-indigo-500/10'
+                          : 'border-[#2a2a35] bg-[#151520] hover:border-[#3a3a45] hover:bg-[#181824]',
+                        isSavingPrefs ? 'opacity-75' : 'cursor-pointer'
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleLevel(level)}
+                        disabled={isSavingPrefs}
+                        className="mt-0.5 h-4 w-4 rounded border-[#404055] bg-[#0d0d12] accent-indigo-500"
+                      />
+                      <span className="text-sm font-medium text-[#f0f0fa]">{level}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-          ) : (
-            <div className="flex flex-col gap-6">
-              <div>
-                <p className="text-[#aaaacc] text-sm font-medium mb-3">Target Experience Level</p>
-                <div className="flex flex-wrap gap-2">
-                  {LEVEL_OPTIONS.map(level => {
-                    const checked = targetLevels.includes(level);
-                    return (
-                      <button
-                        key={level}
-                        onClick={() => toggleLevel(level)}
-                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                          checked
-                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                            : 'bg-transparent border-[#2a2a35] text-[#888899] hover:border-[#3a3a45] hover:text-[#aaaacc]'
-                        }`}
-                      >
-                        {level}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
 
-              <div>
-                <p className="text-[#aaaacc] text-sm font-medium mb-3">Target Roles</p>
-                <div className="flex flex-wrap gap-2">
-                  {ROLE_OPTIONS.map(role => {
-                    const checked = targetRoles.includes(role);
-                    return (
-                      <button
-                        key={role}
-                        onClick={() => toggleRole(role)}
-                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                          checked
-                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                            : 'bg-transparent border-[#2a2a35] text-[#888899] hover:border-[#3a3a45] hover:text-[#aaaacc]'
-                        }`}
-                      >
-                        {role}
-                      </button>
-                    );
-                  })}
-                </div>
+            <div className="rounded-2xl border border-[#2a2a35] bg-[#101018] p-4">
+              <div className="mb-4">
+                <p className="text-sm font-medium text-[#f0f0fa]">Target Roles</p>
+                <p className="mt-1 text-sm text-[#888899]">
+                  Choose the types of roles you want prioritized in chat recommendations.
+                </p>
               </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {ROLE_OPTIONS.map((role) => {
+                  const checked = targetRoles.includes(role);
 
+                  return (
+                    <label
+                      key={role}
+                      className={cn(
+                        'flex items-start gap-3 rounded-xl border px-4 py-3 transition-colors',
+                        checked
+                          ? 'border-indigo-500/45 bg-indigo-500/10'
+                          : 'border-[#2a2a35] bg-[#151520] hover:border-[#3a3a45] hover:bg-[#181824]',
+                        isSavingPrefs ? 'opacity-75' : 'cursor-pointer'
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleRole(role)}
+                        disabled={isSavingPrefs}
+                        className="mt-0.5 h-4 w-4 rounded border-[#404055] bg-[#0d0d12] accent-indigo-500"
+                      />
+                      <span className="text-sm font-medium text-[#f0f0fa]">{role}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-[#2a2a35] pt-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-[#77778a]">
+                These preferences are optional and only affect personalized AI guidance.
+              </p>
               <button
                 onClick={() => void handleSavePreferences()}
-                disabled={isSavingPrefs}
-                className="self-start bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-5 py-2 rounded-lg transition-colors"
+                disabled={isSavingPrefs || !hasUnsavedPreferences}
+                className="self-start rounded-lg bg-indigo-500 px-5 py-2 text-sm text-white transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSavingPrefs ? (
                   <span className="flex items-center gap-1.5">
@@ -637,7 +693,7 @@ export default function ProfileClient({
                 ) : 'Save Preferences'}
               </button>
             </div>
-          )}
+          </div>
         </div>
 
       </div>

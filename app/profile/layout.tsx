@@ -1,3 +1,7 @@
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
-  return <div className="bg-[#0d0d12] min-h-screen flex flex-col flex-1">{children}</div>;
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-[#0d0d12]">
+      {children}
+    </div>
+  );
 }

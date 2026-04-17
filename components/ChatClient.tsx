@@ -78,7 +78,7 @@ function renderInline(text: string): ReactNode[] {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-indigo-400 hover:text-indigo-300 underline break-all"
+          className="break-all text-indigo-300 underline decoration-indigo-400/60 underline-offset-2 transition-colors hover:text-indigo-200"
         >
           {url}
         </a>
@@ -116,6 +116,31 @@ function MessageContent({ content }: { content: string }) {
 const CHAT_HISTORY_KEY = 'nextrole_chat_history';
 const MAX_HISTORY = 50;
 
+function isMessage(value: unknown): value is Message {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const role = 'role' in value ? value.role : undefined;
+  const content = 'content' in value ? value.content : undefined;
+
+  return (
+    (role === 'user' || role === 'assistant') &&
+    typeof content === 'string'
+  );
+}
+
+function normalizeMessages(history: unknown): Message[] {
+  if (!Array.isArray(history)) {
+    return [];
+  }
+
+  return history
+    .filter(isMessage)
+    .filter((message) => message.content.trim().length > 0)
+    .slice(-MAX_HISTORY);
+}
+
 export default function ChatClient({ hasResume }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -131,8 +156,8 @@ export default function ChatClient({ hasResume }: Props) {
     try {
       const stored = localStorage.getItem(CHAT_HISTORY_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as Message[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        const parsed = normalizeMessages(JSON.parse(stored));
+        if (parsed.length > 0) {
           setMessages(parsed);
         }
       }
@@ -142,9 +167,16 @@ export default function ChatClient({ hasResume }: Props) {
   }, []);
 
   useEffect(() => {
-    if (messages.length === 0) return;
     try {
-      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages.slice(-MAX_HISTORY)));
+      if (messages.length === 0) {
+        localStorage.removeItem(CHAT_HISTORY_KEY);
+        return;
+      }
+
+      localStorage.setItem(
+        CHAT_HISTORY_KEY,
+        JSON.stringify(normalizeMessages(messages))
+      );
     } catch {
       // ignore
     }
@@ -154,18 +186,26 @@ export default function ChatClient({ hasResume }: Props) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isStreaming]);
 
-  async function sendMessage(query: string) {
-    if (!query.trim() || isStreaming || atLimit) return;
+  function resetInputHeight() {
+    if (!inputRef.current) {
+      return;
+    }
 
-    const userMessage: Message = { role: 'user', content: query.trim() };
+    inputRef.current.style.height = '44px';
+  }
+
+  async function sendMessage(query: string) {
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery || isStreaming || atLimit) return;
+
+    const userMessage: Message = { role: 'user', content: trimmedQuery };
     const historyBeforeSend = messages;
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '' }]);
     setInput('');
+    resetInputHeight();
     setIsStreaming(true);
-
-    // Placeholder for streaming assistant message
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -178,7 +218,7 @@ export default function ChatClient({ hasResume }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: historyBeforeSend,
-          query: query.trim(),
+          query: trimmedQuery,
         }),
         signal: controller.signal,
       });
@@ -275,9 +315,11 @@ export default function ChatClient({ hasResume }: Props) {
     if (isStreaming) {
       abortRef.current?.abort();
     }
+    abortRef.current = null;
     setMessages([]);
     setInput('');
     setIsStreaming(false);
+    resetInputHeight();
     try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch { /* ignore */ }
     inputRef.current?.focus();
   }
@@ -285,7 +327,7 @@ export default function ChatClient({ hasResume }: Props) {
   const showTypingIndicator = isStreaming && messages.at(-1)?.content === '';
 
   return (
-    <div className="flex flex-col h-full bg-[#0d0d12]">
+    <div className="flex h-full min-h-0 flex-col bg-[#0d0d12]">
       {/* Fixed header */}
       <div className="shrink-0 flex items-center justify-between border-b border-[#2a2a35] bg-[#1a1a24] px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2.5">
@@ -346,7 +388,7 @@ export default function ChatClient({ hasResume }: Props) {
             </div>
           </div>
         ) : (
-          <div className="mx-auto max-w-3xl space-y-4">
+          <div className="mx-auto max-w-4xl space-y-4">
             {messages.map((msg, i) => {
               const isUser = msg.role === 'user';
               const isLastAssistant = !isUser && i === messages.length - 1;
@@ -364,7 +406,7 @@ export default function ChatClient({ hasResume }: Props) {
                       className={
                         isUser
                           ? 'rounded-2xl rounded-tr-sm bg-indigo-600 px-4 py-2.5 text-[15px] text-white'
-                          : 'rounded-2xl rounded-tl-sm border border-[#2a2a35] bg-[#222233] p-4 text-[15px] text-[#f0f0fa]'
+                          : 'rounded-2xl rounded-tl-sm border border-[#303045] bg-[#252538] p-4 text-[15px] text-[#f0f0fa] shadow-[0_8px_24px_rgba(0,0,0,0.14)]'
                       }
                     >
                       {isUser ? (
@@ -394,7 +436,7 @@ export default function ChatClient({ hasResume }: Props) {
             </button>
           </p>
         ) : (
-          <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-2">
+          <form onSubmit={handleSubmit} className="mx-auto flex max-w-4xl items-end gap-2">
             <textarea
               ref={inputRef}
               value={input}

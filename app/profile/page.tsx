@@ -14,6 +14,8 @@ type ProfileRecord = {
   tier: 'free' | 'pro' | null;
   stripe_subscription_id: string | null;
   subscription_status: string | null;
+  target_levels: string[] | null;
+  target_roles: string[] | null;
 };
 
 export default async function ProfilePage() {
@@ -28,7 +30,7 @@ export default async function ProfilePage() {
     await Promise.all([
       supabase
         .from('profiles')
-        .select('id, email, display_name, tier, stripe_subscription_id, subscription_status')
+        .select('id, email, display_name, tier, stripe_subscription_id, subscription_status, target_levels, target_roles')
         .eq('id', user.id)
         .maybeSingle(),
       supabase
@@ -42,19 +44,39 @@ export default async function ProfilePage() {
   if (profileError) {
     console.error('[profile/page] profile query error:', profileError.message);
 
-    const { data: fallbackProfile, error: fallbackError } = await supabase
+    const { data: fallbackProfileWithDisplayName, error: fallbackDisplayNameError } = await supabase
       .from('profiles')
-      .select('id, email, tier, stripe_subscription_id, subscription_status')
+      .select('id, email, display_name, tier, stripe_subscription_id, subscription_status')
       .eq('id', user.id)
       .maybeSingle();
 
-    if (fallbackError) {
-      console.error('[profile/page] fallback profile query error:', fallbackError.message);
-    } else if (fallbackProfile) {
+    if (!fallbackDisplayNameError && fallbackProfileWithDisplayName) {
       profile = {
-        ...(fallbackProfile as Omit<ProfileRecord, 'display_name'>),
-        display_name: null,
+        ...(fallbackProfileWithDisplayName as Omit<ProfileRecord, 'target_levels' | 'target_roles'>),
+        target_levels: [],
+        target_roles: [],
       };
+    } else {
+      if (fallbackDisplayNameError) {
+        console.error('[profile/page] fallback profile query with display_name error:', fallbackDisplayNameError.message);
+      }
+
+      const { data: fallbackProfile, error: fallbackError } = await supabase
+        .from('profiles')
+        .select('id, email, tier, stripe_subscription_id, subscription_status')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (fallbackError) {
+        console.error('[profile/page] fallback profile query error:', fallbackError.message);
+      } else if (fallbackProfile) {
+        profile = {
+          ...(fallbackProfile as Omit<ProfileRecord, 'display_name' | 'target_levels' | 'target_roles'>),
+          display_name: null,
+          target_levels: [],
+          target_roles: [],
+        };
+      }
     }
   }
 
@@ -70,6 +92,8 @@ export default async function ProfilePage() {
       tier={profile?.tier === 'pro' ? 'pro' : 'free'}
       subscriptionStatus={profile?.subscription_status ?? null}
       applicationCount={count ?? 0}
+      initialTargetLevels={Array.isArray(profile?.target_levels) ? profile.target_levels : []}
+      initialTargetRoles={Array.isArray(profile?.target_roles) ? profile.target_roles : []}
     />
   );
 }

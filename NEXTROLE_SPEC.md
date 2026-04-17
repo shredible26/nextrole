@@ -523,8 +523,9 @@ This section is included as operational reference. In this checkout, scraper cod
 5k.'About this role' section should be displayed perfectly (not at one 
     big paragraph). The description should not show on the the jobs card
     (which it currently does), it should only show if you click on the job title and it should appear in the 'About this role' section. Maybe add a 'view description' button for jobs with them?
-5l.Add 'best match' filter (pro only) - ranks all jobs from best to
-   worst.
+5l.Add 'best match' filter (pro only) - ranks all jobs from best to worst.
+5m.Limit pro users to 5 chat total (same / other chat) questions 
+   per day.
 ---
 
 ### 2: NEW SOURCES & SOURCE EXPANSION
