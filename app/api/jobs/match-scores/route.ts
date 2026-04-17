@@ -242,6 +242,19 @@ export async function POST(req: NextRequest) {
       // Preserve any existing claude_score from DB — don't overwrite
     }
 
+    // Any requested job that has no embedding and no prior cached score gets
+    // similarity=0 so it still participates in percentile grading and every
+    // card receives a badge.  These placeholder entries are excluded from the
+    // upsert so the cache is never polluted with fake zeros.
+    const placeholderIds = new Set<string>();
+    for (const id of jobIds) {
+      if (!allRawSimilarities.has(id)) {
+        allRawSimilarities.set(id, 0);
+        allClaudeScores.set(id, null);
+        placeholderIds.add(id);
+      }
+    }
+
     // ── Step 4: Claude hybrid scoring for top newly-computed candidates ──
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const resumeText = ((profile.resume_text as string | null) ?? '').slice(0, 1500);
@@ -288,14 +301,16 @@ export async function POST(req: NextRequest) {
 
     // ── Step 6: Upsert ALL rows — grades may have shifted for existing jobs ──
     const now = new Date().toISOString();
-    const upsertRows = [...allRawSimilarities.entries()].map(([id, rawSim]) => ({
-      user_id: user.id,
-      job_id: id,
-      similarity: rawSim,
-      grade: gradeMap.get(id) ?? 'F',
-      computed_at: now,
-      claude_score: allClaudeScores.get(id) ?? null,
-    }));
+    const upsertRows = [...allRawSimilarities.entries()]
+      .filter(([id]) => !placeholderIds.has(id))
+      .map(([id, rawSim]) => ({
+        user_id: user.id,
+        job_id: id,
+        similarity: rawSim,
+        grade: gradeMap.get(id) ?? 'F',
+        computed_at: now,
+        claude_score: allClaudeScores.get(id) ?? null,
+      }));
 
     if (upsertRows.length > 0) {
       await admin
