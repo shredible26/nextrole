@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
+const LEVEL_OPTIONS = ['New Grad', 'Entry Level', 'Internship'] as const;
+const ROLE_OPTIONS = ['SWE', 'DS', 'ML', 'AI', 'DevOps', 'Security', 'PM', 'Analyst', 'Finance', 'Consulting'] as const;
+
 const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024;
 
 type ResumeInfo = {
@@ -125,6 +128,10 @@ export default function ProfileClient({
   const [isLoadingResume, setIsLoadingResume] = useState(true);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
   const [isDeletingResume, setIsDeletingResume] = useState(false);
+  const [targetLevels, setTargetLevels] = useState<string[]>([]);
+  const [targetRoles, setTargetRoles] = useState<string[]>([]);
+  const [isLoadingPrefs, setIsLoadingPrefs] = useState(true);
+  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -145,6 +152,33 @@ export default function ProfileClient({
     }
 
     void loadResume();
+
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPrefs() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('target_levels, target_roles')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (data) {
+        if (Array.isArray(data.target_levels)) setTargetLevels(data.target_levels as string[]);
+        if (Array.isArray(data.target_roles)) setTargetRoles(data.target_roles as string[]);
+      }
+      setIsLoadingPrefs(false);
+    }
+
+    void loadPrefs();
 
     return () => {
       active = false;
@@ -217,6 +251,35 @@ export default function ProfileClient({
       toast.error('Failed to update name');
     } finally {
       setIsSavingName(false);
+    }
+  }
+
+  function toggleLevel(level: string) {
+    setTargetLevels(prev => prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]);
+  }
+
+  function toggleRole(role: string) {
+    setTargetRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+  }
+
+  async function handleSavePreferences() {
+    setIsSavingPrefs(true);
+    try {
+      const res = await fetch('/api/profile/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_levels: targetLevels, target_roles: targetRoles }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(typeof data.error === 'string' ? data.error : 'Failed to save preferences');
+        return;
+      }
+      toast.success('Preferences saved');
+    } catch {
+      toast.error('Failed to save preferences');
+    } finally {
+      setIsSavingPrefs(false);
     }
   }
 
@@ -498,6 +561,80 @@ export default function ProfileClient({
                 ) : (
                   <><Upload className="h-4 w-4" />Choose PDF</>
                 )}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Card 5 — Job Preferences */}
+        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-[#f0f0fa] text-lg font-semibold">Job Preferences</h2>
+            <p className="text-[#888899] text-sm">Personalizes your AI recommendations.</p>
+          </div>
+
+          {isLoadingPrefs ? (
+            <div className="flex items-center gap-2 text-[#555566] text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading...
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              <div>
+                <p className="text-[#aaaacc] text-sm font-medium mb-3">Target Experience Level</p>
+                <div className="flex flex-wrap gap-2">
+                  {LEVEL_OPTIONS.map(level => {
+                    const checked = targetLevels.includes(level);
+                    return (
+                      <button
+                        key={level}
+                        onClick={() => toggleLevel(level)}
+                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                          checked
+                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                            : 'bg-transparent border-[#2a2a35] text-[#888899] hover:border-[#3a3a45] hover:text-[#aaaacc]'
+                        }`}
+                      >
+                        {level}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[#aaaacc] text-sm font-medium mb-3">Target Roles</p>
+                <div className="flex flex-wrap gap-2">
+                  {ROLE_OPTIONS.map(role => {
+                    const checked = targetRoles.includes(role);
+                    return (
+                      <button
+                        key={role}
+                        onClick={() => toggleRole(role)}
+                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                          checked
+                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                            : 'bg-transparent border-[#2a2a35] text-[#888899] hover:border-[#3a3a45] hover:text-[#aaaacc]'
+                        }`}
+                      >
+                        {role}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={() => void handleSavePreferences()}
+                disabled={isSavingPrefs}
+                className="self-start bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-5 py-2 rounded-lg transition-colors"
+              >
+                {isSavingPrefs ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Saving...
+                  </span>
+                ) : 'Save Preferences'}
               </button>
             </div>
           )}

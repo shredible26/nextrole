@@ -98,13 +98,13 @@ function renderInline(text: string): ReactNode[] {
 function MessageContent({ content }: { content: string }) {
   const lines = content.split('\n');
   return (
-    <div className="leading-7">
+    <div className="leading-[1.7]" style={{ fontFamily: 'inherit' }}>
       {lines.map((line, i) => {
         if (line === '') {
           return <div key={i} className="h-3" />;
         }
         return (
-          <p key={i} className="text-sm text-[#f0f0fa]">
+          <p key={i} className="text-[15px] text-[#f0f0fa]">
             {renderInline(line)}
           </p>
         );
@@ -112,6 +112,9 @@ function MessageContent({ content }: { content: string }) {
     </div>
   );
 }
+
+const CHAT_HISTORY_KEY = 'nextrole_chat_history';
+const MAX_HISTORY = 50;
 
 export default function ChatClient({ hasResume }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -123,6 +126,29 @@ export default function ChatClient({ hasResume }: Props) {
   const abortRef = useRef<AbortController | null>(null);
 
   const atLimit = messages.filter(m => m.role === 'user').length >= 20;
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as Message[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    try {
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages.slice(-MAX_HISTORY)));
+    } catch {
+      // ignore
+    }
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -245,13 +271,14 @@ export default function ChatClient({ hasResume }: Props) {
     }
   }
 
-  function handleNewChat() {
+  function handleFreshChat() {
     if (isStreaming) {
       abortRef.current?.abort();
     }
     setMessages([]);
     setInput('');
     setIsStreaming(false);
+    try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch { /* ignore */ }
     inputRef.current?.focus();
   }
 
@@ -269,10 +296,10 @@ export default function ChatClient({ hasResume }: Props) {
           </div>
         </div>
         <button
-          onClick={handleNewChat}
+          onClick={handleFreshChat}
           className="rounded-lg border border-[#2a2a35] bg-transparent px-3 py-1.5 text-xs font-medium text-[#8888aa] transition-colors hover:bg-[#2a2a35] hover:text-[#f0f0fa]"
         >
-          New Chat
+          Fresh Chat
         </button>
       </div>
 
@@ -319,7 +346,7 @@ export default function ChatClient({ hasResume }: Props) {
             </div>
           </div>
         ) : (
-          <div className="mx-auto max-w-2xl space-y-4">
+          <div className="mx-auto max-w-3xl space-y-4">
             {messages.map((msg, i) => {
               const isUser = msg.role === 'user';
               const isLastAssistant = !isUser && i === messages.length - 1;
@@ -336,12 +363,12 @@ export default function ChatClient({ hasResume }: Props) {
                     <div
                       className={
                         isUser
-                          ? 'rounded-2xl rounded-tr-sm bg-indigo-600 px-4 py-2.5 text-sm text-white'
-                          : 'rounded-2xl rounded-tl-sm border border-[#2a2a35] bg-[#1a1a24] px-4 py-3 text-sm text-[#f0f0fa]'
+                          ? 'rounded-2xl rounded-tr-sm bg-indigo-600 px-4 py-2.5 text-[15px] text-white'
+                          : 'rounded-2xl rounded-tl-sm border border-[#2a2a35] bg-[#222233] p-4 text-[15px] text-[#f0f0fa]'
                       }
                     >
                       {isUser ? (
-                        <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
+                        <p className="whitespace-pre-wrap leading-[1.7] text-[15px]" style={{ fontFamily: 'inherit' }}>{msg.content}</p>
                       ) : isLastAssistant && showTypingIndicator ? (
                         <TypingIndicator />
                       ) : (
@@ -362,12 +389,12 @@ export default function ChatClient({ hasResume }: Props) {
         {atLimit ? (
           <p className="text-center text-sm text-[#8888aa]">
             Conversation limit reached.{' '}
-            <button onClick={handleNewChat} className="text-indigo-400 hover:underline">
-              Start a new chat.
+            <button onClick={handleFreshChat} className="text-indigo-400 hover:underline">
+              Start fresh.
             </button>
           </p>
         ) : (
-          <form onSubmit={handleSubmit} className="mx-auto flex max-w-2xl items-end gap-2">
+          <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-2">
             <textarea
               ref={inputRef}
               value={input}
@@ -376,8 +403,8 @@ export default function ChatClient({ hasResume }: Props) {
               placeholder="Ask about jobs, your resume, or career advice..."
               rows={1}
               disabled={isStreaming}
-              className="flex-1 resize-none rounded-xl border border-[#2a2a35] bg-[#0d0d12] px-4 py-2.5 text-sm text-[#f0f0fa] placeholder:text-[#555566] focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
-              style={{ minHeight: '44px', maxHeight: '120px' }}
+              className="flex-1 resize-none rounded-xl border border-[#2a2a35] bg-[#0d0d12] px-4 py-2.5 text-[15px] text-[#f0f0fa] placeholder:text-[15px] placeholder:text-[#555566] focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
+              style={{ fontFamily: 'inherit', minHeight: '44px', maxHeight: '120px' }}
               onInput={e => {
                 const el = e.currentTarget;
                 el.style.height = 'auto';

@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     const { data: profile, error: profileError } = await admin
       .from('profiles')
-      .select('tier, resume_embedding, resume_text')
+      .select('tier, resume_embedding, resume_text, target_levels, target_roles')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -234,6 +234,12 @@ export async function POST(req: NextRequest) {
     }
 
     const resumeText = (profile.resume_text as string | null) ?? null;
+    const targetLevels = Array.isArray(profile.target_levels) ? (profile.target_levels as string[]) : [];
+    const targetRoles = Array.isArray(profile.target_roles) ? (profile.target_roles as string[]) : [];
+    const hasPreferences = targetLevels.length > 0 || targetRoles.length > 0;
+    const preferencesSection = hasPreferences
+      ? `\nUser's job search preferences:\n- Target experience levels: ${targetLevels.length > 0 ? targetLevels.join(', ') : 'not specified'}\n- Target role types: ${targetRoles.length > 0 ? targetRoles.join(', ') : 'not specified'}\nUse these preferences to personalize all job recommendations and advice.`
+      : '';
 
     // Format job context
     const jobContext = matchedJobs
@@ -263,7 +269,7 @@ You have two powerful inputs:
 
 User's resume:
 ${resumeText ?? 'No resume uploaded yet'}
-
+${preferencesSection}
 Relevant jobs from NextRole's database:
 ${hasJobs ? jobContext : 'No matching jobs found for this query.'}
 
