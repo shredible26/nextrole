@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
 export const BASE_URL = 'https://nextrole-phi.vercel.app'
-export const ROOT_JOB_URL_LIMIT = 49000
-export const JOB_SITEMAP_URL_LIMIT = 49000
+export const ROOT_JOB_URL_LIMIT = 0
+export const JOB_SITEMAP_URL_LIMIT = 5000
 
 const SUPABASE_BATCH_SIZE = 1000
 const QUERY_CONCURRENCY = 5
@@ -101,7 +101,7 @@ export async function fetchSitemapJobs({
             .from('jobs')
             .select('id, scraped_at, posted_at')
             .eq('is_active', true)
-            .order('posted_at', { ascending: false })
+            .order('scraped_at', { ascending: false })
             .range(from, to)
             .abortSignal(AbortSignal.timeout(QUERY_TIMEOUT_MS))
 

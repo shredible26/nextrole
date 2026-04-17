@@ -1,9 +1,8 @@
 import { MetadataRoute } from 'next'
 import {
   BASE_URL,
-  ROOT_JOB_URL_LIMIT,
-  buildJobSitemapEntries,
-  fetchSitemapJobs,
+  getActiveJobCount,
+  getOverflowSitemapUrls,
 } from '@/lib/sitemap/jobs'
 
 export const runtime = 'nodejs'
@@ -29,16 +28,37 @@ const staticUrls: MetadataRoute.Sitemap = [
     changeFrequency: 'monthly',
     priority: 0.5,
   },
+  {
+    url: `${BASE_URL}/tracker`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
+    url: `${BASE_URL}/profile`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
+    url: `${BASE_URL}/chat`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const jobs = await fetchSitemapJobs({
-    logLabel: 'sitemap',
-    offset: 0,
-    limit: ROOT_JOB_URL_LIMIT,
-  })
+  const totalJobs = await getActiveJobCount('sitemap:index')
+  const sitemapUrls = getOverflowSitemapUrls(totalJobs)
 
-  const jobUrls = buildJobSitemapEntries(jobs)
-
-  return [...staticUrls, ...jobUrls]
+  return [
+    ...staticUrls,
+    ...sitemapUrls.map((url) => ({
+      url,
+      lastModified: new Date(),
+      changeFrequency: 'hourly' as const,
+      priority: 0.3,
+    })),
+  ]
 }

@@ -1,7 +1,6 @@
 import type { MetadataRoute } from 'next'
 import {
   JOB_SITEMAP_URL_LIMIT,
-  ROOT_JOB_URL_LIMIT,
   buildJobSitemapEntries,
   fetchSitemapJobs,
   getActiveJobCount,
@@ -29,7 +28,7 @@ export default async function sitemap(props: {
 
   const jobs = await fetchSitemapJobs({
     logLabel: `jobs/sitemap:${id}`,
-    offset: ROOT_JOB_URL_LIMIT + id * JOB_SITEMAP_URL_LIMIT,
+    offset: id * JOB_SITEMAP_URL_LIMIT,
     limit: JOB_SITEMAP_URL_LIMIT,
   })
 
