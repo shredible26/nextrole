@@ -519,7 +519,8 @@ This section is included as operational reference. In this checkout, scraper cod
    can they be sorted/categorized? 
 5i.Fix back button (on About this role page and browser back button 
    on jobs page)
-5j.Add the claude re-read step for the RAG grade matching.    
+5j.Add the claude re-read step for the RAG grade matching. 
+   (Partially done, uses deterministic approach right now)   
 5k.'About this role' section should be displayed perfectly (not at one 
     big paragraph). The description should not show on the the jobs card
     (which it currently does), it should only show if you click on the job title and it should appear in the 'About this role' section. Maybe add a 'view description' button for jobs with them?
@@ -532,6 +533,31 @@ This section is included as operational reference. In this checkout, scraper cod
 5p. Handle long chat memory - when users send many messages to the same 
    chat conversation (without clicking new chat) - should not cost much
 5q. In the user profile page, remove the 'current plan' section (where it just says Pro for pro users).
+5r. Right now, when on any page, the profile circle shows the users first
+   name initial but it should show full name initials (fit properly into circle).
+5s. For pro users, add a grade toggle allowing them to turn off grades.
+5t. Give grades to free users as well (they still have limited job 
+    access)
+5u. Fix location filtering for personio, make sure it works for all 
+    sources and is as good a possible (catches all possible keywords). Research until all keywords are gathered. 
+5v. Fix pricing page (include best match, chat, etc)
+5w. Update logic for finding jobs (active vs inactive) - this should
+    be flawless and should include ALL keywords/etc since this is what determines whether or not a job shows up on the sits. This filtering should be the most thorough out of every filter. I want to include as many relevant jobs as possible (anything that fits into my available filters). Do deep research. How should I approach this?
+5x. Change home page text to something like 'Every tech job from all
+    the common sites and repositories' and the numbers should be updated to 70,000+ jobs and 35+ sources (or whatever I am at now).
+5t. Any way to speed up the deactivation process after jobs all jobs are
+    scraped? Maybe just remove jobs from postings 6+ months ago or something?
+5u. Right now, the 'Best match' filter only sorts the current jobs 
+    showing (I have to click 'Load more' to increase the number of jobs). This is perfect for free users. For pro users, can the best match grade be based on ALL jobs with the current users filter configuration? They can click the '24 hour' filter if they just want all of the jobs from the past 24 hours graded, etc. 
+5v. On the profile page, redesign the top box (with the name and email
+    and profile circle with initials). Instead of a box, the circle should be in the center, the name should be right under it, the email right under that, and then the 'Pro' badge or the 'Upgrade' button should be under that. Everthing else should remain - this is just for the very top element/box. 
+5w. When switching tabs (between jobs, tracker, profile, etc), the 
+    filters on the jobs page should not change, until the a full browser reload. 
+5x. Whenever I reload the page (on my pro account), in the jobs page,
+    the search bar at the end of the text shows (Pro) for half a second before erasing it. Remove this- the text should remain the same. For free users, it should show (Pro) at the end, and that should remain there between reloads (not change at all), but for Pro users it should dissappear. 
+5y. Make the company name on the job card more bold / stand out more. 
+
+
 ---
 
 ### 2: NEW SOURCES & SOURCE EXPANSION
@@ -548,13 +574,14 @@ This section is included as operational reference. In this checkout, scraper cod
 8. [COMPLETED ✅]: Expand Lever company list (currently ~115 slugs)
 9. [COMPLETED ✅]: Expand Workday company list — currently 26/365
    companies returning jobs. Verify wdVersions for remaining 339.
-10. Add Recruitee source:
+10.[COMPLETED ✅]: Add Recruitee source:
     GET https://{company}.recruitee.com/api/offers/
     No auth required. Large list of companies available.
 11. Add TeamTailor source:
     GET https://api.teamtailor.com/v1/jobs
     No auth, large ATS used by European + US startups.
-12. Add Personio source (XML feed, European ATS with US roles)
+12. [COMPLETED ✅]:Add Personio source (XML feed, European ATS with US 
+    roles)
 13. Add iCIMS source (large enterprise ATS, no public API —
     research correct endpoint via Codex)
 14. Add rabiuk/job-scraper GitHub repo as source
@@ -628,7 +655,7 @@ This section is included as operational reference. In this checkout, scraper cod
 29a.[COMPLETED ✅]: Pricing page text rewrite — clarify free vs pro tiers,
     update feature list, mark coming-soon features clearly
 29b.Add button to Tracker page that allows users to add custom job (with
-    optional url/details/etc) to their tracker
+    optional url/details/etc, whatever fields are there normally) to their tracker
 29c.[COMPLETED ✅]:In the mini pricing window (and main pricing page if
     applicable, for the two rows that say 'Unlimited' for Pro users, remove the check mark next to Unlimited. 
 29d.[COMPLETED ✅]:Remove "No account required to browse" from pricing. 
@@ -694,21 +721,21 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ### 6: RAG PIPELINE (Build in order)
 
-43. Embeddings setup:
+[COMPLETED ✅]: 43. Embeddings setup:
     - Enable pgvector extension in Supabase
     - Add embedding column to jobs table: vector(1536)
     - Generate embeddings via OpenAI text-embedding-3-small
       for job title + description concatenated
     - Batch embedding generation after each scrape run
     - Add embedding generation to scrape pipeline
-44. Resume text extraction:
+[COMPLETED ✅]: 44. Resume text extraction:
     - Parse uploaded PDF from Supabase Storage on upload
     - Use pdf-parse (Node.js) to extract clean text
     - Store extracted text in profiles.resume_text column
     - Re-extract automatically when resume is replaced
     - Generate and store resume embedding in
       profiles.resume_embedding column
-45. Match scoring:
+[COMPLETED ✅]: 45. Match scoring:
     - Compute cosine similarity: resume_embedding vs job
       embedding via pgvector <=> operator
     - Convert to A-F grade:
@@ -721,7 +748,7 @@ This section is included as operational reference. In this checkout, scraper cod
     - Cache scores: job_scores(user_id, job_id, score,
       grade, computed_at)
     - Invalidate cache when user uploads new resume
-46. Match scoring UI:
+[COMPLETED ✅]: 46. Match scoring UI:
     - Grade badge on job card (A/B/C/D/F, color coded:
       A=green, B=teal, C=yellow, D=orange, F=red)
     - Pro users only — show lock icon for free users
@@ -729,7 +756,7 @@ This section is included as operational reference. In this checkout, scraper cod
       without resume uploaded
     - "Best Match" sort option in job feed (sort by grade)
     - Grade shown on job detail page with brief explanation
-47. Agent/Chat (Claude-powered, build last):
+[COMPLETED ✅]: 47. Agent/Chat (Claude-powered, build last):
     - /chat page or sidebar on /jobs
     - System prompt: user's resume text + job preferences
     - RAG retrieval: pgvector similarity search for top 10

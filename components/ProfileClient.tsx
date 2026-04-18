@@ -388,78 +388,76 @@ export default function ProfileClient(props: ProfileClientProps) {
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
 
         {/* Card 1 — Profile identity */}
-        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex items-start gap-5">
-          <div className="h-16 w-16 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-xl font-bold shrink-0">
+        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6 flex flex-col items-center text-center gap-3">
+          <div className="h-16 w-16 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-xl font-bold">
             {initials}
           </div>
-          <div className="flex-1 min-w-0">
-            {isEditingName ? (
-              <div className="flex flex-col gap-3">
-                <Input
-                  value={draftDisplayName}
-                  onChange={(event) => setDraftDisplayName(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      void handleSaveName();
-                    }
-                    if (event.key === 'Escape') {
-                      handleCancelEditing();
-                    }
-                  }}
-                  placeholder="Enter your display name"
-                  maxLength={50}
-                  className="bg-[#0d0d12] border-[#2a2a35] text-[#f0f0fa] placeholder:text-[#555566] rounded-lg"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => void handleSaveName()}
-                    disabled={!canSaveName}
-                    className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
-                  >
-                    {isSavingName ? (
-                      <span className="flex items-center gap-1.5">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Saving...
-                      </span>
-                    ) : 'Save'}
-                  </button>
-                  <button
-                    onClick={handleCancelEditing}
-                    disabled={isSavingName}
-                    className="bg-[#2a2a35] hover:bg-[#3a3a45] text-[#f0f0fa] text-sm px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
+          {isEditingName ? (
+            <div className="flex w-full max-w-sm flex-col items-center gap-3">
+              <Input
+                value={draftDisplayName}
+                onChange={(event) => setDraftDisplayName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    void handleSaveName();
+                  }
+                  if (event.key === 'Escape') {
+                    handleCancelEditing();
+                  }
+                }}
+                placeholder="Enter your display name"
+                maxLength={50}
+                className="bg-[#0d0d12] border-[#2a2a35] text-[#f0f0fa] placeholder:text-[#555566] rounded-lg text-center"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void handleSaveName()}
+                  disabled={!canSaveName}
+                  className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
+                >
+                  {isSavingName ? (
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Saving...
+                    </span>
+                  ) : 'Save'}
+                </button>
+                <button
+                  onClick={handleCancelEditing}
+                  disabled={isSavingName}
+                  className="bg-[#2a2a35] hover:bg-[#3a3a45] text-[#f0f0fa] text-sm px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-semibold text-[#f0f0fa]">{displayNameLabel}</span>
-                  <button
-                    onClick={handleStartEditing}
-                    aria-label="Edit display name"
-                    className="text-[#555566] hover:text-[#aaaacc] transition-colors"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                </div>
-                <p className="text-sm text-[#888899] mt-1">{email}</p>
-              </>
-            )}
-          </div>
-          <div className="shrink-0 self-start">
-            {tier === 'pro' ? (
-              <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
-                Pro
-              </span>
-            ) : (
-              <Link href="/pricing" className="inline-flex rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-400">
-                Upgrade to Pro →
-              </Link>
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xl font-semibold text-[#f0f0fa]">{displayNameLabel}</span>
+                <button
+                  onClick={handleStartEditing}
+                  aria-label="Edit display name"
+                  className="text-[#555566] hover:text-[#aaaacc] transition-colors"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-sm text-[#888899]">{email}</p>
+              <div className="mt-1">
+                {tier === 'pro' ? (
+                  <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
+                    Pro
+                  </span>
+                ) : (
+                  <Link href="/pricing" className="inline-flex rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-400">
+                    Upgrade to Pro →
+                  </Link>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Card 2 — Applications */}
