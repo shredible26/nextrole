@@ -88,9 +88,10 @@ interface Props {
   onOpen?: () => void;
   fromUrl?: string;
   matchScore?: { grade: string; similarity: number };
+  showGrade?: boolean;
 }
 
-export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchScore }: Props) {
+export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchScore, showGrade = true }: Props) {
   const postedAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
@@ -112,7 +113,7 @@ export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchS
   return (
     <div className="relative flex flex-col gap-3 rounded-xl border border-[#2a2a35] bg-[#1a1a24] p-4 shadow-sm transition-shadow hover:border-[#3a3a45]">
       {/* Grade badge */}
-      {matchScore && gradeColors && (
+      {showGrade && matchScore && gradeColors && (
         <div
           className="absolute -top-2 -right-2 z-10 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-none shadow-sm"
           style={{ backgroundColor: gradeColors.bg, color: gradeColors.text }}

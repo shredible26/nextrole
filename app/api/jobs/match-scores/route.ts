@@ -441,8 +441,8 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .maybeSingle();
 
-    if (profile?.tier !== 'pro') {
-      return NextResponse.json({ upgrade: true }, { status: 402 });
+    if (!profile) {
+      return NextResponse.json({ scores: {}, noResume: true });
     }
 
     if (!profile.resume_embedding) {

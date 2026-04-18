@@ -8,6 +8,7 @@ import JobCard from './JobCard';
 import UpgradeModal from './UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Job, JobFilters } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { getTrackedIds, addTrackedId, removeTrackedId, writeTrackedIds } from '@/lib/trackedStorage';
@@ -60,6 +61,7 @@ interface FeedSnapshot {
   isPro: boolean;
   showResumePrompt: boolean;
   resumePromptDismissed: boolean;
+  showGrades: boolean;
   scrollTop: number;
   sidebarScrollTop: number;
 }
@@ -151,6 +153,7 @@ function readFeedSnapshot(): FeedSnapshot | null {
       isPro: typeof parsed.isPro === 'boolean' ? parsed.isPro : false,
       showResumePrompt: typeof parsed.showResumePrompt === 'boolean' ? parsed.showResumePrompt : false,
       resumePromptDismissed: typeof parsed.resumePromptDismissed === 'boolean' ? parsed.resumePromptDismissed : false,
+      showGrades: typeof parsed.showGrades === 'boolean' ? parsed.showGrades : true,
       scrollTop: typeof parsed.scrollTop === 'number' ? parsed.scrollTop : 0,
       sidebarScrollTop: typeof parsed.sidebarScrollTop === 'number' ? parsed.sidebarScrollTop : 0,
     };
@@ -194,6 +197,7 @@ export default function JobFeed() {
   const [showResumePrompt, setShowResumePrompt] = useState(initialSnapshot?.showResumePrompt ?? false);
   const [resumePromptDismissed, setResumePromptDismissed] = useState(initialSnapshot?.resumePromptDismissed ?? false);
   const [sortBy, setSortBy] = useState<'default' | 'best_match'>(initialSnapshot?.sortBy ?? 'default');
+  const [showGrades, setShowGrades] = useState<boolean>(initialSnapshot?.showGrades ?? true);
   const requestIdRef = useRef(0);
   const jobsRef = useRef<Job[]>(initialSnapshot?.jobs ?? []);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -215,6 +219,7 @@ export default function JobFeed() {
     isPro: initialSnapshot?.isPro ?? false,
     showResumePrompt: initialSnapshot?.showResumePrompt ?? false,
     resumePromptDismissed: initialSnapshot?.resumePromptDismissed ?? false,
+    showGrades: initialSnapshot?.showGrades ?? true,
   });
 
   const persistFeedState = useCallback(() => {
@@ -233,6 +238,7 @@ export default function JobFeed() {
       isPro: snapshotStateRef.current.isPro,
       showResumePrompt: snapshotStateRef.current.showResumePrompt,
       resumePromptDismissed: snapshotStateRef.current.resumePromptDismissed,
+      showGrades: snapshotStateRef.current.showGrades,
       scrollTop: feedContainerRef.current?.scrollTop ?? feedScrollTopRef.current,
       sidebarScrollTop: sidebarContainerRef.current?.scrollTop ?? sidebarScrollTopRef.current,
     });
@@ -250,6 +256,7 @@ export default function JobFeed() {
       isPro,
       showResumePrompt,
       resumePromptDismissed,
+      showGrades,
     };
 
     persistFeedState();
@@ -264,6 +271,7 @@ export default function JobFeed() {
     isPro,
     showResumePrompt,
     resumePromptDismissed,
+    showGrades,
     persistFeedState,
   ]);
 
@@ -462,11 +470,10 @@ export default function JobFeed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.roles.join(), filters.search, filters.level, filters.remote, filters.location, filters.postedWithin, filters.sources.join()]);
 
-  // Fetch match scores whenever isPro resolves (jobs already loaded) or jobs change (isPro already true).
-  // Kept separate from fetchJobs so isPro is never captured in a stale closure.
+  // Fetch match scores whenever jobs change.
   // Only sends IDs not yet scored to avoid re-scoring jobs already in matchScores.
   useEffect(() => {
-    if (!isPro || jobs.length === 0) return;
+    if (jobs.length === 0) return;
     const unseenIds = jobs.map(j => j.id).filter(id => !scoredJobIdsRef.current.has(id));
     if (unseenIds.length === 0) return;
     fetch('/api/jobs/match-scores', {
@@ -484,7 +491,7 @@ export default function JobFeed() {
         }
       })
       .catch(() => { /* non-blocking */ });
-  }, [isPro, jobs]);
+  }, [jobs]);
 
   async function handleTrack(job: Job) {
     // Optimistic update — both React state and localStorage
@@ -639,21 +646,36 @@ export default function JobFeed() {
               <p className="text-sm text-white">
                 {isSearching ? 'Searching...' : (loading || isRefetching) ? 'Loading…' : `${total.toLocaleString()} jobs found`}
               </p>
-              {isPro && Object.keys(matchScores).length > 0 && (
-                <select
-                  value={sortBy}
-                  onChange={e => setSortBy(e.target.value as 'default' | 'best_match')}
-                  className="h-7 rounded-md border border-[#2a2a35] bg-[#1a1a24] px-2 text-xs text-[#f0f0fa] focus:outline-none focus:border-indigo-500/50"
-                >
-                  <option value="default">Sort: Latest</option>
-                  <option value="best_match">Sort: Best Match</option>
-                </select>
+              {Object.keys(matchScores).length > 0 && (
+                <div className="flex items-center gap-3">
+                  <label
+                    className="group flex cursor-pointer items-center gap-2 rounded-md border border-[#2a2a35] bg-[#1a1a24] px-2.5 py-1 text-xs text-[#d8d9e6] transition-colors hover:border-[#3a3a45]"
+                    title={showGrades ? 'Hide match grades' : 'Show match grades'}
+                  >
+                    <span className="select-none font-medium">Show grades</span>
+                    <Switch
+                      size="sm"
+                      checked={showGrades}
+                      onCheckedChange={setShowGrades}
+                      className="data-checked:bg-indigo-500"
+                      aria-label="Toggle match grades"
+                    />
+                  </label>
+                  <select
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as 'default' | 'best_match')}
+                    className="h-7 rounded-md border border-[#2a2a35] bg-[#1a1a24] px-2 text-xs text-[#f0f0fa] focus:outline-none focus:border-indigo-500/50"
+                  >
+                    <option value="default">Sort: Latest</option>
+                    <option value="best_match">Sort: Best Match</option>
+                  </select>
+                </div>
               )}
             </div>
           </div>
 
           {/* Resume prompt banner */}
-          {isPro && showResumePrompt && !resumePromptDismissed && (
+          {showResumePrompt && !resumePromptDismissed && (
             <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-[#2a2a35] bg-[#1a1a24] px-4 py-2.5 text-sm text-[#aaaacc]">
               <span>Upload your resume on the <a href="/profile" className="text-indigo-400 hover:underline">Profile page</a> to see AI match scores for each job</span>
               <button
@@ -694,6 +716,7 @@ export default function JobFeed() {
                     onOpen={handleOpenJob}
                     fromUrl={pathname}
                     matchScore={matchScores[job.id]}
+                    showGrade={showGrades}
                   />
                 ))}
             </div>
