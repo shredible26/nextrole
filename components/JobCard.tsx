@@ -118,7 +118,7 @@ export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchS
             {job.title}
           </Link>
           <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#d8d9e6] font-medium truncate">
-            <span className="font-bold text-white">{job.company}</span>
+            <span className="font-bold text-indigo-300">{job.company}</span>
             {job.location && (
               <>
                 <span>·</span>
