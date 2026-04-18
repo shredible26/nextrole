@@ -4,26 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Job, Role, ROLE_LABELS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { MapPin, CheckCircle2, Plus } from 'lucide-react';
-
-const SOURCE_LABELS: Record<string, string> = {
-  pittcsc: 'SimplifyJobs',
-  simplify_internships: 'SimplifyJobs',
-  adzuna: 'Adzuna',
-  remoteok: 'RemoteOK',
-  arbeitnow: 'Arbeitnow',
-  themuse: 'The Muse',
-  recruitee: 'Recruitee',
-  personio: 'Personio',
-  jobright_business: 'Jobright (Business)',
-  jobright_design: 'Jobright (Design)',
-  jobright_marketing: 'Jobright (Marketing)',
-  jobright_accounting: 'Jobright (Accounting)',
-  jobright_pm: 'Jobright (PM)',
-};
 
 const ROLE_BADGE_COLORS: Partial<Record<Role, string>> = {
   swe: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30',
@@ -108,48 +93,50 @@ export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchS
       : null;
 
   const gradeColors = matchScore ? (GRADE_COLORS[matchScore.grade] ?? GRADE_COLORS['F']) : null;
-  const showGradeBadge = showGrade && matchScore && gradeColors;
 
   return (
-    <div className="flex flex-col gap-3.5 rounded-[14px] border border-[#2a2a35] bg-[#1a1a24] p-[18px] transition-colors hover:border-[#3a3a45]">
-      {/* Header: logo + company/title/location + grade */}
+    <div className="relative flex flex-col gap-3 rounded-xl border border-[#2a2a35] bg-[#1a1a24] p-4 shadow-sm transition-shadow hover:border-[#3a3a45]">
+      {/* Grade badge */}
+      {showGrade && matchScore && gradeColors && (
+        <div
+          className="absolute -top-2 -right-2 z-10 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-none shadow-sm"
+          style={{ backgroundColor: gradeColors.bg, color: gradeColors.text }}
+          title={`Match score: ${matchScore.grade} (${(matchScore.similarity * 100).toFixed(0)}%)`}
+        >
+          {matchScore.grade}
+        </div>
+      )}
+      {/* Header */}
       <div className="flex items-start gap-3">
         <CompanyLogo company={job.company} />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-bold tracking-[-0.005em] text-[#f0f0fa]">
-            {job.company}
-          </div>
           <Link
             href={`/jobs/${job.id}?from=${encodeURIComponent(fromUrl ?? '/jobs')}`}
             onClick={onOpen}
-            className="mt-[3px] block truncate text-sm font-medium leading-[1.35] text-[#d0d0e0] hover:underline"
+            className="block truncate font-semibold text-sm leading-snug text-white hover:underline"
           >
             {job.title}
           </Link>
-          {job.location && (
-            <div className="mt-[5px] flex items-center gap-1 truncate text-xs text-[#8888aa]">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate">{job.location}</span>
-            </div>
-          )}
-        </div>
-        {showGradeBadge && (
-          <div
-            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg text-[13px] font-bold"
-            style={{
-              backgroundColor: `${gradeColors.bg}1f`,
-              border: `1px solid ${gradeColors.bg}59`,
-              color: gradeColors.bg,
-            }}
-            title={`Match score: ${matchScore.grade} (${(matchScore.similarity * 100).toFixed(0)}%)`}
-          >
-            {matchScore.grade}
+          <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#d8d9e6] font-medium truncate">
+            <span className="font-bold text-white">{job.company}</span>
+            {job.location && (
+              <>
+                <span>·</span>
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">{job.location}</span>
+              </>
+            )}
           </div>
+        </div>
+        {job.remote && (
+          <Badge className="shrink-0 bg-emerald-500/15 text-emerald-400 border-transparent text-xs">
+            Remote
+          </Badge>
         )}
       </div>
 
-      {/* Role tags + Remote pill */}
-      {(job.roles.length > 0 || job.remote) && (
+      {/* Role tags */}
+      {job.roles.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {job.roles.map(role => (
             <span
@@ -162,21 +149,14 @@ export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchS
               {ROLE_LABELS[role as Role] ?? role}
             </span>
           ))}
-          {job.remote && (
-            <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
-              Remote
-            </span>
-          )}
         </div>
       )}
 
         {/* Footer */}
-        <div className="mt-auto flex items-center justify-between border-t border-[#24242e] pt-3">
-          <div className="flex items-center gap-2 text-[11px] text-[#70708a]">
-            {salary && <span className="font-semibold text-[#d0d0e0]">{salary}</span>}
-            {salary && <span>·</span>}
-            <span>{SOURCE_LABELS[job.source] ?? job.source}</span>
-            {postedAgoFormatted && <><span>·</span><span>{postedAgoFormatted}</span></>}
+        <div className="flex items-center justify-between mt-auto pt-1">
+          <div className="flex items-center gap-3 text-[13px] font-medium text-[#e0e0f0]">
+            {salary && <span className="font-medium text-[#f0f0fa]">{salary}</span>}
+            {postedAgoFormatted && <span>{postedAgoFormatted}</span>}
           </div>
 
         <div className="flex items-center gap-1.5">
