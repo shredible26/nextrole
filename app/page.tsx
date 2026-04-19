@@ -705,7 +705,7 @@ export default function HomePage() {
 
         <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-[#030303]/80 pointer-events-none" />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 flex flex-col items-center gap-8 md:gap-10 pt-20 md:pt-28 pb-32 md:pb-40">
+        <div className="relative z-10 max-w-5xl mx-auto px-4 flex flex-col items-center gap-5 md:gap-7 pt-12 md:pt-16 pb-12 md:pb-16">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -724,10 +724,10 @@ export default function HomePage() {
             custom={1}
             className="text-center tracking-tight"
           >
-            <span className="block text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/80">
+            <span className="block text-4xl md:text-6xl font-bold leading-[1.05] bg-clip-text text-transparent bg-gradient-to-b from-white to-white/80">
               Every internship &amp; new grad tech job,
             </span>
-            <span className="block text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-white/90 to-purple-300">
+            <span className="block text-4xl md:text-6xl font-bold leading-[1.05] bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-white/90 to-purple-300">
               from every source.
             </span>
           </motion.h1>
@@ -782,48 +782,48 @@ export default function HomePage() {
             initial="hidden"
             animate="visible"
             custom={4}
-            className="mt-4 grid grid-cols-3 gap-12 w-full max-w-lg text-center"
+            className="grid grid-cols-3 gap-10 md:gap-12 w-full max-w-lg text-center"
           >
             <div>
-              <p className="text-4xl md:text-5xl font-bold text-white">
+              <p className="text-3xl md:text-4xl font-bold text-white">
                 {count.toLocaleString()}+
               </p>
-              <p className="mt-1 text-sm text-white/50">Active jobs</p>
+              <p className="mt-1 text-xs md:text-sm text-white/50">Active jobs</p>
             </div>
             <div>
-              <p className="text-4xl md:text-5xl font-bold text-white">40+</p>
-              <p className="mt-1 text-sm text-white/50">Sources</p>
+              <p className="text-3xl md:text-4xl font-bold text-white">40+</p>
+              <p className="mt-1 text-xs md:text-sm text-white/50">Sources</p>
             </div>
             <div>
-              <p className="text-4xl md:text-5xl font-bold text-white">Daily</p>
-              <p className="mt-1 text-sm text-white/50">Updates</p>
+              <p className="text-3xl md:text-4xl font-bold text-white">Daily</p>
+              <p className="mt-1 text-xs md:text-sm text-white/50">Updates</p>
             </div>
+          </motion.div>
+
+          {/* Scroll indicator */}
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.6, ease: 'easeOut' }}
+            className="mt-6 md:mt-10"
+          >
+            <motion.div
+              animate={{ y: [0, 5, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex flex-col items-center gap-2 text-white/40"
+            >
+              <span className="text-[10px] font-medium uppercase tracking-[0.25em]">Scroll</span>
+              <div className="flex h-9 w-5 items-start justify-center rounded-full border border-white/15 pt-1.5">
+                <motion.span
+                  animate={{ y: [0, 10, 0], opacity: [1, 0.2, 1] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="block h-1.5 w-1 rounded-full bg-white/60"
+                />
+              </div>
+              <ChevronDown className="h-3.5 w-3.5" />
+            </motion.div>
           </motion.div>
         </div>
-
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.6, ease: 'easeOut' }}
-          className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
-        >
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            className="flex flex-col items-center gap-2 text-white/40"
-          >
-            <span className="text-[10px] font-medium uppercase tracking-[0.25em]">Scroll</span>
-            <div className="flex h-9 w-5 items-start justify-center rounded-full border border-white/15 pt-1.5">
-              <motion.span
-                animate={{ y: [0, 10, 0], opacity: [1, 0.2, 1] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                className="block h-1.5 w-1 rounded-full bg-white/60"
-              />
-            </div>
-            <ChevronDown className="h-3.5 w-3.5" />
-          </motion.div>
-        </motion.div>
       </section>
 
       {/* ── HOW IT WORKS ── */}
