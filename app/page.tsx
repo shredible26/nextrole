@@ -540,7 +540,7 @@ export default function HomePage() {
     : user?.email?.[0]?.toUpperCase() ?? 'U';
 
   return (
-    <div className="flex flex-col bg-[#030303]">
+    <div className="flex flex-1 min-h-0 flex-col overflow-y-auto bg-[#030303]">
       {/* ── NAVBAR ── */}
       <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24] h-14">
         <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
@@ -704,7 +704,7 @@ export default function HomePage() {
 
         <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-[#030303]/80 pointer-events-none" />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 flex flex-col items-center gap-8 py-20">
+        <div className="relative z-10 max-w-5xl mx-auto px-4 flex flex-col items-center gap-10 py-28 md:py-36">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -774,7 +774,7 @@ export default function HomePage() {
             initial="hidden"
             animate="visible"
             custom={4}
-            className="grid grid-cols-3 gap-12 w-full max-w-lg text-center"
+            className="mt-4 grid grid-cols-3 gap-12 w-full max-w-lg text-center"
           >
             <div>
               <p className="text-4xl md:text-5xl font-bold text-white">
