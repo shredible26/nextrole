@@ -17,6 +17,7 @@ import {
   MessageSquare,
   LayoutGrid,
   Send,
+  ChevronDown,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
@@ -677,7 +678,7 @@ export default function HomePage() {
       </header>
 
       {/* ── HERO SECTION ── */}
-      <section className="relative min-h-screen bg-[#030303] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen bg-[#030303] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.05] via-transparent to-purple-500/[0.05] blur-3xl" />
 
         {SHAPES.map((shape, i) => (
@@ -704,7 +705,7 @@ export default function HomePage() {
 
         <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-[#030303]/80 pointer-events-none" />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 flex flex-col items-center gap-10 py-28 md:py-36">
+        <div className="relative z-10 max-w-5xl mx-auto px-4 flex flex-col items-center gap-8 md:gap-10 pt-20 md:pt-28 pb-32 md:pb-40">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -736,10 +737,17 @@ export default function HomePage() {
             initial="hidden"
             animate="visible"
             custom={2}
-            className="text-base md:text-xl text-white/50 leading-relaxed font-light max-w-3xl mx-auto text-center"
+            className="text-[clamp(0.6rem,2.1vw,1.125rem)] text-white/50 leading-relaxed font-light mx-auto text-center whitespace-nowrap"
           >
-            76,000+ internship, new grad, and entry-level jobs from 40+ sources — updated daily.
-            Find the right role and automatically track every application in one place.
+            AI match scoring
+            <span className="mx-2 text-white/25">·</span>
+            Auto application tracking
+            <span className="mx-2 text-white/25">·</span>
+            Search feature
+            <span className="mx-2 text-white/25">·</span>
+            Email updates
+            <span className="mx-2 text-white/25">·</span>
+            NextRole AI <span className="text-indigo-300/80">(Pro)</span>
           </motion.p>
 
           <motion.div
@@ -792,6 +800,30 @@ export default function HomePage() {
             </div>
           </motion.div>
         </div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.6, ease: 'easeOut' }}
+          className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
+        >
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+            className="flex flex-col items-center gap-2 text-white/40"
+          >
+            <span className="text-[10px] font-medium uppercase tracking-[0.25em]">Scroll</span>
+            <div className="flex h-9 w-5 items-start justify-center rounded-full border border-white/15 pt-1.5">
+              <motion.span
+                animate={{ y: [0, 10, 0], opacity: [1, 0.2, 1] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                className="block h-1.5 w-1 rounded-full bg-white/60"
+              />
+            </div>
+            <ChevronDown className="h-3.5 w-3.5" />
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* ── HOW IT WORKS ── */}
