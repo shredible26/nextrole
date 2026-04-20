@@ -37,6 +37,11 @@ export const JOB_BOARD_SOURCES = [
   'careerjet',
   'ashby',
   'recruitee',
+  'breezy',
+  'icims',
+  'jazzhr',
+  'jobvite',
+  'oraclecloud',
 ] as const;
 
 export const GITHUB_REPO_SOURCE_SET = new Set<string>(GITHUB_REPO_SOURCES);
