@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { BellRing, Briefcase, CheckCircle2, Crown, DollarSign, Loader2, Mail, MapPin, Pencil, Trash2, TrendingUp, Upload } from 'lucide-react';
+import { BellRing, Briefcase, CheckCircle2, Crown, Loader2, Mail, Pencil, Trash2, TrendingUp, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -697,18 +697,10 @@ export default function ProfileClient(props: ProfileClientProps) {
                 </p>
               )}
 
-              <div className="flex flex-col gap-3 pt-4 border-t border-[#2a2a35]">
+              <div className="pt-4 border-t border-[#2a2a35]">
                 <div className="flex items-center gap-3 p-3 bg-[#0d0d12]/50 rounded-xl">
                   <Mail className="w-4 h-4 text-indigo-400" />
                   <span className="text-sm text-[#aaaacc]">Email notifications</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-[#0d0d12]/50 rounded-xl">
-                  <MapPin className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm text-[#aaaacc]">Location-based alerts</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-[#0d0d12]/50 rounded-xl">
-                  <DollarSign className="w-4 h-4 text-pink-400" />
-                  <span className="text-sm text-[#aaaacc]">Salary range matches</span>
                 </div>
               </div>
             </div>
