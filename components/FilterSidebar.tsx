@@ -79,6 +79,11 @@ const SOURCES = [
   { value: 'careerjet',              label: 'Careerjet' },
   { value: 'workatastartup',         label: 'Work at a Startup' },
   { value: 'builtin',                label: 'BuiltIn' },
+  { value: 'breezy',                 label: 'Breezy HR' },
+  { value: 'icims',                  label: 'iCIMS' },
+  { value: 'jazzhr',                 label: 'JazzHR' },
+  { value: 'jobvite',                label: 'Jobvite' },
+  { value: 'oraclecloud',            label: 'Oracle Cloud' },
 ];
 
 type FreeSourceOption = 'all' | 'github_repos' | 'job_boards';

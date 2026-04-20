@@ -541,14 +541,13 @@ export default function HomePage() {
     : user?.email?.[0]?.toUpperCase() ?? 'U';
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col overflow-y-auto bg-[#030303]">
+    <div className="flex flex-1 min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-[#030303]">
       {/* ── NAVBAR ── */}
       <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24] h-14">
         <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
           <Link
             href="/"
-            className="flex shrink-0 items-center gap-2"
-            style={{ minWidth: '200px' }}
+            className="flex shrink-0 items-center gap-2 md:min-w-[200px]"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -603,10 +602,7 @@ export default function HomePage() {
             )}
           </div>
 
-          <div
-            className="flex shrink-0 items-center justify-end gap-3"
-            style={{ minWidth: '200px' }}
-          >
+          <div className="flex shrink-0 items-center justify-end gap-3 md:min-w-[200px]">
             {mounted && !authLoading && (
               <>
                 {user ? (
@@ -737,15 +733,15 @@ export default function HomePage() {
             initial="hidden"
             animate="visible"
             custom={2}
-            className="text-[clamp(0.6rem,2.1vw,1.125rem)] text-white/50 leading-relaxed font-light mx-auto text-center whitespace-nowrap"
+            className="text-[clamp(0.75rem,2.1vw,1.125rem)] text-white/50 leading-relaxed font-light mx-auto text-center md:whitespace-nowrap"
           >
             AI match scoring
             <span className="mx-2 text-white/25">·</span>
             Auto application tracking
             <span className="mx-2 text-white/25">·</span>
-            Search feature
-            <span className="mx-2 text-white/25">·</span>
             Email updates
+            <span className="mx-2 text-white/25">·</span>
+            Search <span className="text-indigo-300/80">(Pro)</span>
             <span className="mx-2 text-white/25">·</span>
             NextRole AI <span className="text-indigo-300/80">(Pro)</span>
           </motion.p>
