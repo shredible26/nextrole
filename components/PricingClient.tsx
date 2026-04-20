@@ -302,39 +302,39 @@ export default function PricingClient() {
     <div className="relative flex-1 overflow-hidden">
       <BGPattern variant="dots" mask="fade-edges" size={32} fill="#1a1a24" className="opacity-50" />
 
-      <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+      <div className="relative z-10 container mx-auto px-4 py-6 md:py-8">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
             Simple, transparent pricing
           </h1>
-          <p className="text-xl text-gray-400">
+          <p className="text-base md:text-lg text-gray-400">
             Start free. Upgrade when you need more.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-5 max-w-5xl mx-auto">
           {/* Free card */}
-          <GlowCard className="p-6 md:p-8 flex flex-col bg-[#1a1a24]" glowColor="purple">
+          <GlowCard className="p-4 md:p-5 flex flex-col bg-[#1a1a24]" glowColor="purple">
             <div className="flex-1 flex flex-col">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-white mb-2">Free</h3>
+              <div className="mb-3">
+                <h3 className="text-xl font-bold text-white mb-1">Free</h3>
                 <p className="text-gray-400 text-sm">Everything you need to get started.</p>
               </div>
 
-              <div className="mb-6">
+              <div className="mb-3">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-bold text-white">$0</span>
+                  <span className="text-4xl font-bold text-white">$0</span>
                   <span className="text-gray-400">/ month</span>
                 </div>
               </div>
 
-              <div className="flex-1 mb-6">
-                <ul className="space-y-3">
+              <div className="flex-1 mb-3">
+                <ul className="space-y-1.5">
                   {FREE_FEATURES.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
+                    <li key={feature} className="flex items-start gap-2.5">
                       <div className="mt-0.5 flex-shrink-0">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-green-400" />
+                        <div className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 text-green-400" />
                         </div>
                       </div>
                       <span className="text-gray-300 text-sm">{feature}</span>
@@ -356,11 +356,11 @@ export default function PricingClient() {
           </GlowCard>
 
           {/* Pro card */}
-          <GlowCard className="p-6 md:p-8 flex flex-col bg-[#1a1a24] md:scale-105" glowColor="purple">
+          <GlowCard className="p-4 md:p-5 flex flex-col bg-[#1a1a24] md:scale-105" glowColor="purple">
             <div className="relative flex-1 flex flex-col">
               <Badge
                 className={cn(
-                  'absolute -top-4 right-0 border-0 text-white',
+                  'absolute -top-3 right-0 border-0 text-white',
                   isPro
                     ? 'bg-emerald-600 hover:bg-emerald-600'
                     : 'bg-indigo-600 hover:bg-indigo-600'
@@ -369,28 +369,28 @@ export default function PricingClient() {
                 {isPro ? 'Current Plan' : 'Most popular'}
               </Badge>
 
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
+              <div className="mb-3">
+                <h3 className="text-xl font-bold text-white mb-1">Pro</h3>
                 <p className="text-gray-400 text-sm">Unlimited access for serious job seekers.</p>
               </div>
 
-              <div className="mb-6">
+              <div className="mb-3">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-bold text-white">{displayPrice}</span>
+                  <span className="text-4xl font-bold text-white">{displayPrice}</span>
                   <span className="text-gray-400">{displayPeriod}</span>
                 </div>
                 {billingPeriod === 'yearly' && (
-                  <p className="text-sm text-green-400 mt-1">Save 17%</p>
+                  <p className="text-sm text-green-400 mt-0.5">Save 17%</p>
                 )}
               </div>
 
-              <div className="flex-1 mb-6">
-                <ul className="space-y-3">
+              <div className="flex-1 mb-3">
+                <ul className="space-y-1.5">
                   {PRO_FEATURES.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
+                    <li key={feature} className="flex items-start gap-2.5">
                       <div className="mt-0.5 flex-shrink-0">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-green-400" />
+                        <div className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 text-green-400" />
                         </div>
                       </div>
                       <span className="text-gray-300 text-sm">{feature}</span>
@@ -413,7 +413,7 @@ export default function PricingClient() {
                   )}
                 </Button>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-4">
                   <Button
                     onClick={() => { setBillingPeriod('monthly'); handleUpgrade('monthly'); }}
                     disabled={!!loading}

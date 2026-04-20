@@ -237,7 +237,8 @@ export default async function JobPage({ params, searchParams }: Props) {
   const validThrough = getValidThroughDate(job.posted_at, job.scraped_at)
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8" data-page="jobs">
+    <main className="flex-1 min-h-0 overflow-y-auto" data-page="jobs">
+      <div className="max-w-3xl mx-auto px-4 py-8">
         <Link
           href={backUrl}
           scroll={false}
@@ -339,6 +340,7 @@ export default async function JobPage({ params, searchParams }: Props) {
             }),
           }}
         />
+      </div>
     </main>
   )
 }
