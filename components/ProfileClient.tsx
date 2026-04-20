@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { Briefcase, Loader2, Pencil, Trash2, Upload } from 'lucide-react';
+import { BellRing, Briefcase, Loader2, Pencil, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -30,6 +30,7 @@ export interface ProfileClientProps {
   applicationCount: number;
   initialTargetLevels: string[];
   initialTargetRoles: string[];
+  initialJobAlertsEnabled: boolean;
 }
 
 function sortSelections<T extends string>(values: string[], options: readonly T[]) {
@@ -117,6 +118,7 @@ export default function ProfileClient(props: ProfileClientProps) {
     applicationCount,
     initialTargetLevels,
     initialTargetRoles,
+    initialJobAlertsEnabled,
   } = props;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
@@ -132,6 +134,8 @@ export default function ProfileClient(props: ProfileClientProps) {
   const [savedTargetLevels, setSavedTargetLevels] = useState(() => sortSelections(initialTargetLevels, LEVEL_OPTIONS));
   const [savedTargetRoles, setSavedTargetRoles] = useState(() => sortSelections(initialTargetRoles, ROLE_OPTIONS));
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+  const [jobAlertsEnabled, setJobAlertsEnabled] = useState(initialJobAlertsEnabled);
+  const [isSavingAlerts, setIsSavingAlerts] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -276,6 +280,29 @@ export default function ProfileClient(props: ProfileClientProps) {
     }
   }
 
+  async function handleToggleAlerts() {
+    const nextValue = !jobAlertsEnabled;
+    setJobAlertsEnabled(nextValue);
+    setIsSavingAlerts(true);
+    try {
+      const res = await fetch('/api/profile/alerts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: nextValue }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setJobAlertsEnabled(!nextValue);
+        toast.error(typeof data.error === 'string' ? data.error : 'Failed to update alerts');
+      }
+    } catch {
+      setJobAlertsEnabled(!nextValue);
+      toast.error('Failed to update alerts');
+    } finally {
+      setIsSavingAlerts(false);
+    }
+  }
+
   async function handleResumeSelected(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     const file = input.files?.[0];
@@ -382,6 +409,11 @@ export default function ProfileClient(props: ProfileClientProps) {
     !areSelectionsEqual(targetLevels, savedTargetLevels) ||
     !areSelectionsEqual(targetRoles, savedTargetRoles);
   const totalPreferencesSelected = targetLevels.length + targetRoles.length;
+  const resumeReady = !isLoadingResume && resume !== null;
+  const rolesReady = savedTargetRoles.length > 0;
+  const alertsRequirementsMet = resumeReady && rolesReady;
+  const isToggleDisabled = !alertsRequirementsMet || isSavingAlerts;
+  const showAlertHint = !isLoadingResume && !alertsRequirementsMet && !isSavingAlerts;
 
   return (
     <div className="w-full bg-[#0d0d12] px-4 py-10 sm:px-6">
@@ -648,6 +680,65 @@ export default function ProfileClient(props: ProfileClientProps) {
                   </span>
                 ) : 'Save Preferences'}
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 5 — Job Alerts */}
+        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-2xl p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="bg-indigo-500/20 rounded-xl h-10 w-10 flex items-center justify-center shrink-0 mt-0.5">
+                <BellRing className="text-indigo-400 h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-[#f0f0fa] text-lg font-semibold">Daily Job Alerts</h2>
+                  {jobAlertsEnabled && (
+                    <span className="inline-flex items-center rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-[#888899] mt-0.5">
+                  Get up to 10 matched jobs in your inbox every morning
+                </p>
+                {showAlertHint && (
+                  <p className="text-xs text-[#666677] mt-2 leading-relaxed">
+                    Upload a resume and set job preferences to enable alerts
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="shrink-0 mt-1">
+              {isSavingAlerts ? (
+                <div className="flex h-6 w-11 items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
+                </div>
+              ) : (
+                <button
+                  role="switch"
+                  aria-checked={jobAlertsEnabled}
+                  aria-label="Toggle daily job alerts"
+                  onClick={() => void handleToggleAlerts()}
+                  disabled={isToggleDisabled}
+                  className={cn(
+                    'relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1a24]',
+                    jobAlertsEnabled
+                      ? 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.35)]'
+                      : 'bg-[#2a2a35]',
+                    isToggleDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200',
+                      jobAlertsEnabled ? 'translate-x-6' : 'translate-x-1'
+                    )}
+                  />
+                </button>
+              )}
             </div>
           </div>
         </div>

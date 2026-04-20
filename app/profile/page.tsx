@@ -16,6 +16,7 @@ type ProfileRecord = {
   subscription_status: string | null;
   target_levels: string[] | null;
   target_roles: string[] | null;
+  job_alerts_enabled: boolean | null;
 };
 
 export default async function ProfilePage() {
@@ -30,7 +31,7 @@ export default async function ProfilePage() {
     await Promise.all([
       supabase
         .from('profiles')
-        .select('id, email, display_name, tier, stripe_subscription_id, subscription_status, target_levels, target_roles')
+        .select('id, email, display_name, tier, stripe_subscription_id, subscription_status, target_levels, target_roles, job_alerts_enabled')
         .eq('id', user.id)
         .maybeSingle(),
       supabase
@@ -94,6 +95,7 @@ export default async function ProfilePage() {
       applicationCount={count ?? 0}
       initialTargetLevels={Array.isArray(profile?.target_levels) ? profile.target_levels : []}
       initialTargetRoles={Array.isArray(profile?.target_roles) ? profile.target_roles : []}
+      initialJobAlertsEnabled={profile?.job_alerts_enabled ?? false}
     />
   );
 }

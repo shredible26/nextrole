@@ -20,6 +20,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 import { useRouter, usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -497,6 +498,16 @@ export default function HomePage() {
     });
     return () => listener.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('unsubscribed') === 'true') {
+      toast("You've been unsubscribed from job alerts.");
+      const url = new URL(window.location.href);
+      url.searchParams.delete('unsubscribed');
+      window.history.replaceState({}, '', url.toString());
+    }
   }, []);
 
   useEffect(() => {
