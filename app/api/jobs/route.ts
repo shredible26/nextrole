@@ -580,16 +580,9 @@ export async function GET(req: NextRequest) {
   };
 
   let jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
-    'jobs query (exact count)',
-    () => runJobsQuery('exact')
+    'jobs query (planned count)',
+    () => runJobsQuery('planned')
   );
-
-  if (jobsResult.error && isRetryableSupabaseError(jobsResult.error)) {
-    jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
-      'jobs query (planned count fallback)',
-      () => runJobsQuery('planned')
-    );
-  }
 
   if (jobsResult.error) {
     logSupabaseError('jobs query failed', jobsResult.error);
