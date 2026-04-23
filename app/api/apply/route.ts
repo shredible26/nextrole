@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     user_id: user.id,
     job_id,
     status: 'applied',
+    interview_count: 0,
     auto_tracked: true,
     applied_at: new Date().toISOString(),
   }, { onConflict: 'user_id,job_id', ignoreDuplicates: true });

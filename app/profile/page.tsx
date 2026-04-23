@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import ProfileClient from '@/components/ProfileClient';
+import { normalizeInterviewCount } from '@/lib/interviews';
 import { createServerClient } from '@/lib/supabase/server';
 
 export const metadata = {
@@ -27,7 +28,11 @@ export default async function ProfilePage() {
     redirect('/jobs');
   }
 
-  const [{ data: profileWithDisplayName, error: profileError }, { count, error: countError }] =
+  const [
+    { data: profileWithDisplayName, error: profileError },
+    { count, error: countError },
+    { data: interviewRows, error: interviewCountError },
+  ] =
     await Promise.all([
       supabase
         .from('profiles')
@@ -37,6 +42,10 @@ export default async function ProfilePage() {
       supabase
         .from('applications')
         .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id),
+      supabase
+        .from('applications')
+        .select('interview_count')
         .eq('user_id', user.id),
     ]);
 
@@ -85,6 +94,15 @@ export default async function ProfilePage() {
     console.error('[profile/page] application count error:', countError.message);
   }
 
+  if (interviewCountError) {
+    console.error('[profile/page] interview count query error:', interviewCountError.message);
+  }
+
+  const interviewCount = (interviewRows ?? []).reduce(
+    (total, application) => total + normalizeInterviewCount(application.interview_count),
+    0,
+  );
+
   return (
     <ProfileClient
       userId={user.id}
@@ -93,6 +111,7 @@ export default async function ProfilePage() {
       tier={profile?.tier === 'pro' ? 'pro' : 'free'}
       subscriptionStatus={profile?.subscription_status ?? null}
       applicationCount={count ?? 0}
+      interviewCount={interviewCount}
       initialTargetLevels={Array.isArray(profile?.target_levels) ? profile.target_levels : []}
       initialTargetRoles={Array.isArray(profile?.target_roles) ? profile.target_roles : []}
       initialJobAlertsEnabled={profile?.job_alerts_enabled ?? false}

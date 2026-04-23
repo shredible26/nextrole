@@ -175,9 +175,11 @@ export default function Navbar({
                 }`}
               >
                 Chat
-                <Badge className="bg-indigo-500 text-white text-[10px] px-1.5 py-0 h-4 hover:bg-indigo-500">
-                  Pro
-                </Badge>
+                {!isPro && (
+                  <Badge className="bg-indigo-500 text-white text-[10px] px-1.5 py-0 h-4 hover:bg-indigo-500">
+                    Pro
+                  </Badge>
+                )}
               </Link>
             )}
           </nav>

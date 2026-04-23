@@ -28,6 +28,7 @@ export interface ProfileClientProps {
   tier: 'free' | 'pro';
   subscriptionStatus: string | null;
   applicationCount: number;
+  interviewCount: number;
   initialTargetLevels: string[];
   initialTargetRoles: string[];
   initialJobAlertsEnabled: boolean;
@@ -116,6 +117,7 @@ export default function ProfileClient(props: ProfileClientProps) {
     displayName,
     tier,
     applicationCount,
+    interviewCount,
     initialTargetLevels,
     initialTargetRoles,
     initialJobAlertsEnabled,
@@ -534,18 +536,17 @@ export default function ProfileClient(props: ProfileClientProps) {
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10 p-5 md:p-8 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 <div className="p-3 bg-purple-500/10 rounded-2xl">
                   <CheckCircle2 className="w-6 h-6 text-purple-400" />
                 </div>
-                <TrendingUp className="w-5 h-5 text-green-400" />
               </div>
               <div>
                 <p className="text-sm text-[#888899] mb-1">Interviews</p>
-                <p className="text-4xl font-bold text-white">—</p>
+                <p className="text-4xl font-bold text-white">{interviewCount}</p>
               </div>
               <div className="pt-2 border-t border-[#2a2a35]">
-                <p className="text-xs text-[#555566]">coming soon</p>
+                <p className="text-xs text-[#555566]">interviews logged in your tracker</p>
               </div>
             </div>
           </div>

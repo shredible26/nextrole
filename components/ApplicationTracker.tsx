@@ -5,10 +5,16 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  getMinimumInterviewCountForStatus,
+  getNextInterviewCount,
+  normalizeInterviewCount,
+} from '@/lib/interviews';
 import { Application, ApplicationStatus, Role, ROLE_LABELS, STATUS_LABELS } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { ExternalLink, Loader2, LayoutGrid, Table2, X, Trash2 } from 'lucide-react';
@@ -59,11 +65,27 @@ const ROLE_OPTIONS: Role[] = [
   'pm',
 ];
 
+type ApplicationPatch = {
+  interviewCount?: number;
+  notes?: string;
+  status?: ApplicationStatus;
+};
 
-async function patchApplication(id: string, status?: ApplicationStatus, notes?: string) {
+function normalizeApplication(app: Application) {
+  return {
+    ...app,
+    interview_count: Math.max(
+      normalizeInterviewCount(app.interview_count),
+      getMinimumInterviewCountForStatus(app.status),
+    ),
+  };
+}
+
+async function patchApplication(id: string, { status, notes, interviewCount }: ApplicationPatch) {
   const body: Record<string, unknown> = {};
   if (status !== undefined) body.status = status;
   if (notes !== undefined) body.notes = notes;
+  if (interviewCount !== undefined) body.interview_count = interviewCount;
 
   const res = await fetch(`/api/applications/${id}`, {
     method: 'PATCH',
@@ -132,6 +154,7 @@ export default function ApplicationTracker() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Application | null>(null);
   const [notes, setNotes] = useState('');
+  const [interviewCount, setInterviewCount] = useState(0);
   const [saving, setSaving] = useState(false);
 
   // View toggle — default to table
@@ -157,7 +180,7 @@ export default function ApplicationTracker() {
         .order('applied_at', { ascending: false });
 
       if (error) toast.error('Failed to load applications');
-      else setApps((data ?? []) as Application[]);
+      else setApps(((data ?? []) as Application[]).map(normalizeApplication));
       setLoading(false);
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,13 +213,33 @@ export default function ApplicationTracker() {
   }
 
   async function handleStatusChange(app: Application, status: ApplicationStatus) {
+    const nextInterviewCount = getNextInterviewCount({
+      currentStatus: app.status,
+      nextStatus: status,
+      currentCount: app.interview_count,
+    });
     const prev = apps;
-    setApps(apps.map(a => a.id === app.id ? { ...a, status } : a));
+    setApps(apps.map(a => (
+      a.id === app.id
+        ? { ...a, status, interview_count: nextInterviewCount }
+        : a
+    )));
+
+    if (selected?.id === app.id) {
+      setSelected({ ...selected, status, interview_count: nextInterviewCount });
+      setInterviewCount(nextInterviewCount);
+    }
+
     try {
-      await patchApplication(app.id, status);
+      await patchApplication(app.id, { status, interviewCount: nextInterviewCount });
       toast.success(`Moved to ${STATUS_LABELS[status]}`);
     } catch {
       setApps(prev);
+      if (selected?.id === app.id) {
+        const normalizedApp = normalizeApplication(app);
+        setSelected(normalizedApp);
+        setInterviewCount(normalizedApp.interview_count ?? 0);
+      }
       toast.error('Failed to update status');
     }
   }
@@ -204,7 +247,7 @@ export default function ApplicationTracker() {
   async function handleNoteSave(appId: string, newNotes: string) {
     setApps(prev => prev.map(a => a.id === appId ? { ...a, notes: newNotes } : a));
     try {
-      await patchApplication(appId, undefined, newNotes);
+      await patchApplication(appId, { notes: newNotes });
     } catch {
       toast.error('Failed to save notes');
     }
@@ -229,9 +272,17 @@ export default function ApplicationTracker() {
     if (!selected) return;
     setSaving(true);
     try {
-      await patchApplication(selected.id, selected.status, notes);
-      setApps(apps.map(a => a.id === selected.id ? { ...a, notes } : a));
-      toast.success('Notes saved');
+      await patchApplication(selected.id, {
+        status: selected.status,
+        notes,
+        interviewCount,
+      });
+      setApps(apps.map(a => (
+        a.id === selected.id
+          ? { ...a, status: selected.status, notes, interview_count: interviewCount }
+          : a
+      )));
+      toast.success('Application updated');
       setSelected(null);
     } catch {
       toast.error('Failed to save notes');
@@ -241,8 +292,10 @@ export default function ApplicationTracker() {
   }
 
   function openSlideOver(app: Application) {
-    setSelected(app);
+    const normalizedApp = normalizeApplication(app);
+    setSelected(normalizedApp);
     setNotes(app.notes ?? '');
+    setInterviewCount(normalizedApp.interview_count ?? 0);
   }
 
   if (loading) {
@@ -280,7 +333,13 @@ export default function ApplicationTracker() {
                     value={selected.status}
                     onValueChange={val => {
                       const status = val as ApplicationStatus;
-                      setSelected({ ...selected, status });
+                      const nextInterviewCount = getNextInterviewCount({
+                        currentStatus: selected.status,
+                        nextStatus: status,
+                        currentCount: interviewCount,
+                      });
+                      setSelected({ ...selected, status, interview_count: nextInterviewCount });
+                      setInterviewCount(nextInterviewCount);
                     }}
                   >
                     <SelectTrigger>
@@ -292,6 +351,30 @@ export default function ApplicationTracker() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor={`interview-count-${selected.id}`}>Interview count</Label>
+                  <Input
+                    id={`interview-count-${selected.id}`}
+                    type="number"
+                    min={getMinimumInterviewCountForStatus(selected.status)}
+                    step="1"
+                    inputMode="numeric"
+                    value={interviewCount}
+                    onChange={e => {
+                      const nextValue = Number.parseInt(e.target.value, 10);
+                      const minimumInterviewCount = getMinimumInterviewCountForStatus(selected.status);
+                      const normalizedValue = Number.isNaN(nextValue)
+                        ? minimumInterviewCount
+                        : Math.max(minimumInterviewCount, nextValue);
+                      setInterviewCount(normalizedValue);
+                      setSelected({ ...selected, interview_count: normalizedValue });
+                    }}
+                  />
+                  <p className="text-xs text-[#888899]">
+                    Count recruiter phone calls and each interview round. Do not count OA, assessments, or HireVue.
+                  </p>
                 </div>
 
                 <div className="space-y-1.5">

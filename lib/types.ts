@@ -10,14 +10,17 @@ export type Role =
   | 'finance'
   | 'analyst'
   | 'pm';
-export type ApplicationStatus =
-  | 'applied'
-  | 'phone_screen'
-  | 'oa'
-  | 'interview'
-  | 'offer'
-  | 'rejected'
-  | 'withdrawn';
+export const APPLICATION_STATUSES = [
+  'applied',
+  'phone_screen',
+  'oa',
+  'interview',
+  'offer',
+  'rejected',
+  'withdrawn',
+] as const;
+
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
 export type Job = {
   id: string;
@@ -44,6 +47,7 @@ export type Application = {
   user_id: string;
   job_id: string;
   status: ApplicationStatus;
+  interview_count?: number | null;
   applied_at: string;
   notes?: string;
   auto_tracked: boolean;
