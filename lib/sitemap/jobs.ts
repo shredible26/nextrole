@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { createClient } from '@supabase/supabase-js'
 
 export const BASE_URL = 'https://nextrole-phi.vercel.app'
@@ -8,6 +9,7 @@ export const JOB_SITEMAP_URL_LIMIT = 5000
 const SUPABASE_BATCH_SIZE = 1000
 const QUERY_CONCURRENCY = 5
 const QUERY_TIMEOUT_MS = 30000
+const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD
 
 export type SitemapJob = {
   id: string
@@ -15,12 +17,29 @@ export type SitemapJob = {
   posted_at: string | null
 }
 
+function logSitemapIssue(
+  level: 'log' | 'warn' | 'error',
+  message: string,
+  details?: unknown
+) {
+  if (IS_PRODUCTION_BUILD) {
+    return
+  }
+
+  if (details === undefined) {
+    console[level](message)
+    return
+  }
+
+  console[level](message, details)
+}
+
 function createSitemapSupabaseClient(logLabel: string) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    console.error(`[${logLabel}] Missing Supabase env vars`, {
+    logSitemapIssue('error', `[${logLabel}] Missing Supabase env vars`, {
       hasSupabaseUrl: Boolean(supabaseUrl),
       hasServiceKey: Boolean(supabaseServiceKey),
     })
@@ -46,13 +65,13 @@ export async function getActiveJobCount(logLabel: string): Promise<number> {
       .abortSignal(AbortSignal.timeout(QUERY_TIMEOUT_MS))
 
     if (error) {
-      console.error(`[${logLabel}] Supabase error:`, error)
+      logSitemapIssue('error', `[${logLabel}] Supabase error:`, error)
       return 0
     }
 
     return count ?? 0
   } catch (error) {
-    console.error(`[${logLabel}] Supabase query threw:`, error)
+    logSitemapIssue('error', `[${logLabel}] Supabase query threw:`, error)
     return 0
   }
 }
@@ -69,10 +88,10 @@ export async function fetchSitemapJobs({
   const supabase = createSitemapSupabaseClient(logLabel)
 
   if (!supabase || limit <= 0) {
-    console.log(`[${logLabel}] Jobs fetched: 0`)
+    logSitemapIssue('log', `[${logLabel}] Jobs fetched: 0`)
 
     if (limit > 0) {
-      console.warn(`[${logLabel}] No jobs returned from Supabase`)
+      logSitemapIssue('warn', `[${logLabel}] No jobs returned from Supabase`)
     }
 
     return []
@@ -106,13 +125,13 @@ export async function fetchSitemapJobs({
             .abortSignal(AbortSignal.timeout(QUERY_TIMEOUT_MS))
 
           if (error) {
-            console.error(`[${logLabel}] Supabase error (${from}-${to}):`, error)
+            logSitemapIssue('error', `[${logLabel}] Supabase error (${from}-${to}):`, error)
             return []
           }
 
           return data ?? []
         } catch (error) {
-          console.error(`[${logLabel}] Supabase query threw (${from}-${to}):`, error)
+          logSitemapIssue('error', `[${logLabel}] Supabase query threw (${from}-${to}):`, error)
           return []
         }
       })
@@ -123,10 +142,10 @@ export async function fetchSitemapJobs({
     })
   }
 
-  console.log(`[${logLabel}] Jobs fetched:`, jobs.length)
+  logSitemapIssue('log', `[${logLabel}] Jobs fetched:`, jobs.length)
 
   if (!jobs.length) {
-    console.warn(`[${logLabel}] No jobs returned from Supabase`)
+    logSitemapIssue('warn', `[${logLabel}] No jobs returned from Supabase`)
   }
 
   return jobs

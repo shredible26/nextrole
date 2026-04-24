@@ -36,8 +36,10 @@ import type { User } from '@supabase/supabase-js';
 const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs' },
   { href: '/tracker', label: 'Tracker' },
+  { href: '/chat', label: 'Chat' },
+  { href: '/subscription', label: 'Subscription' },
+  { href: '/profile', label: 'Profile' },
 ];
-const CHAT_HREF = '/chat';
 
 const HOW_IT_WORKS: Array<{
   step: string;
@@ -467,7 +469,6 @@ export default function HomePage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [count, setCount] = useState(0);
-  const [loginRedirectToJobs, setLoginRedirectToJobs] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -528,7 +529,6 @@ export default function HomePage() {
   }, []);
 
   async function handleLogin(redirectToJobs = false) {
-    setLoginRedirectToJobs(redirectToJobs);
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -596,19 +596,6 @@ export default function HomePage() {
                     {label}
                   </Link>
                 ))}
-                <Link
-                  href={CHAT_HREF}
-                  className={`flex items-center gap-1.5 transition-colors ${
-                    pathname === CHAT_HREF || pathname.startsWith(CHAT_HREF)
-                      ? 'text-white font-semibold'
-                      : 'text-white/70 hover:text-white'
-                  }`}
-                >
-                  Chat
-                  <Badge className="bg-indigo-500 text-white text-[10px] px-1.5 py-0 h-4 hover:bg-indigo-500">
-                    Pro
-                  </Badge>
-                </Link>
               </nav>
             )}
           </div>
@@ -645,13 +632,6 @@ export default function HomePage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48 border-[#2a2a35] bg-[#1a1a24]">
                         <div className="truncate px-2 py-1.5 text-sm text-[#8888aa]">{user.email}</div>
-                        <DropdownMenuSeparator className="bg-[#2a2a35]" />
-                        <DropdownMenuItem
-                          onClick={() => router.push('/profile')}
-                          className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
-                        >
-                          Profile
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-[#2a2a35]" />
                         <DropdownMenuItem
                           onClick={handleLogout}
@@ -762,33 +742,6 @@ export default function HomePage() {
             initial="hidden"
             animate="visible"
             custom={3}
-          >
-            {user ? (
-              <Link
-                href="/jobs"
-                className="group inline-flex items-center gap-2 px-10 py-4 bg-white text-[#030303] rounded-full font-bold text-lg hover:bg-white/90 transition-all duration-300"
-              >
-                Browse Jobs
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            ) : (
-              <button
-                onClick={() => handleLogin(true)}
-                className="group inline-flex items-center gap-2 px-10 py-4 bg-white text-[#030303] rounded-full font-bold text-lg hover:bg-white/90 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-90"
-                aria-busy={loginRedirectToJobs}
-                disabled={loginRedirectToJobs}
-              >
-                Browse Jobs
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            )}
-          </motion.div>
-
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            custom={4}
             className="grid grid-cols-3 gap-10 md:gap-12 w-full max-w-lg text-center"
           >
             <div>
