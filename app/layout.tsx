@@ -1,15 +1,9 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
 import './globals.css';
 import ConditionalNavbar from '@/components/ConditionalNavbar';
 import { Toaster } from '@/components/ui/sonner';
 import { Analytics } from '@vercel/analytics/react';
 import { createServerClient } from '@/lib/supabase/server';
-
-const geist = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: 'NextRole — Internship & New Grad Tech Jobs',
@@ -43,7 +37,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className={`${geist.variable} h-full antialiased`}>
+    <html lang="en" className="h-full antialiased">
       <body className="flex min-h-dvh flex-col overflow-x-hidden bg-background text-foreground md:h-dvh md:overflow-hidden md:overscroll-none">
         <ConditionalNavbar
           initialUser={

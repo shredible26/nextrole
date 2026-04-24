@@ -327,9 +327,9 @@ export default function ChatClient({ hasResume }: Props) {
   const showTypingIndicator = isStreaming && messages.at(-1)?.content === '';
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0d0d12]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0d0d12]">
       {/* Fixed header */}
-      <div className="shrink-0 flex items-center justify-between border-b border-[#2a2a35] bg-[#1a1a24] px-4 py-3 sm:px-6">
+      <div className="flex shrink-0 items-center justify-between border-b border-[#2a2a35] bg-[#1a1a24] px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2.5">
           <SparkleIcon className="text-indigo-400 h-5 w-5" />
           <div>
@@ -347,7 +347,7 @@ export default function ChatClient({ hasResume }: Props) {
 
       {/* Resume banner */}
       {!hasResume && !resumeBannerDismissed && (
-        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-[#2a2a35] bg-[#1a1a24] px-4 py-2.5 sm:px-6">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#2a2a35] bg-[#1a1a24] px-4 py-2.5 sm:px-6">
           <p className="text-xs text-[#8888aa]">
             For personalized results,{' '}
             <a href="/profile" className="text-indigo-400 hover:underline">
@@ -365,10 +365,10 @@ export default function ChatClient({ hasResume }: Props) {
       )}
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 sm:px-6">
         {messages.length === 0 ? (
           /* Empty state */
-          <div className="flex h-full flex-col items-center justify-center text-center px-4">
+          <div className="flex h-full min-h-full flex-col items-center justify-center px-4 text-center">
             <SparkleIcon className="h-12 w-12 text-indigo-400 mb-4" />
             <h2 className="text-xl font-bold text-[#f0f0fa]">Your AI Job Search Assistant</h2>
             <p className="mt-2 max-w-sm text-sm text-[#8888aa]">
@@ -388,7 +388,7 @@ export default function ChatClient({ hasResume }: Props) {
             </div>
           </div>
         ) : (
-          <div className="mx-auto max-w-4xl space-y-4">
+          <div className="mx-auto w-full max-w-4xl space-y-4">
             {messages.map((msg, i) => {
               const isUser = msg.role === 'user';
               const isLastAssistant = !isUser && i === messages.length - 1;
@@ -398,7 +398,7 @@ export default function ChatClient({ hasResume }: Props) {
 
               return (
                 <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] ${isUser ? '' : 'flex flex-col gap-1'}`}>
+                  <div className={`min-w-0 max-w-[80%] ${isUser ? '' : 'flex flex-col gap-1'}`}>
                     {showLabel && (
                       <span className="text-[11px] font-medium text-[#555566] px-1">NextRole AI</span>
                     )}
@@ -410,7 +410,7 @@ export default function ChatClient({ hasResume }: Props) {
                       }
                     >
                       {isUser ? (
-                        <p className="whitespace-pre-wrap leading-[1.7] text-[15px]" style={{ fontFamily: 'inherit' }}>{msg.content}</p>
+                        <p className="whitespace-pre-wrap break-words leading-[1.7] text-[15px]" style={{ fontFamily: 'inherit' }}>{msg.content}</p>
                       ) : isLastAssistant && showTypingIndicator ? (
                         <TypingIndicator />
                       ) : (
@@ -427,7 +427,10 @@ export default function ChatClient({ hasResume }: Props) {
       </div>
 
       {/* Fixed input area */}
-      <div className="shrink-0 border-t border-[#2a2a35] bg-[#1a1a24] px-4 py-3 sm:px-6">
+      <div
+        className="sticky bottom-0 z-10 shrink-0 border-t border-[#2a2a35] bg-[#1a1a24] px-4 pt-3 sm:px-6"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+      >
         {atLimit ? (
           <p className="text-center text-sm text-[#8888aa]">
             Conversation limit reached.{' '}
@@ -436,7 +439,7 @@ export default function ChatClient({ hasResume }: Props) {
             </button>
           </p>
         ) : (
-          <form onSubmit={handleSubmit} className="mx-auto flex max-w-4xl items-end gap-2">
+          <form onSubmit={handleSubmit} className="mx-auto flex w-full max-w-4xl items-end gap-2">
             <textarea
               ref={inputRef}
               value={input}
@@ -445,7 +448,7 @@ export default function ChatClient({ hasResume }: Props) {
               placeholder="Ask about jobs, your resume, or career advice..."
               rows={1}
               disabled={isStreaming}
-              className="flex-1 resize-none rounded-xl border border-[#2a2a35] bg-[#0d0d12] px-4 py-2.5 text-[15px] text-[#f0f0fa] placeholder:text-[15px] placeholder:text-[#555566] focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
+              className="min-w-0 flex-1 resize-none rounded-xl border border-[#2a2a35] bg-[#0d0d12] px-4 py-2.5 text-[15px] text-[#f0f0fa] placeholder:text-[15px] placeholder:text-[#555566] focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
               style={{ fontFamily: 'inherit', minHeight: '44px', maxHeight: '120px' }}
               onInput={e => {
                 const el = e.currentTarget;

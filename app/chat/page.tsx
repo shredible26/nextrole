@@ -9,6 +9,8 @@ export const metadata = {
   description: 'Ask your AI job search assistant anything about jobs, your resume, or career advice.',
 };
 
+const CHAT_VIEWPORT_HEIGHT = 'calc(100dvh - 3.5rem)';
+
 function createAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,7 +39,11 @@ export default async function ChatPage() {
 
   if (!isPro) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center bg-[#0d0d12] px-4">
+      <div
+        className="flex flex-col items-center justify-center overflow-hidden bg-[#0d0d12] px-4"
+        data-page="chat"
+        style={{ height: CHAT_VIEWPORT_HEIGHT }}
+      >
         <div className="w-full max-w-md rounded-2xl border border-[#2a2a35] bg-[#1a1a24] p-8 text-center">
           <div className="mb-4 flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500/15 border border-indigo-500/25">
@@ -66,5 +72,13 @@ export default async function ChatPage() {
     );
   }
 
-  return <ChatClient hasResume={hasResume} />;
+  return (
+    <div
+      className="flex flex-col overflow-hidden bg-[#0d0d12]"
+      data-page="chat"
+      style={{ height: CHAT_VIEWPORT_HEIGHT }}
+    >
+      <ChatClient hasResume={hasResume} />
+    </div>
+  );
 }

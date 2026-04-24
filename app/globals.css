@@ -50,6 +50,8 @@
 }
 
 :root {
+  --font-sans: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-geist-mono: "SFMono-Regular", "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -131,6 +133,10 @@
 }
 
 html:has([data-page="jobs"]),
-html:has([data-page="jobs"]) body {
+html:has([data-page="jobs"]) body,
+html:has([data-page="chat"]),
+html:has([data-page="chat"]) body,
+html:has([data-page="pricing"]),
+html:has([data-page="pricing"]) body {
   background-color: #0d0d12;
 }

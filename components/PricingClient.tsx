@@ -299,10 +299,10 @@ export default function PricingClient() {
   const displayPeriod = billingPeriod === 'yearly' ? '/ year' : '/ month';
 
   return (
-    <div className="relative flex-1 overflow-hidden">
+    <div className="relative flex flex-col overflow-x-hidden bg-[#0d0d12]" data-page="pricing">
       <BGPattern variant="dots" mask="fade-edges" size={32} fill="#1a1a24" className="opacity-50" />
 
-      <div className="relative z-10 container mx-auto px-4 py-6 md:py-8">
+      <div className="relative z-10 container mx-auto w-full px-4 py-6 md:py-8">
         <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
             Simple, transparent pricing
