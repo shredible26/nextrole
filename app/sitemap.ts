@@ -23,7 +23,7 @@ const staticUrls: MetadataRoute.Sitemap = [
     priority: 0.9,
   },
   {
-    url: `${BASE_URL}/pricing`,
+    url: `${BASE_URL}/subscription`,
     lastModified: new Date(),
     changeFrequency: 'monthly',
     priority: 0.5,

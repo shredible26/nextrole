@@ -625,7 +625,7 @@ export default function HomePage() {
                     )}
                     {!isPro && !isProLoading && (
                       <button
-                        onClick={() => router.push('/pricing')}
+                        onClick={() => router.push('/subscription')}
                         className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-indigo-500/40 text-indigo-300 bg-transparent hover:bg-gradient-to-r hover:from-indigo-500 hover:to-violet-500 hover:text-white hover:border-transparent transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25"
                       >
                         Upgrade
@@ -969,13 +969,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── PRICING ── */}
+      {/* ── SUBSCRIPTION ── */}
       <section className="relative bg-[#030303] py-24">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <Reveal>
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white">
-                Simple pricing
+                Simple plans
               </h2>
               <p className="mt-4 text-base md:text-lg text-white/50">
                 Start free. Upgrade when you&apos;re ready to unlock the full database.
@@ -1044,7 +1044,7 @@ export default function HomePage() {
                   <PlanRow included>Priority support</PlanRow>
                 </ul>
                 <Link
-                  href="/pricing"
+                  href="/subscription"
                   className="group relative mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:brightness-110"
                 >
                   Upgrade to Pro

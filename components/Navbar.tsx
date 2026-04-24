@@ -15,13 +15,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Menu, X } from 'lucide-react';
 
+// Chat link only shown when authenticated
+const CHAT_HREF = '/chat';
+
 const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs' },
   { href: '/tracker', label: 'Tracker' },
+  { href: CHAT_HREF, label: 'Chat', requiresAuth: true, showProBadge: true },
+  { href: '/subscription', label: 'Subscription' },
+  { href: '/profile', label: 'Profile', requiresAuth: true },
 ];
-
-// Chat link only shown when authenticated
-const CHAT_HREF = '/chat';
 
 export type NavbarUser = {
   email: string | null;
@@ -143,6 +146,13 @@ export default function Navbar({
       pathname.startsWith(href) ? 'font-semibold text-white' : 'font-medium text-[#e0e0f0]'
     }`;
 
+  const desktopLinkClass = (href: string) =>
+    `flex items-center gap-1.5 transition-colors ${
+      pathname.startsWith(href)
+        ? 'text-[#f0f0fa]'
+        : 'text-[#8888aa] hover:text-[#f0f0fa]'
+    }`;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24]">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
@@ -176,36 +186,20 @@ export default function Navbar({
         {/* Nav links — centered (desktop only) */}
         <div className="hidden flex-1 justify-center md:flex">
           <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
-            {NAV_LINKS.map(({ href, label }) => (
+            {NAV_LINKS.filter(({ requiresAuth }) => !requiresAuth || user).map(({ href, label, showProBadge }) => (
               <Link
                 key={href}
                 href={href}
-                className={`transition-colors ${
-                  pathname.startsWith(href)
-                    ? 'text-[#f0f0fa]'
-                    : 'text-[#8888aa] hover:text-[#f0f0fa]'
-                }`}
+                className={desktopLinkClass(href)}
               >
                 {label}
-              </Link>
-            ))}
-            {user && (
-              <Link
-                href={CHAT_HREF}
-                className={`flex items-center gap-1.5 transition-colors ${
-                  pathname.startsWith(CHAT_HREF)
-                    ? 'text-[#f0f0fa]'
-                    : 'text-[#8888aa] hover:text-[#f0f0fa]'
-                }`}
-              >
-                Chat
-                {!isPro && (
+                {showProBadge && !isPro && (
                   <Badge className="bg-indigo-500 text-white text-[10px] px-1.5 py-0 h-4 hover:bg-indigo-500">
                     Pro
                   </Badge>
                 )}
               </Link>
-            )}
+            ))}
           </nav>
         </div>
 
@@ -222,7 +216,7 @@ export default function Navbar({
             )}
             {user && !isPro && (
               <button
-                onClick={() => router.push('/pricing')}
+                onClick={() => router.push('/subscription')}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-indigo-500/40 text-indigo-300 bg-transparent hover:bg-gradient-to-r hover:from-indigo-500 hover:to-violet-500 hover:text-white hover:border-transparent transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25"
               >
                 Upgrade
@@ -243,13 +237,6 @@ export default function Navbar({
                   <div className="truncate px-2 py-1.5 text-sm text-[#8888aa]">
                     {user.email}
                   </div>
-                  <DropdownMenuSeparator className="bg-[#2a2a35]" />
-                  <DropdownMenuItem
-                    onClick={() => router.push('/profile')}
-                    className="text-[#f0f0fa] focus:bg-[#2a2a35] focus:text-[#f0f0fa]"
-                  >
-                    Profile
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#2a2a35]" />
                   <DropdownMenuItem
                     onClick={handleLogout}
@@ -317,11 +304,11 @@ export default function Navbar({
               </Link>
             )}
             <Link
-              href="/pricing"
+              href="/subscription"
               onClick={() => setMobileMenuOpen(false)}
-              className={mobileLinkClass('/pricing')}
+              className={mobileLinkClass('/subscription')}
             >
-              Pricing
+              Subscription
             </Link>
             {user && (
               <Link

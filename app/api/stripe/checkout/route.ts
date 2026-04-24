@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     payment_method_types: ['card'],
     line_items: [{ price: PLANS[plan].priceId, quantity: 1 }],
     success_url: process.env.NEXT_PUBLIC_URL + '/jobs?upgraded=true',
-    cancel_url: process.env.NEXT_PUBLIC_URL + '/pricing',
+    cancel_url: process.env.NEXT_PUBLIC_URL + '/subscription',
     ...(profile?.stripe_customer_id
       ? { customer: profile.stripe_customer_id }
       : { customer_email: user.email ?? undefined }

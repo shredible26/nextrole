@@ -57,7 +57,7 @@ export default async function ChatPage() {
             Upgrade to Pro to chat with your AI job search assistant, get personalized job recommendations, and analyze your resume.
           </p>
           <Link
-            href="/pricing"
+            href="/subscription"
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-400"
           >
             Upgrade to Pro →

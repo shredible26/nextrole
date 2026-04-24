@@ -247,7 +247,7 @@ const BILLING_PORTAL_ERROR_MESSAGE = 'Unable to open billing portal. Please cont
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function PricingClient() {
+export default function SubscriptionClient() {
   const searchParams = useSearchParams();
   const [tier, setTier] = useState<'free' | 'pro' | null>(null);
   const [loading, setLoading] = useState<'monthly' | 'yearly' | 'portal' | null>(null);
@@ -325,13 +325,13 @@ export default function PricingClient() {
   const displayPeriod = billingPeriod === 'yearly' ? '/ year' : '/ month';
 
   return (
-    <div className="relative flex flex-col overflow-x-hidden bg-[#0d0d12]" data-page="pricing">
+    <div className="relative flex flex-col overflow-x-hidden bg-[#0d0d12]" data-page="subscription">
       <BGPattern variant="dots" mask="fade-edges" size={32} fill="#1a1a24" className="opacity-50" />
 
       <div className="relative z-10 container mx-auto w-full px-4 py-6 md:py-8">
         <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-            Simple, transparent pricing
+            Simple subscription plans
           </h1>
           <p className="text-base md:text-lg text-gray-400">
             Start free. Upgrade when you need more.

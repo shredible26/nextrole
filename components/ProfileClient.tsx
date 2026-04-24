@@ -12,6 +12,7 @@ const LEVEL_OPTIONS = ['New Grad', 'Entry Level', 'Internship'] as const;
 const ROLE_OPTIONS = ['SWE', 'DS', 'ML', 'AI', 'DevOps', 'Security', 'PM', 'Analyst', 'Finance', 'Consulting'] as const;
 
 const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024;
+const MANAGE_SUBSCRIPTION_ERROR = 'Unable to open portal. Contact shreyvarma26@gmail.com';
 
 type ResumeInfo = {
   name: string;
@@ -138,6 +139,8 @@ export default function ProfileClient(props: ProfileClientProps) {
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
   const [jobAlertsEnabled, setJobAlertsEnabled] = useState(initialJobAlertsEnabled);
   const [isSavingAlerts, setIsSavingAlerts] = useState(false);
+  const [isManagingSubscription, setIsManagingSubscription] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -302,6 +305,27 @@ export default function ProfileClient(props: ProfileClientProps) {
       toast.error('Failed to update alerts');
     } finally {
       setIsSavingAlerts(false);
+    }
+  }
+
+  async function handleManageSubscription() {
+    setIsManagingSubscription(true);
+    setPortalError(null);
+
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = (await res.json().catch(() => null)) as { error?: string; url?: string } | null;
+
+      if (!res.ok || !data?.url) {
+        setPortalError(MANAGE_SUBSCRIPTION_ERROR);
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch {
+      setPortalError(MANAGE_SUBSCRIPTION_ERROR);
+    } finally {
+      setIsManagingSubscription(false);
     }
   }
 
@@ -491,14 +515,35 @@ export default function ProfileClient(props: ProfileClientProps) {
                   <>
                     <h1 className="text-2xl font-bold text-[#f0f0fa] tracking-tight">{displayNameLabel}</h1>
                     <p className="text-sm text-[#888899]">{email}</p>
-                    <div className="mt-1">
+                    <div className="mt-1 flex flex-col items-center gap-2 md:items-start">
                       {tier === 'pro' ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
-                          <Crown className="h-3 w-3" />
-                          Pro
-                        </span>
+                        <>
+                          <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
+                              <Crown className="h-3 w-3" />
+                              Pro
+                            </span>
+                            <button
+                              onClick={() => void handleManageSubscription()}
+                              disabled={isManagingSubscription}
+                              className="inline-flex items-center justify-center rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-400 disabled:opacity-50 disabled:hover:bg-indigo-500"
+                            >
+                              {isManagingSubscription ? (
+                                <span className="flex items-center gap-1.5">
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  Opening...
+                                </span>
+                              ) : 'Manage Subscription'}
+                            </button>
+                          </div>
+                          {portalError && (
+                            <p className="text-center text-sm text-red-400 md:text-left">
+                              {portalError}
+                            </p>
+                          )}
+                        </>
                       ) : (
-                        <Link href="/pricing" className="inline-flex rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-400">
+                        <Link href="/subscription" className="inline-flex rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-400">
                           Upgrade to Pro →
                         </Link>
                       )}

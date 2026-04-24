@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
     // Silence the workspace root detection warning
     root: __dirname,
   },
+  async redirects() {
+    return [
+      {
+        source: '/pricing',
+        destination: '/subscription',
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'logo.clearbit.com' },

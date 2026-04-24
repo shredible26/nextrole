@@ -136,7 +136,7 @@ html:has([data-page="jobs"]),
 html:has([data-page="jobs"]) body,
 html:has([data-page="chat"]),
 html:has([data-page="chat"]) body,
-html:has([data-page="pricing"]),
-html:has([data-page="pricing"]) body {
+html:has([data-page="subscription"]),
+html:has([data-page="subscription"]) body {
   background-color: #0d0d12;
 }
