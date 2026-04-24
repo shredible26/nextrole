@@ -509,20 +509,20 @@ This section is included as operational reference. In this checkout, scraper cod
 ---
 
 ### 1: SCRAPER STABILITY
-
-1a.[COMPLETED ✅]: Fix lever/workday/workable concurrent timeout — run
+1a. LOCATION FILTERING DOESN'T WORK (USA, OTHER)
+1b.[COMPLETED ✅]: Fix lever/workday/workable concurrent timeout — run
    heavy scrapers in a prioritized early sequential batch before the
    other 34 scrapers start competing for resources. Lever needs
    200s+, Workday needs 300s+, currently getting starved.
-1b.Contact workable support (support@workable.com) or fix scraper to
+1c.Contact workable support (support@workable.com) or fix scraper to
    bypass rate limit / ip detection.    
 2. [COMPLETED ✅]: Remove dead scrapers: speedyapply-swe.ts, 
    speedyapply-ai.ts (always 0 jobs, confirmed stubs), make sure to remove correct scrapers
-3. Fix careerjet (0 jobs every run — check if API key expired
+3. [COMPLETED ✅] Fix careerjet (0 jobs every run — check if API key expired
    or endpoint changed). Right now, it gracefully fails, but returns 0 jobs (not fixed, but no longer crashes)
 4a. [COMPLETED ✅]: Fix rippling if possible (do research) (2 jobs,
    fragile next.js build ID). If absolutely not possible, then deactivate/remove
-4b.Create careerjet.ts file in nextrole-scrapers! File is non-existent. 
+4b.[COMPLETED ✅] Create careerjet.ts file in nextrole-scrapers! File is non-existent. 
    Currently 115 jobs from careerjet from an old nextrole scraper - recreate and get as many jobs as possible for all existing roles and experience levels. Make sure to take IP address into account. 
 5a.[COMPLETED ✅]: Potentially remove source filtering, or redesign it so 
    that users cannot easily just go to the sources and search there instead. 
@@ -530,9 +530,9 @@ This section is included as operational reference. In this checkout, scraper cod
 5b.Set up local caffeinate cron for CF-blocked scrapers
    (simplyhired, workable) that fail in GitHub Actions:
    `caffeinate -i pnpm scrape` at 7AM daily via crontab
-5c.Viewers should not be able to view jobs without an account - remove 
+5c.[COMPLETED ✅] Viewers should not be able to view jobs without an account - remove 
    from the pricing page. 'View jobs' button while not signed in should redirect to google login. 
-5d.When a user signs in and it automatically goes to the job page, it
+5d.[COMPLETED ✅] When a user signs in and it automatically goes to the job page, it
    always shows 0 jobs until the user refreshes the page. Then the jobs load. Fix this- the jobs should load immediately after signing in/signing up.
 5e.In the search bar (in jobs page), the 'x' button doesn't work. It 
    should clear all the text and unselect the search bar.
@@ -587,7 +587,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ### 2: NEW SOURCES & SOURCE EXPANSION
 
-6a.Hide job source from the job card for free users (hide completely or 
+6a.[COMPLETED ✅] Hide job source from the job card for free users (hide completely or 
    categorize into the available free source filters: github, job board, or other, and use that)
 6b.Fix Workable — currently 10 jobs. 429 rate limiting on
    entry-level search terms. Add exponential backoff + retry,
@@ -607,11 +607,11 @@ This section is included as operational reference. In this checkout, scraper cod
     No auth, large ATS used by European + US startups.
 12. [COMPLETED ✅]:Add Personio source (XML feed, European ATS with US 
     roles)
-13. Add iCIMS source (large enterprise ATS, no public API —
+13. [COMPLETED ✅] Add iCIMS source (large enterprise ATS, no public API —
     research correct endpoint via Codex)
-14. Add rabiuk/job-scraper GitHub repo as source
-15. Add bttf/internio GitHub repo as source
-16. Add SpeedyApply 2026-SWE-College-Jobs and
+14. [COMPLETED ✅] Add rabiuk/job-scraper GitHub repo as source
+15. [COMPLETED ✅] Add bttf/internio GitHub repo as source
+16. [COMPLETED ✅] Add SpeedyApply 2026-SWE-College-Jobs and
     2026-AI-College-Jobs repos (distinct from current ones)
 17. Expand HackerNews — add more monthly "Who is Hiring"
     thread IDs (currently only 2-3 threads)
@@ -634,18 +634,22 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ### 3: FILTERING LOGIC
 
-22a.Update inferExperienceLevel(), inferRoles(), and
-    inferRemote() functions in scrapers/normalize.ts. Make
-    a LOT more detailed.
+22a.[COMPLETED ✅]: Update inferExperienceLevel(), inferRoles(), and
+    inferRemote() functions in scrapers/normalize.ts. Expanded
+    heuristics / keyword coverage for experience level, role tagging,
+    and remote inference.
 22b.Train a small text classifier (e.g. fine-tuned distilbert
     or even a simple sklearn TF-IDF + logistic regression) on labeled job title/description → experience level + role tags.
 22c.Add ML to roles with no keywords.
 22d.Per-source keyword tuning — audit each source's role
     classification accuracy. Ensure SWE/DS/ML/AI chips
     return correct results per source.
-22e.Make the 'remote' filter toggle in the jobs page dark themed / dark.
-23. Role classification improvements — expand inferRoles()
-    keyword lists, add more title patterns for each role.
+22e.[COMPLETED ✅] Make the 'remote' filter toggle in the jobs page dark themed / dark.
+23. [COMPLETED ✅]: Role classification improvements — expand
+    inferRoles() keyword lists, add more title patterns for each role.
+23a.[COMPLETED ✅]: Weighted FTS (migration 008) — implemented with
+    `ts_rank_cd(...)` plus `setweight(...)` on `title=A`,
+    `company=B`, `description=C`.
 24. Add more role filters beyond current 7 chips:
     - Consulting / Tech Consulting
     - Full-Stack
@@ -654,12 +658,14 @@ This section is included as operational reference. In this checkout, scraper cod
 25. Add more experience level filter options:
     - Co-op (separate from internship)
     - Recent Grad (0-2 YOE, distinct from new_grad)
-26. International/non-tech filter tightening — reduce false
+26. [COMPLETED ✅] International/non-tech filter tightening — reduce false
     positives slipping through (non-tech roles, non-Latin
     character titles, etc.)
 27. Location filter expansion — add more granular options
     beyond USA/Other (e.g., by state, by city cluster like
     SF Bay Area, NYC, Seattle, Austin)
+27a.[COMPLETED ✅]: USA/Other location filter improvements —
+    expanded USA-vs-non-USA matching heuristics in `app/api/jobs/route.ts`.
 
 ---
 
@@ -673,14 +679,15 @@ This section is included as operational reference. In this checkout, scraper cod
     - Feature highlights: search, filters, tracker, pro scoring
     - Add social proof when available (users, applications
       tracked, etc.)
-28b.For the search bar feature, make sure you are able to search by job
+28b.[COMPLETED ✅] For the search bar feature, make sure you are able to search by job
     source along with everyhting else. (Ex. search 'ZapplyJobs')
-28c.Fix the back button (UI and logic) to become more prominent and make sure
+28c.[COMPLETED ✅] Fix the back button (UI and logic) to become more prominent and make sure
     it actually works. Right now it resets all filters when clicked. Back button for jobs page, wheen you click on a job and it shows the description etc. 
 29a.[COMPLETED ✅]: Pricing page text rewrite — clarify free vs pro tiers,
     update feature list, mark coming-soon features clearly
-29b.Add button to Tracker page that allows users to add custom job (with
-    optional url/details/etc, whatever fields are there normally) to their tracker
+29b.[COMPLETED ✅]: Add button to Tracker page that allows users to add
+    custom job (with optional url/details/etc, whatever fields are there
+    normally) to their tracker
 29c.[COMPLETED ✅]:In the mini pricing window (and main pricing page if
     applicable, for the two rows that say 'Unlimited' for Pro users, remove the check mark next to Unlimited. 
 29d.[COMPLETED ✅]:Remove "No account required to browse" from pricing. 
@@ -692,12 +699,12 @@ This section is included as operational reference. In this checkout, scraper cod
     toggle, status column styling
 33. [COMPLETED ✅]:Job card design improvements — salary display, company
     logo quality, role chip styling
-34. Mobile responsiveness full audit — test /jobs, /tracker,
-    /pricing, /profile on iPhone and Android screen sizes.
+34. [COMPLETED ✅]: Mobile responsiveness full audit — test /jobs,
+    /tracker, /pricing, /profile on iPhone and Android screen sizes.
     Fix all broken layouts.
 35a.[COMPLETED ✅]:Navbar: add Profile link (done), verify all links work
-35b.Make sure everything works on mobile (all pages, all links, 
-    hamburger menu, etc)
+35b.[COMPLETED ✅]: Make sure everything works on mobile (all pages,
+    all links, hamburger menu, etc)
 
 ---
 
@@ -706,24 +713,29 @@ This section is included as operational reference. In this checkout, scraper cod
 36. [COMPLETED ✅]: Job view limit for free users — free users see page 1
     only (30 jobs per filter configuration, already implemented). Confirm
     this works correctly end-to-end including upgrade modal.
-37. Job tracker limit — cap at 100 tracked jobs for free
+37. [COMPLETED ✅] Job tracker limit — cap at 100 tracked jobs for free
     users, unlimited for pro. Show "Upgrade to track more"
     when limit hit.
-38a.Similar jobs on job detail page — show 5 similar jobs
+38a.Similar jobs on 'about this role' page — show 5 similar jobs
     by title/role using existing FTS + pgvector when ready.
     For now use textSearch similarity. 
 38b.[COMPLETED ✅]:Upgrade modal copy still says "20 jobs", needs update 
     to '30 jobs'
-39. Job alerts via email (Resend):
+38c.[COMPLETED ✅]: Application rate tracker on profile —
+    `Applications` + `Interviews` stat cards now use real tracker data.
+39. [COMPLETED ✅]: Job alerts via email (Resend):
     - User sets filter preferences (role, experience level,
       remote, location) — store in profiles table
     - Daily or weekly digest email: "X new jobs matching
       your preferences"
     - Unsubscribe link in every email
     - Resend free tier: 3,000 emails/month
-40. Contact / feedback page — simple /contact form, submits
+    - Implemented with profile opt-in toggle, daily cron script,
+      Claude Haiku summaries for Pro users, and `/api/unsubscribe`
+40. [COMPLETED ✅] Contact / feedback page — simple /contact form, submits
     via Resend to your email. Helps with user trust.
-41a. [COMPLETED ✅]: Server-enforce Pro-only search — currently search is
+41a. [COMPLETED ✅]: Server-enforce Pro-only search — confirmed in
+     `app/api/jobs/route.ts`; currently search is
      blocked in the UI for free users but /api/jobs?search=
      can be called directly to bypass it. Add a server-side
      check in app/api/jobs/route.ts: if search param is
@@ -744,7 +756,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-### 6: RAG PIPELINE (Build in order)
+[COMPLETED ✅] ### 6: RAG PIPELINE (Build in order)
 
 [COMPLETED ✅]: 43. Embeddings setup:
     - Enable pgvector extension in Supabase
