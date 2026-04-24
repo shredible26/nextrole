@@ -510,11 +510,12 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ### 1: SCRAPER STABILITY
 1a. LOCATION FILTERING DOESN'T WORK (USA, OTHER)
-1b.[COMPLETED ✅]: Fix lever/workday/workable concurrent timeout — run
+1b. Fix mobile screens (chat, pricing, etc)
+1c.[COMPLETED ✅]: Fix lever/workday/workable concurrent timeout — run
    heavy scrapers in a prioritized early sequential batch before the
    other 34 scrapers start competing for resources. Lever needs
    200s+, Workday needs 300s+, currently getting starved.
-1c.Contact workable support (support@workable.com) or fix scraper to
+1d.Contact workable support (support@workable.com) or fix scraper to
    bypass rate limit / ip detection.    
 2. [COMPLETED ✅]: Remove dead scrapers: speedyapply-swe.ts, 
    speedyapply-ai.ts (always 0 jobs, confirmed stubs), make sure to remove correct scrapers
