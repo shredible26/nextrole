@@ -163,6 +163,7 @@ const USA_REMOTE_EXACT_PATTERNS = [
 ];
 const WORKDAY_MULTI_LOCATION_REGEX = /^\d+ Locations?$/i;
 const WORKDAY_US_PREFIX_REGEX = /^US[,\s]/i;
+const US_STATE_AND_DC_REGEX_GROUP = US_STATE_AND_DC_CODES.map(escapeRegExp).join('|');
 const POSTGREST_USA_LOCATION_ILIKE_PATTERNS = [
   '%United States%',
   '%USA%',
@@ -209,9 +210,39 @@ const US_STATE_ABBREV_REGEX = new RegExp(US_STATE_ABBREV_REGEX_SOURCE, 'i');
 const USA_REMOTE_EXACT_REGEX = new RegExp(USA_REMOTE_EXACT_REGEX_SOURCE, 'i');
 const US_GOV_LOCATION_REGEX = new RegExp(US_GOV_LOCATION_REGEX_SOURCE, 'i');
 const WORKDAY_US_STATE_CODE_REGEX = new RegExp(WORKDAY_US_STATE_CODE_REGEX_SOURCE, 'i');
+const US_STATE_COMMA_END_OR_NON_ALPHA_REGEX = new RegExp(
+  `,\\s*(${US_STATE_AND_DC_REGEX_GROUP})(\\s*$|[^A-Za-z])`,
+  'i'
+);
+const USA_COUNTRY_SUFFIX_REGEX = /,\s*U\.?S\.?A?\.?\s*$/i;
+const US_STATE_IN_PARENS_REGEX = new RegExp(`\\(\\s*(${US_STATE_AND_DC_REGEX_GROUP})\\s*\\)`, 'i');
+const US_STATE_DASH_REGEX = new RegExp(`,\\s*(${US_STATE_AND_DC_REGEX_GROUP})\\s*[-–]`, 'i');
+const USA_BARE_COUNTRY_REGEX = /^\s*(United\s+States|U\.?S\.?A?\.?)\s*$/i;
+const USA_REGION_REGEX = /(San Francisco Bay Area|Bay Area|Silicon Valley)/i;
+const USA_PLUS_MORE_REGEX = /\+\s*\d+\s+more/i;
+const USA_BARE_HYBRID_OR_REMOTE_REGEX = /^\s*(Hybrid|Remote)\s*$/i;
+const USA_MILITARY_GOV_LOCATION_REGEX = /(AFB|Naval\s+Base|Pentagon|Quantico|Langley|Stennis)/i;
+const WORKDAY_STATE_CODE_PREFIX_REGEX = /^[A-Z]{2}-/;
 const USA_BARE_LOCATION_LOOKUP = new Set(
   USA_BARE_LOCATION_ILIKE_PATTERNS.map(pattern => pattern.toLowerCase())
 );
+const TARGET_ROLE_TO_DB_ROLE: Record<string, string> = {
+  SWE: 'swe',
+  DS: 'ds',
+  ML: 'ml',
+  AI: 'ai',
+  Security: 'security',
+  DevOps: 'devops',
+  PM: 'pm',
+  Analyst: 'analyst',
+  Finance: 'finance',
+  Consulting: 'consulting',
+};
+const TARGET_LEVEL_TO_DB_LEVEL: Record<string, string> = {
+  'New Grad': 'new_grad',
+  'Entry Level': 'entry_level',
+  Internship: 'internship',
+};
 const NON_US_COUNTRY_PATTERNS = [
   'Germany', 'Austria', 'Switzerland', 'Netherlands', 'France', 'Spain',
   'Italy', 'Poland', 'Portugal', 'Sweden', 'Norway', 'Denmark', 'Finland',
@@ -310,6 +341,12 @@ type SupabaseResult<T> = {
   count?: number | null;
 };
 
+type ProfileRecord = {
+  tier: string | null;
+  target_levels?: string[] | null;
+  target_roles?: string[] | null;
+};
+
 type RoleFilterableJob = Pick<RankedJob, 'title' | 'company' | 'description'>;
 
 const NON_TECH_ROLE_TITLE_REGEX =
@@ -361,6 +398,32 @@ function escapeRegExp(value: string) {
 
 function normalizeLocation(value: string) {
   return value.trim().replace(/\s+/g, ' ');
+}
+
+function parseTextArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const items: string[] = [];
+
+  for (const entry of value) {
+    if (typeof entry !== 'string') {
+      continue;
+    }
+
+    const trimmed = entry.trim();
+
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+
+    seen.add(trimmed);
+    items.push(trimmed);
+  }
+
+  return items;
 }
 
 function isWorkdayUsStateCodeLocation(location: string) {
@@ -518,6 +581,21 @@ function isUsaJob(job: { remote?: boolean; location?: string | null }): boolean 
   if (WORKDAY_US_PREFIX_REGEX.test(loc)) return true;
   if (USA_REMOTE_EXACT_REGEX.test(loc)) return true;
   if (isWorkdayUsStateCodeLocation(loc)) return true;
+  if (US_STATE_COMMA_END_OR_NON_ALPHA_REGEX.test(loc)) return true;
+  if (USA_COUNTRY_SUFFIX_REGEX.test(loc)) return true;
+  if (US_STATE_IN_PARENS_REGEX.test(loc)) return true;
+  if (US_STATE_DASH_REGEX.test(loc)) return true;
+  if (USA_BARE_COUNTRY_REGEX.test(loc)) return true;
+  if (USA_REGION_REGEX.test(loc)) return true;
+  if (USA_PLUS_MORE_REGEX.test(loc)) return true;
+  if (USA_BARE_HYBRID_OR_REMOTE_REGEX.test(loc)) return true;
+  if (USA_MILITARY_GOV_LOCATION_REGEX.test(loc)) return true;
+  if (
+    WORKDAY_STATE_CODE_PREFIX_REGEX.test(loc) &&
+    US_STATE_AND_DC_CODE_LOOKUP.has(loc.slice(0, 2).toUpperCase())
+  ) {
+    return true;
+  }
 
   return (
     USA_SUBSTRING_REGEX.test(loc) ||
@@ -549,12 +627,12 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   // Only need tier — no more daily counter reads or writes
-  const profileResult = await withSupabaseRetry<SupabaseResult<{ tier: string }>>(
+  const profileResult = await withSupabaseRetry<SupabaseResult<ProfileRecord>>(
     'profile lookup',
     () =>
       admin
         .from('profiles')
-        .select('tier')
+        .select('tier, target_roles, target_levels')
         .eq('id', user.id)
         .maybeSingle()
   );
@@ -578,14 +656,21 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    profile = { tier: 'free' };
+    profile = { tier: 'free', target_roles: [], target_levels: [] };
   }
 
   const isPro = profile.tier === 'pro';
+  const targetRoles = parseTextArray(profile.target_roles);
+  const targetLevels = parseTextArray(profile.target_levels);
+  const userMeta = {
+    target_roles: targetRoles,
+    target_levels: targetLevels,
+  };
 
   // Parse query params
   const url = req.nextUrl;
   const params      = url.searchParams;
+  const forYou      = params.get('forYou') === 'true';
   const rolesParam  = params.get('roles');
   const search      = url.searchParams.get('search')?.trim() ?? '';
   // Strip 'all' — it means no filter
@@ -619,12 +704,90 @@ export async function GET(req: NextRequest) {
   }
 
   const searchParam = params.get('search')?.trim();
-  if (searchParam && profile.tier === 'free') {
+  if (searchParam && !forYou && profile.tier === 'free') {
     return Response.json({ error: 'Pro required', upgrade: true }, { status: 402 });
   }
 
   if (cutoffIso) {
     console.log(`[jobs/route] postedWithin="${postedWithin}" → cutoff=${cutoffIso}`);
+  }
+
+  if (forYou) {
+    const mappedTargetRoles = Array.from(new Set(
+      targetRoles
+        .map(role => TARGET_ROLE_TO_DB_ROLE[role])
+        .filter((role): role is string => Boolean(role))
+    ));
+    const mappedTargetLevels = Array.from(new Set(
+      targetLevels
+        .map(level => TARGET_LEVEL_TO_DB_LEVEL[level])
+        .filter((level): level is string => Boolean(level))
+    ));
+
+    if (mappedTargetRoles.length === 0 && mappedTargetLevels.length === 0) {
+      return NextResponse.json({
+        jobs: [],
+        total: 0,
+        page: 1,
+        perPage,
+        forYouEmpty: true,
+        userMeta,
+      });
+    }
+
+    const runForYouQuery = (
+      countMode: 'exact' | 'planned',
+      paginate = true,
+      pageSize = perPage
+    ) => {
+      let query = admin
+        .from('jobs')
+        .select('*', { count: countMode })
+        .eq('is_active', true)
+        .eq('is_usa', true);
+
+      if (mappedTargetRoles.length > 0) {
+        query = query.overlaps('roles', mappedTargetRoles);
+      }
+
+      if (mappedTargetLevels.length > 0) {
+        query = query.in('experience_level', mappedTargetLevels);
+      }
+
+      query = query.order('posted_at', { ascending: false, nullsFirst: false });
+
+      return paginate ? query.range(offset, offset + pageSize - 1) : query;
+    };
+
+    const forYouResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
+      'forYou jobs query (planned count)',
+      () => runForYouQuery('planned', true, perPage)
+    );
+
+    if (forYouResult.error) {
+      logSupabaseError('forYou jobs query failed', forYouResult.error);
+      return NextResponse.json(
+        {
+          error: toPublicSupabaseError(forYouResult.error),
+          retryable: isRetryableSupabaseError(forYouResult.error),
+        },
+        { status: isRetryableSupabaseError(forYouResult.error) ? 503 : 500 }
+      );
+    }
+
+    const jobs = (forYouResult.data ?? []) as RankedJob[];
+
+    return NextResponse.json({
+      jobs: jobs.map(job => ({
+        ...job,
+        description: toCardSnippet(job.description as string | null | undefined),
+      })),
+      total: forYouResult.count ?? 0,
+      page,
+      perPage,
+      forYou: true,
+      userMeta,
+    });
   }
 
   if (search) {
@@ -690,6 +853,7 @@ export async function GET(req: NextRequest) {
       total: jobs.length,
       page,
       perPage,
+      userMeta,
     });
   }
 
@@ -760,5 +924,6 @@ export async function GET(req: NextRequest) {
     total: jobsResult.count ?? 0,
     page,
     perPage,
+    userMeta,
   });
 }

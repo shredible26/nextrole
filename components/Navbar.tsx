@@ -210,8 +210,6 @@ export default function Navbar({
   ) : null;
 
   if (isHomePage) {
-    if (!user) return null;
-
     return (
       <>
         {mobileMenuButton(

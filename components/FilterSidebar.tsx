@@ -10,6 +10,7 @@ import {
 } from '@/lib/source-groups';
 import { JobFilters, Role, ExperienceLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Sparkles } from 'lucide-react';
 
 export const ROLE_OPTIONS: { value: Role | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -92,6 +93,9 @@ interface FilterSidebarProps {
   filters: JobFilters;
   onChange: (f: JobFilters) => void;
   isPro?: boolean;
+  forYou: boolean;
+  onForYouChange: (v: boolean) => void;
+  userPreferences: { target_roles: string[]; target_levels: string[] };
 }
 
 function getFreeSourceSelection(sources: string[]): FreeSourceOption | null {
@@ -106,6 +110,9 @@ export default function FilterSidebar({
   filters,
   onChange,
   isPro = false,
+  forYou,
+  onForYouChange,
+  userPreferences,
 }: FilterSidebarProps) {
   const sectionLabelClassName =
     'mb-3 text-xs font-semibold uppercase tracking-wider text-[#9999bb]';
@@ -160,9 +167,54 @@ export default function FilterSidebar({
   }
 
   const freeSourceSelection = getFreeSourceSelection(filters.sources);
+  const hasPreferences =
+    userPreferences.target_roles.length > 0 ||
+    userPreferences.target_levels.length > 0;
 
   return (
     <aside className="w-full overflow-x-hidden space-y-6 bg-[#0f0f12]">
+      <div>
+        <div className="group relative">
+          <button
+            type="button"
+            aria-pressed={forYou}
+            onClick={() => {
+              if (hasPreferences) onForYouChange(!forYou);
+            }}
+            className={cn(
+              'w-full rounded-xl px-4 py-3 text-left transition-all duration-200',
+              forYou
+                ? 'border border-indigo-400/50 bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white shadow-lg shadow-indigo-500/20'
+                : 'border border-white/10 bg-white/5 text-white/50 hover:border-white/25 hover:bg-white/10 hover:text-white',
+              !hasPreferences && 'cursor-not-allowed pointer-events-none opacity-40'
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-5 w-5 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">For You</div>
+                <div
+                  className={cn(
+                    'mt-0.5 text-xs',
+                    forYou ? 'text-white/80' : 'text-white/60'
+                  )}
+                >
+                  Jobs matching your preferences
+                </div>
+              </div>
+            </div>
+          </button>
+          {!hasPreferences && (
+            <div className="pointer-events-none absolute left-0 right-0 top-full z-10 hidden pt-2 md:block md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+              <div className="rounded-lg border border-white/10 bg-[#16161f] px-3 py-2 text-xs text-white/75 shadow-lg">
+                Set your job preferences in Profile to use this filter
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="my-4 border-b border-white/10" />
+      </div>
+
       {/* Roles */}
       <div>
         <p className={sectionLabelClassName}>

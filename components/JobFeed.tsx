@@ -29,6 +29,11 @@ const DEFAULT_FILTERS: JobFilters = {
   page: 1,
 };
 
+type UserPreferences = {
+  target_roles: string[];
+  target_levels: string[];
+};
+
 type MatchScore = { grade: string; similarity: number };
 
 interface FeedResponse {
@@ -36,6 +41,9 @@ interface FeedResponse {
   total: number;
   page: number;
   perPage: number;
+  forYou?: boolean;
+  forYouEmpty?: boolean;
+  userMeta?: Partial<UserPreferences>;
   error?: string;
   upgrade?: boolean;
   retryable?: boolean;
@@ -62,8 +70,28 @@ interface FeedSnapshot {
   showResumePrompt: boolean;
   resumePromptDismissed: boolean;
   showGrades: boolean;
+  forYou: boolean;
+  userPreferences: UserPreferences;
+  hasLoadedPrefs: boolean;
   scrollTop: number;
   sidebarScrollTop: number;
+}
+
+function createEmptyUserPreferences(): UserPreferences {
+  return { target_roles: [], target_levels: [] };
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string');
+}
+
+function normalizeUserPreferences(value: Partial<UserPreferences> | null | undefined): UserPreferences {
+  const empty = createEmptyUserPreferences();
+
+  return {
+    target_roles: isStringArray(value?.target_roles) ? [...value.target_roles] : empty.target_roles,
+    target_levels: isStringArray(value?.target_levels) ? [...value.target_levels] : empty.target_levels,
+  };
 }
 
 function looksLikeHtml(value: string) {
@@ -154,6 +182,9 @@ function readFeedSnapshot(): FeedSnapshot | null {
       showResumePrompt: typeof parsed.showResumePrompt === 'boolean' ? parsed.showResumePrompt : false,
       resumePromptDismissed: typeof parsed.resumePromptDismissed === 'boolean' ? parsed.resumePromptDismissed : false,
       showGrades: typeof parsed.showGrades === 'boolean' ? parsed.showGrades : true,
+      forYou: typeof parsed.forYou === 'boolean' ? parsed.forYou : false,
+      userPreferences: normalizeUserPreferences(parsed.userPreferences),
+      hasLoadedPrefs: typeof parsed.hasLoadedPrefs === 'boolean' ? parsed.hasLoadedPrefs : false,
       scrollTop: typeof parsed.scrollTop === 'number' ? parsed.scrollTop : 0,
       sidebarScrollTop: typeof parsed.sidebarScrollTop === 'number' ? parsed.sidebarScrollTop : 0,
     };
@@ -183,6 +214,10 @@ export default function JobFeed() {
   const [filters, setFilters] = useState<JobFilters>(initialSnapshot?.filters ?? DEFAULT_FILTERS);
   const [jobs, setJobs] = useState<Job[]>(initialSnapshot?.jobs ?? []);
   const [total, setTotal] = useState(initialSnapshot?.total ?? 0);
+  const [forYou, setForYou] = useState(initialSnapshot?.forYou ?? false);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences>(
+    () => normalizeUserPreferences(initialSnapshot?.userPreferences)
+  );
   const [loading, setLoading] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -204,6 +239,7 @@ export default function JobFeed() {
   const inputRef = useRef<HTMLInputElement>(null);
   const scoredJobIdsRef = useRef<Set<string>>(new Set(Object.keys(initialSnapshot?.matchScores ?? {})));
   const hasFetchedRef = useRef(Boolean(initialSnapshot?.hasFetched));
+  const hasLoadedPrefsRef = useRef(initialSnapshot?.hasLoadedPrefs ?? false);
   const skipInitialFetchRef = useRef(Boolean(initialSnapshot?.hasFetched));
   const feedContainerRef = useRef<HTMLDivElement>(null);
   const sidebarContainerRef = useRef<HTMLDivElement>(null);
@@ -221,6 +257,8 @@ export default function JobFeed() {
     showResumePrompt: initialSnapshot?.showResumePrompt ?? false,
     resumePromptDismissed: initialSnapshot?.resumePromptDismissed ?? false,
     showGrades: initialSnapshot?.showGrades ?? true,
+    forYou: initialSnapshot?.forYou ?? false,
+    userPreferences: normalizeUserPreferences(initialSnapshot?.userPreferences),
   });
 
   const persistFeedState = useCallback(() => {
@@ -240,6 +278,9 @@ export default function JobFeed() {
       showResumePrompt: snapshotStateRef.current.showResumePrompt,
       resumePromptDismissed: snapshotStateRef.current.resumePromptDismissed,
       showGrades: snapshotStateRef.current.showGrades,
+      forYou: snapshotStateRef.current.forYou,
+      userPreferences: snapshotStateRef.current.userPreferences,
+      hasLoadedPrefs: hasLoadedPrefsRef.current,
       scrollTop: feedContainerRef.current?.scrollTop ?? feedScrollTopRef.current,
       sidebarScrollTop: sidebarContainerRef.current?.scrollTop ?? sidebarScrollTopRef.current,
     });
@@ -258,6 +299,8 @@ export default function JobFeed() {
       showResumePrompt,
       resumePromptDismissed,
       showGrades,
+      forYou,
+      userPreferences,
     };
 
     persistFeedState();
@@ -273,6 +316,8 @@ export default function JobFeed() {
     showResumePrompt,
     resumePromptDismissed,
     showGrades,
+    forYou,
+    userPreferences,
     persistFeedState,
   ]);
 
@@ -350,8 +395,14 @@ export default function JobFeed() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const buildQuery = useCallback((f: JobFilters) => {
+  const buildQuery = useCallback((f: JobFilters, useForYou: boolean) => {
     const params = new URLSearchParams();
+    if (useForYou) {
+      params.set('forYou', 'true');
+      params.set('page', String(f.page));
+      return params.toString();
+    }
+
     if (f.roles.length) params.set('roles', f.roles.join(','));
     if (f.search) params.set('search', f.search);
     if (f.level) params.set('level', f.level);
@@ -363,7 +414,7 @@ export default function JobFeed() {
     return params.toString();
   }, []);
 
-  const fetchJobs = useCallback(async (f: JobFilters, append = false) => {
+  const fetchJobs = useCallback(async (f: JobFilters, append = false, useForYou = forYou) => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
     if (append) {
@@ -377,7 +428,7 @@ export default function JobFeed() {
       let lastError = 'Failed to load jobs. Please try again.';
 
       for (let attempt = 1; attempt <= 2; attempt += 1) {
-        const res = await fetch(`/api/jobs?${buildQuery(f)}`, { cache: 'no-store' });
+        const res = await fetch(`/api/jobs?${buildQuery(f, useForYou)}`, { cache: 'no-store' });
         const contentType = res.headers.get('content-type') ?? '';
         let data: FeedResponse;
 
@@ -419,6 +470,11 @@ export default function JobFeed() {
           return;
         }
 
+        if (!hasLoadedPrefsRef.current && data.userMeta) {
+          setUserPreferences(normalizeUserPreferences(data.userMeta));
+          hasLoadedPrefsRef.current = true;
+        }
+
         const newJobs = data.jobs ?? [];
         if (append) {
           setJobs(prev => {
@@ -451,7 +507,7 @@ export default function JobFeed() {
       setIsRefetching(false);
       setLoadingMore(false);
     }
-  }, [buildQuery]);
+  }, [buildQuery, forYou]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -481,7 +537,7 @@ export default function JobFeed() {
 
     fetchJobs(nextFilters, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.roles.join(), filters.search, filters.level, filters.remote, filters.location, filters.postedWithin, filters.sources.join()]);
+  }, [forYou, filters.roles.join(), filters.search, filters.level, filters.remote, filters.location, filters.postedWithin, filters.sources.join()]);
 
   // Fetch match scores whenever jobs change.
   // Only sends IDs not yet scored to avoid re-scoring jobs already in matchScores.
@@ -549,11 +605,24 @@ export default function JobFeed() {
   function handleLoadMore() {
     const next = { ...filters, page: filters.page + 1 };
     setFilters(next);
-    fetchJobs(next, true);
+    fetchJobs(next, true, forYou);
   }
 
   function handleFilterChange(f: JobFilters) {
+    if (forYou) {
+      setForYou(false);
+    }
+
     setFilters(f);
+  }
+
+  function handleForYouChange(nextValue: boolean) {
+    setForYou(nextValue);
+
+    if (nextValue) {
+      setFilters(DEFAULT_FILTERS);
+      setSearchInput('');
+    }
   }
 
   function handleOpenJob() {
@@ -588,6 +657,10 @@ export default function JobFeed() {
       return;
     }
 
+    if (forYou) {
+      setForYou(false);
+    }
+
     setSearchInput(value);
   }
 
@@ -603,8 +676,12 @@ export default function JobFeed() {
     (filters.sources.length > 0 ? 1 : 0);
 
   function handleClearAllFilters() {
+    if (forYou) {
+      setForYou(false);
+    }
+
     setSearchInput('');
-    setFilters({ ...DEFAULT_FILTERS });
+    setFilters(DEFAULT_FILTERS);
   }
 
   return (
@@ -648,7 +725,14 @@ export default function JobFeed() {
               </div>
             </div>
             <div className="px-5 pb-4">
-              <FilterSidebar filters={filters} onChange={handleFilterChange} isPro={isPro} />
+              <FilterSidebar
+                filters={filters}
+                onChange={handleFilterChange}
+                isPro={isPro}
+                forYou={forYou}
+                onForYouChange={handleForYouChange}
+                userPreferences={userPreferences}
+              />
             </div>
             <div className="sticky bottom-0 border-t border-[#1e1e28] bg-[#0f0f12] px-5 py-4">
               <Button
@@ -678,6 +762,9 @@ export default function JobFeed() {
             filters={filters}
             onChange={handleFilterChange}
             isPro={isPro}
+            forYou={forYou}
+            onForYouChange={handleForYouChange}
+            userPreferences={userPreferences}
           />
         </div>
 
