@@ -603,7 +603,6 @@ export async function GET(req: NextRequest) {
   const rawLocationFilter = params.get('location');
   const locationFilter = rawLocationFilter ?? '';
   const searchLocationFilter = rawLocationFilter ?? 'usa';
-  const shouldPostFilterRoles = roles.length > 0;
   const page = Math.max(1, Number(params.get('page') ?? 1));
   const perPage = isPro ? PRO_PER_PAGE : FREE_PER_PAGE;
   const offset = (page - 1) * perPage;
@@ -731,39 +730,6 @@ export async function GET(req: NextRequest) {
     return paginate ? query.range(offset, offset + pageSize - 1) : query;
   };
 
-  if (shouldPostFilterRoles) {
-    const jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
-      'jobs query (role post-filter)',
-      () => runJobsQuery('planned', true, perPage * 2)
-    );
-
-    if (jobsResult.error) {
-      logSupabaseError('jobs query failed', jobsResult.error);
-      return NextResponse.json(
-        {
-          error: toPublicSupabaseError(jobsResult.error),
-          retryable: isRetryableSupabaseError(jobsResult.error),
-        },
-        { status: isRetryableSupabaseError(jobsResult.error) ? 503 : 500 }
-      );
-    }
-
-    const pageJobs = applyRoleTitlePostFilter(
-      (jobsResult.data ?? []) as RankedJob[],
-      roles
-    ).slice(0, perPage);
-
-    return NextResponse.json({
-      jobs: pageJobs.map(job => ({
-        ...job,
-        description: toCardSnippet(job.description),
-      })),
-      total: pageJobs.length,
-      page,
-      perPage,
-    });
-  }
-
   const jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
     'jobs query (planned count)',
     () => runJobsQuery('planned', true, perPage)
@@ -780,7 +746,11 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const jobs = (jobsResult.data ?? []) as RankedJob[];
+  let jobs = (jobsResult.data ?? []) as RankedJob[];
+
+  if (roles.length > 0) {
+    jobs = applyRoleTitlePostFilter(jobs, roles);
+  }
 
   return NextResponse.json({
     jobs: jobs.map(job => ({
