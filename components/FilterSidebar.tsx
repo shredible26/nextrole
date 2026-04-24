@@ -170,49 +170,40 @@ export default function FilterSidebar({
   const hasPreferences =
     userPreferences.target_roles.length > 0 ||
     userPreferences.target_levels.length > 0;
+  const showOnlyForYouSelection = forYou;
+  const disabledForYouTitle = hasPreferences
+    ? undefined
+    : 'Set your job preferences in Profile to use this filter';
 
   return (
     <aside className="w-full overflow-x-hidden space-y-6 bg-[#0f0f12]">
       <div>
-        <div className="group relative">
-          <button
-            type="button"
-            aria-pressed={forYou}
-            onClick={() => {
-              if (hasPreferences) onForYouChange(!forYou);
-            }}
-            className={cn(
-              'w-full rounded-xl px-4 py-3 text-left transition-all duration-200',
-              forYou
-                ? 'border border-indigo-400/50 bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white shadow-lg shadow-indigo-500/20'
-                : 'border border-white/10 bg-white/5 text-white/50 hover:border-white/25 hover:bg-white/10 hover:text-white',
-              !hasPreferences && 'cursor-not-allowed pointer-events-none opacity-40'
-            )}
-          >
-            <div className="flex items-start gap-3">
-              <Sparkles className="mt-0.5 h-5 w-5 shrink-0" />
-              <div className="min-w-0">
-                <div className="text-sm font-semibold">For You</div>
-                <div
-                  className={cn(
-                    'mt-0.5 text-xs',
-                    forYou ? 'text-white/80' : 'text-white/60'
-                  )}
-                >
-                  Jobs matching your preferences
-                </div>
-              </div>
-            </div>
-          </button>
-          {!hasPreferences && (
-            <div className="pointer-events-none absolute left-0 right-0 top-full z-10 hidden pt-2 md:block md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-              <div className="rounded-lg border border-white/10 bg-[#16161f] px-3 py-2 text-xs text-white/75 shadow-lg">
-                Set your job preferences in Profile to use this filter
-              </div>
-            </div>
+        <button
+          type="button"
+          title={disabledForYouTitle}
+          aria-pressed={forYou}
+          aria-disabled={!hasPreferences}
+          onClick={() => {
+            if (!hasPreferences) return;
+            onForYouChange(!forYou);
+          }}
+          className={cn(
+            'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50',
+            forYou
+              ? 'border-indigo-400/50 bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20'
+              : 'border-white/10 bg-[#171720] text-[#b8bad3] hover:border-white/20 hover:bg-[#1d1d28] hover:text-white',
+            !hasPreferences && 'cursor-not-allowed border-[#2a2a35] bg-[#12121a] text-[#696b7f] hover:border-[#2a2a35] hover:bg-[#12121a] hover:text-[#696b7f]'
           )}
-        </div>
-        <div className="my-4 border-b border-white/10" />
+        >
+          <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : 'text-[#8f91a8]')} />
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">For You</div>
+            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#8f91a8]')}>
+              Uses your saved job preferences
+            </div>
+          </div>
+        </button>
+        <Separator className="mt-5 bg-[#1e1e28]" />
       </div>
 
       {/* Roles */}
@@ -223,12 +214,12 @@ export default function FilterSidebar({
         <div className="flex flex-wrap gap-2">
           {ROLE_OPTIONS.map(({ value, label }) => {
             const isSelected =
-              value === 'all'
+              !showOnlyForYouSelection && (value === 'all'
                 ? filters.roles.length === 0
-                : filters.roles.includes(value as Role);
+                : filters.roles.includes(value as Role));
             const colorClass = isSelected
               ? 'bg-indigo-500 border-indigo-500 text-[#f0f0fa]'
-              : 'border-[#2a2a35] bg-transparent text-[#f0f0fa]';
+              : 'border-[#2a2a35] bg-transparent text-[#d7d8e8] hover:border-[#3a3a45] hover:bg-[#171720]';
             return (
               <button
                 key={value}
@@ -254,7 +245,7 @@ export default function FilterSidebar({
         </p>
         <div className="space-y-2">
           {LEVELS.map(({ value, label }) => {
-            const checked = filters.level === value;
+            const checked = !showOnlyForYouSelection && filters.level === value;
 
             return (
               <label key={label} className={optionLabelClassName}>
@@ -290,7 +281,7 @@ export default function FilterSidebar({
         </Label>
         <Switch
           id="remote-toggle"
-          checked={filters.remote}
+          checked={showOnlyForYouSelection ? false : filters.remote}
           onCheckedChange={checked => onChange({ ...filters, remote: checked, page: 1 })}
           className="data-checked:bg-indigo-500 data-unchecked:bg-[#2a2a35]"
         />
@@ -305,7 +296,7 @@ export default function FilterSidebar({
         </p>
         <div className="space-y-2">
           {LOCATION_OPTIONS.map(({ value, label }) => {
-            const checked = (filters.location || 'usa') === value;
+            const checked = !showOnlyForYouSelection && (filters.location || 'usa') === value;
 
             return (
               <label key={value} className={optionLabelClassName}>
@@ -341,7 +332,7 @@ export default function FilterSidebar({
         </p>
         <div className="space-y-2">
           {POSTED_OPTIONS.map(({ value, label }) => {
-            const checked = filters.postedWithin === value;
+            const checked = !showOnlyForYouSelection && filters.postedWithin === value;
 
             return (
               <label key={label} className={optionLabelClassName}>
@@ -378,12 +369,12 @@ export default function FilterSidebar({
         {isPro ? (
           <div className="space-y-2" role="group" aria-label="Source">
             {renderSourceOption({
-              checked: filters.sources.length === 0,
+              checked: !showOnlyForYouSelection && filters.sources.length === 0,
               label: 'All',
               onClick: () => toggleSource(''),
             })}
             {SOURCES.map(({ value, label }) => {
-              const checked = filters.sources[0] === value;
+              const checked = !showOnlyForYouSelection && filters.sources[0] === value;
 
               return (
                 <div key={value}>
@@ -399,17 +390,17 @@ export default function FilterSidebar({
         ) : (
           <div className="space-y-2" role="group" aria-label="Source">
             {renderSourceOption({
-              checked: freeSourceSelection === 'all',
+              checked: !showOnlyForYouSelection && freeSourceSelection === 'all',
               label: 'All Sources',
               onClick: () => onChange({ ...filters, sources: [], page: 1 }),
             })}
             {renderSourceOption({
-              checked: freeSourceSelection === 'github_repos',
+              checked: !showOnlyForYouSelection && freeSourceSelection === 'github_repos',
               label: 'GitHub Repos',
               onClick: () => onChange({ ...filters, sources: ['github_repos'], page: 1 }),
             })}
             {renderSourceOption({
-              checked: freeSourceSelection === 'job_boards',
+              checked: !showOnlyForYouSelection && freeSourceSelection === 'job_boards',
               label: 'Job Boards',
               onClick: () => onChange({ ...filters, sources: [...JOB_BOARD_SOURCES], page: 1 }),
             })}

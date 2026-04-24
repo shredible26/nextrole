@@ -29,6 +29,19 @@ const DEFAULT_FILTERS: JobFilters = {
   page: 1,
 };
 
+function createDefaultFilters(): JobFilters {
+  return {
+    roles: [],
+    search: '',
+    level: '',
+    remote: false,
+    location: 'usa',
+    postedWithin: '',
+    sources: [],
+    page: 1,
+  };
+}
+
 type UserPreferences = {
   target_roles: string[];
   target_levels: string[];
@@ -245,6 +258,7 @@ export default function JobFeed() {
   const sidebarContainerRef = useRef<HTMLDivElement>(null);
   const feedScrollTopRef = useRef(initialSnapshot?.scrollTop ?? 0);
   const sidebarScrollTopRef = useRef(initialSnapshot?.sidebarScrollTop ?? 0);
+  const skipNextAutoFetchRef = useRef(false);
   const snapshotStateRef = useRef({
     filters: initialSnapshot?.filters ?? DEFAULT_FILTERS,
     jobs: initialSnapshot?.jobs ?? [],
@@ -376,10 +390,15 @@ export default function JobFeed() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('tier')
+        .select('tier, target_roles, target_levels')
         .eq('id', user.id)
         .single();
       setIsPro(profile?.tier === 'pro');
+      if (profile) {
+        const nextPreferences = normalizeUserPreferences(profile);
+        setUserPreferences(nextPreferences);
+        hasLoadedPrefsRef.current = true;
+      }
 
       const { data } = await supabase
         .from('applications')
@@ -414,7 +433,7 @@ export default function JobFeed() {
     return params.toString();
   }, []);
 
-  const fetchJobs = useCallback(async (f: JobFilters, append = false, useForYou = forYou) => {
+  const fetchJobs = useCallback(async (f: JobFilters, append = false, useForYou = false) => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
     if (append) {
@@ -507,7 +526,7 @@ export default function JobFeed() {
       setIsRefetching(false);
       setLoadingMore(false);
     }
-  }, [buildQuery, forYou]);
+  }, [buildQuery]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -528,6 +547,10 @@ export default function JobFeed() {
       skipInitialFetchRef.current = false;
       return;
     }
+    if (skipNextAutoFetchRef.current) {
+      skipNextAutoFetchRef.current = false;
+      return;
+    }
 
     const nextFilters = filters.page === 1 ? filters : { ...filters, page: 1 };
 
@@ -535,7 +558,7 @@ export default function JobFeed() {
       setFilters(nextFilters);
     }
 
-    fetchJobs(nextFilters, false);
+    fetchJobs(nextFilters, false, forYou);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forYou, filters.roles.join(), filters.search, filters.level, filters.remote, filters.location, filters.postedWithin, filters.sources.join()]);
 
@@ -617,12 +640,13 @@ export default function JobFeed() {
   }
 
   function handleForYouChange(nextValue: boolean) {
-    setForYou(nextValue);
+    const nextFilters = createDefaultFilters();
 
-    if (nextValue) {
-      setFilters(DEFAULT_FILTERS);
-      setSearchInput('');
-    }
+    skipNextAutoFetchRef.current = true;
+    setForYou(nextValue);
+    setFilters(nextFilters);
+    setSearchInput('');
+    fetchJobs(nextFilters, false, nextValue);
   }
 
   function handleOpenJob() {
@@ -658,6 +682,7 @@ export default function JobFeed() {
     }
 
     if (forYou) {
+      skipNextAutoFetchRef.current = true;
       setForYou(false);
     }
 
@@ -681,7 +706,7 @@ export default function JobFeed() {
     }
 
     setSearchInput('');
-    setFilters(DEFAULT_FILTERS);
+    setFilters(createDefaultFilters());
   }
 
   return (

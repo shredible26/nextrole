@@ -14,6 +14,7 @@ import {
   Plus,
   Check,
   X,
+  Menu,
   MessageSquare,
   LayoutGrid,
   Send,
@@ -469,6 +470,7 @@ export default function HomePage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [count, setCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -528,6 +530,17 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (mobileMenuOpen) {
+      const previous = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = previous;
+      };
+    }
+  }, [mobileMenuOpen]);
+
   async function handleLogin(redirectToJobs = false) {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -540,6 +553,7 @@ export default function HomePage() {
   }
 
   async function handleLogout() {
+    setMobileMenuOpen(false);
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
@@ -550,6 +564,47 @@ export default function HomePage() {
   const initials = fullName
     ? fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
     : user?.email?.[0]?.toUpperCase() ?? 'U';
+  const mobileLinkClass = (href: string) =>
+    `flex min-h-[56px] items-center justify-between border-b border-[#1e1e28] px-5 text-lg text-white transition-colors active:bg-[#1a1a24] ${
+      pathname.startsWith(href) ? 'font-semibold text-white' : 'font-medium text-[#e0e0f0]'
+    }`;
+  const mobileMenuDrawer = user ? (
+    <div
+      id="home-mobile-nav-drawer"
+      className={`fixed left-0 right-0 top-14 z-40 overflow-hidden bg-[#0d0d12] transition-[max-height] duration-300 ease-in-out md:hidden ${
+        mobileMenuOpen ? 'max-h-screen border-t border-[#1e1e28]' : 'max-h-0'
+      }`}
+      style={{ height: mobileMenuOpen ? 'calc(100vh - 56px)' : 0 }}
+      aria-hidden={!mobileMenuOpen}
+    >
+      <nav className="flex h-full flex-col">
+        <div className="flex-1 overflow-y-auto">
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMobileMenuOpen(false)}
+              className={mobileLinkClass(href)}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="border-t border-[#1e1e28] bg-[#0d0d12] p-5">
+          <div className="flex flex-col gap-3">
+            <p className="truncate text-sm text-[#8888aa]">{user.email}</p>
+            <button
+              onClick={handleLogout}
+              className="inline-flex min-h-[48px] items-center justify-center rounded-lg border border-[#2a2a35] bg-transparent text-base font-medium text-red-400 transition-colors hover:bg-[#1a1a24]"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+  ) : null;
 
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-[#030303]">
@@ -639,11 +694,21 @@ export default function HomePage() {
                         >
                           Sign out
                         </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </>
-                ) : (
-                  <>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <button
+                        type="button"
+                        onClick={() => setMobileMenuOpen(open => !open)}
+                        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                        aria-expanded={mobileMenuOpen}
+                        aria-controls="home-mobile-nav-drawer"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[#f0f0fa] transition-colors hover:bg-[#2a2a35] md:hidden"
+                      >
+                        {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                      </button>
+                    </>
+                  ) : (
+                    <>
                     <button
                       onClick={() => handleLogin()}
                       className="text-[#aaaacc] hover:text-white text-sm transition-colors"
@@ -663,6 +728,7 @@ export default function HomePage() {
           </div>
         </div>
       </header>
+      {mobileMenuDrawer}
 
       {/* ── HERO SECTION ── */}
       <section className="relative min-h-screen bg-[#030303] overflow-hidden">

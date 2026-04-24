@@ -210,14 +210,7 @@ export default function Navbar({
   ) : null;
 
   if (isHomePage) {
-    return (
-      <>
-        {mobileMenuButton(
-          'fixed right-14 top-1.5 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-md text-[#f0f0fa] transition-colors hover:bg-[#2a2a35] md:hidden'
-        )}
-        {mobileMenuDrawer}
-      </>
-    );
+    return null;
   }
 
   return (
