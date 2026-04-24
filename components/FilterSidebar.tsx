@@ -191,14 +191,14 @@ export default function FilterSidebar({
             'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50',
             forYou
               ? 'border-indigo-400/50 bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20'
-              : 'border-white/10 bg-[#171720] text-[#b8bad3] hover:border-white/20 hover:bg-[#1d1d28] hover:text-white',
-            !hasPreferences && 'cursor-not-allowed border-[#2a2a35] bg-[#12121a] text-[#696b7f] hover:border-[#2a2a35] hover:bg-[#12121a] hover:text-[#696b7f]'
+              : 'border-[#2a2a35] bg-[#171720] text-[#f0f0fa] hover:border-[#3a3a45] hover:bg-[#1d1d28]',
+            !hasPreferences && 'cursor-not-allowed border-[#2a2a35] bg-[#12121a] text-[#9da1ba] hover:border-[#2a2a35] hover:bg-[#12121a] hover:text-[#9da1ba]'
           )}
         >
-          <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : 'text-[#8f91a8]')} />
+          <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : 'text-[#c7cbff]')} />
           <div className="min-w-0">
             <div className="text-sm font-semibold">For You</div>
-            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#8f91a8]')}>
+            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#a9adca]')}>
               Uses your saved job preferences
             </div>
           </div>
@@ -219,7 +219,7 @@ export default function FilterSidebar({
                 : filters.roles.includes(value as Role));
             const colorClass = isSelected
               ? 'bg-indigo-500 border-indigo-500 text-[#f0f0fa]'
-              : 'border-[#2a2a35] bg-transparent text-[#d7d8e8] hover:border-[#3a3a45] hover:bg-[#171720]';
+              : 'border-[#35374a] bg-transparent text-[#f0f0fa] hover:border-[#4a4d63] hover:bg-[#171720]';
             return (
               <button
                 key={value}
@@ -283,7 +283,7 @@ export default function FilterSidebar({
           id="remote-toggle"
           checked={showOnlyForYouSelection ? false : filters.remote}
           onCheckedChange={checked => onChange({ ...filters, remote: checked, page: 1 })}
-          className="data-checked:bg-indigo-500 data-unchecked:bg-[#2a2a35]"
+          className="border border-[#444455] data-checked:border-indigo-400/60 data-checked:bg-indigo-500 data-unchecked:border-[#444455] data-unchecked:bg-[#1a1a24] [&_[data-slot=switch-thumb]]:bg-[#f5f5ff] dark:[&_[data-slot=switch-thumb]]:bg-[#f5f5ff]"
         />
       </div>
 
