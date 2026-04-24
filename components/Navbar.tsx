@@ -50,6 +50,7 @@ export default function Navbar({
   initialIsPro: boolean;
 }) {
   const pathname = usePathname();
+  const isHomePage = pathname === '/';
   const router = useRouter();
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<NavbarUser | null>(initialUser);
@@ -106,6 +107,12 @@ export default function Navbar({
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!user) {
+      setMobileMenuOpen(false);
+    }
+  }, [user]);
+
   // Lock body scroll when drawer open
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -149,6 +156,71 @@ export default function Navbar({
         ? 'text-[#f0f0fa]'
         : 'text-[#8888aa] hover:text-[#f0f0fa]'
     }`;
+
+  const mobileMenuButton = (className: string) =>
+    user ? (
+      <button
+        type="button"
+        onClick={() => setMobileMenuOpen(open => !open)}
+        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={mobileMenuOpen}
+        aria-controls="mobile-nav-drawer"
+        className={className}
+      >
+        {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+      </button>
+    ) : null;
+
+  const mobileMenuDrawer = user ? (
+    <div
+      id="mobile-nav-drawer"
+      className={`fixed left-0 right-0 top-14 z-40 overflow-hidden bg-[#0d0d12] transition-[max-height] duration-300 ease-in-out md:hidden ${
+        mobileMenuOpen ? 'max-h-screen border-t border-[#1e1e28]' : 'max-h-0'
+      }`}
+      style={{ height: mobileMenuOpen ? 'calc(100vh - 56px)' : 0 }}
+      aria-hidden={!mobileMenuOpen}
+    >
+      <nav className="flex h-full flex-col">
+        <div className="flex-1 overflow-y-auto">
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMobileMenuOpen(false)}
+              className={mobileLinkClass(href)}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="border-t border-[#1e1e28] bg-[#0d0d12] p-5">
+          <div className="flex flex-col gap-3">
+            <p className="truncate text-sm text-[#8888aa]">{user.email}</p>
+            <button
+              onClick={handleLogout}
+              className="inline-flex min-h-[48px] items-center justify-center rounded-lg border border-[#2a2a35] bg-transparent text-base font-medium text-red-400 transition-colors hover:bg-[#1a1a24]"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+  ) : null;
+
+  if (isHomePage) {
+    if (!user) return null;
+
+    return (
+      <>
+        {mobileMenuButton(
+          'fixed right-14 top-1.5 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-md text-[#f0f0fa] transition-colors hover:bg-[#2a2a35] md:hidden'
+        )}
+        {mobileMenuDrawer}
+      </>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24]">
@@ -248,60 +320,15 @@ export default function Navbar({
             )}
 
             {/* Hamburger (mobile only) */}
-            {user && (
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(open => !open)}
-                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobile-nav-drawer"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[#f0f0fa] transition-colors hover:bg-[#2a2a35] md:hidden"
-              >
-                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
+            {mobileMenuButton(
+              'inline-flex h-11 w-11 items-center justify-center rounded-md text-[#f0f0fa] transition-colors hover:bg-[#2a2a35] md:hidden'
             )}
           </>
         </div>
       </div>
 
       {/* Mobile drawer (below md only) */}
-      {user && (
-        <div
-          id="mobile-nav-drawer"
-          className={`fixed left-0 right-0 top-14 z-40 overflow-hidden bg-[#0d0d12] transition-[max-height] duration-300 ease-in-out md:hidden ${
-            mobileMenuOpen ? 'max-h-screen border-t border-[#1e1e28]' : 'max-h-0'
-          }`}
-          style={{ height: mobileMenuOpen ? 'calc(100vh - 56px)' : 0 }}
-          aria-hidden={!mobileMenuOpen}
-        >
-          <nav className="flex h-full flex-col">
-            <div className="flex-1 overflow-y-auto">
-              {NAV_LINKS.map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={mobileLinkClass(href)}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="border-t border-[#1e1e28] bg-[#0d0d12] p-5">
-              <div className="flex flex-col gap-3">
-                <p className="truncate text-sm text-[#8888aa]">{user.email}</p>
-                <button
-                  onClick={handleLogout}
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-lg border border-[#2a2a35] bg-transparent text-base font-medium text-red-400 transition-colors hover:bg-[#1a1a24]"
-                >
-                  Sign out
-                </button>
-              </div>
-            </div>
-          </nav>
-        </div>
-      )}
+      {mobileMenuDrawer}
     </header>
   );
 }

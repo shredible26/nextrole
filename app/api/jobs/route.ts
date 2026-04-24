@@ -494,16 +494,6 @@ async function withSupabaseRetry<T extends SupabaseResult<unknown>>(
   return lastResult as T;
 }
 
-function buildUsaLocationOrFilter() {
-  return [
-    'remote.eq.true',
-    'location.is.null',
-    ...POSTGREST_USA_LOCATION_ILIKE_PATTERNS.map(pattern =>
-      buildPostgrestCondition('location', 'ilike', pattern)
-    ),
-  ].join(',');
-}
-
 function isNonUSLocation(location: string): boolean {
   const loc = location.trim();
 
@@ -612,6 +602,8 @@ export async function GET(req: NextRequest) {
   const postedWithin = params.get('postedWithin');
   const locationFilter = params.get('location') ?? 'usa';
   const shouldPostFilterRoles = roles.length > 0;
+  const shouldPostFilterLocation =
+    locationFilter === 'usa' || locationFilter === 'other';
   const page = Math.max(1, Number(params.get('page') ?? 1));
   const perPage = isPro ? PRO_PER_PAGE : FREE_PER_PAGE;
   const offset = (page - 1) * perPage;
@@ -702,7 +694,11 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const runJobsQuery = (countMode: 'exact' | 'planned', paginate = true) => {
+  const runJobsQuery = (
+    countMode: 'exact' | 'planned',
+    paginate = true,
+    pageSize = perPage
+  ) => {
     let query = admin
       .from('jobs')
       .select('*', { count: countMode })
@@ -724,24 +720,9 @@ export async function GET(req: NextRequest) {
       query = query.gte('posted_at', cutoffIso);
     }
 
-    if (locationFilter === 'usa') {
-      query = query
-        .or(buildUsaLocationOrFilter())
-        .not('location', 'ilike', '%Perth, WA%');
-    } else if (locationFilter === 'other') {
-      query = query
-        .eq('remote', false)
-        .not('location', 'is', null)
-        .not('location', 'eq', '');
-
-      for (const pattern of POSTGREST_USA_LOCATION_ILIKE_PATTERNS) {
-        query = query.not('location', 'ilike', pattern);
-      }
-    }
-
     query = query.order('posted_at', { ascending: false, nullsFirst: false });
 
-    return paginate ? query.range(offset, offset + perPage - 1) : query;
+    return paginate ? query.range(offset, offset + pageSize - 1) : query;
   };
 
   if (shouldPostFilterRoles) {
@@ -761,10 +742,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const filteredJobs = applyRoleTitlePostFilter(
+    let filteredJobs = applyRoleTitlePostFilter(
       (allJobsResult.data ?? []) as RankedJob[],
       roles
     );
+
+    if (locationFilter === 'usa') {
+      filteredJobs = filteredJobs.filter(isUsaJob);
+    } else if (locationFilter === 'other') {
+      filteredJobs = filteredJobs.filter(job => !isUsaJob(job));
+    }
 
     return NextResponse.json({
       jobs: filteredJobs
@@ -781,7 +768,7 @@ export async function GET(req: NextRequest) {
 
   let jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
     'jobs query (planned count)',
-    () => runJobsQuery('planned')
+    () => runJobsQuery('planned', true, shouldPostFilterLocation ? perPage * 3 : perPage)
   );
 
   if (jobsResult.error) {
@@ -795,8 +782,16 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  let jobs = (jobsResult.data ?? []) as RankedJob[];
+
+  if (locationFilter === 'usa') {
+    jobs = jobs.filter(isUsaJob).slice(0, perPage);
+  } else if (locationFilter === 'other') {
+    jobs = jobs.filter(job => !isUsaJob(job)).slice(0, perPage);
+  }
+
   return NextResponse.json({
-    jobs: (jobsResult.data ?? []).map(job => ({
+    jobs: jobs.map(job => ({
       ...job,
       description: toCardSnippet(job.description as string | null | undefined),
     })),
