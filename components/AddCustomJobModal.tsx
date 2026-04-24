@@ -178,8 +178,9 @@ export default function AddCustomJobModal({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="ghost"
-          className="w-full sm:w-auto border border-indigo-500/50 text-white hover:bg-indigo-500/10 hover:border-indigo-500 transition-all duration-200 rounded-xl gap-2"
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto gap-2 text-sm border-[#2a2a35] text-[#f0f0fa] bg-[#1a1a24] hover:bg-[#2a2a35]"
         >
           <Plus className="h-4 w-4" />
           Add Custom Job

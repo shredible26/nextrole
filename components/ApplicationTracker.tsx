@@ -417,11 +417,11 @@ export default function ApplicationTracker() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex flex-col flex-1 gap-5">
+      <div className="flex min-h-0 flex-1 flex-col gap-5">
         {/* Header row */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-xl font-semibold text-[#f0f0fa]">Application Tracker</h1>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <AddCustomJobModal onJobAdded={fetchApplications} />
             {apps.length > 0 && (
               <Button
@@ -451,12 +451,12 @@ export default function ApplicationTracker() {
           <>
             {/* Filter bar */}
             <div className="flex justify-center py-1">
-              <div className="flex items-end gap-8">
+              <div className="flex flex-wrap items-end justify-center gap-4 sm:gap-6 lg:gap-8">
                 {/* Role filter */}
                 <div className="flex flex-col gap-2">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Role</span>
                   <Select value={filterRole} onValueChange={v => setFilterRole(v ?? 'all')}>
-                    <SelectTrigger className="h-9 w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
+                    <SelectTrigger className="h-9 w-full min-w-0 sm:w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -472,7 +472,7 @@ export default function ApplicationTracker() {
                 <div className="flex flex-col gap-2">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Status</span>
                   <Select value={filterStatus} onValueChange={v => setFilterStatus(v ?? 'all')}>
-                    <SelectTrigger className="h-9 w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
+                    <SelectTrigger className="h-9 w-full min-w-0 sm:w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -488,7 +488,7 @@ export default function ApplicationTracker() {
                 <div className="flex flex-col gap-2">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Applied Date</span>
                   <Select value={filterDate} onValueChange={v => setFilterDate(v ?? 'all')}>
-                    <SelectTrigger className="h-9 w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
+                    <SelectTrigger className="h-9 w-full min-w-0 sm:w-44 bg-[#12121e] border border-[#2a2a3e] text-indigo-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_8px_rgba(99,102,241,0.2)] focus:ring-1 focus:ring-indigo-500/30 focus:ring-offset-0 [&>svg]:text-indigo-300/60 [&>svg]:opacity-100">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -527,7 +527,7 @@ export default function ApplicationTracker() {
               </div>
             ) : view === 'table' ? (
               /* ── TABLE ── */
-              <div className="overflow-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-[#2a2a35] text-left text-xs text-[#888899] uppercase tracking-wider">
