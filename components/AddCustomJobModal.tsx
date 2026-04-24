@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Calendar as CalendarIcon, Plus, X } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -12,13 +12,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 interface JobFormData {
@@ -254,23 +247,25 @@ export default function AddCustomJobModal({
               <Label className="text-xs text-gray-400 uppercase tracking-wider sm:text-sm">
                 Status <span className="text-indigo-500">*</span>
               </Label>
-              <Select
-                value={formData.status}
-                onValueChange={value =>
-                  setFormData({ ...formData, status: value as CustomJobStatusLabel })
-                }
-              >
-                <SelectTrigger className="w-full bg-[#0d0d12] border-[#2a2a35] rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1a24] border-[#2a2a35] text-white">
+              <div className="relative">
+                <select
+                  value={formData.status}
+                  onChange={event =>
+                    setFormData({
+                      ...formData,
+                      status: event.target.value as CustomJobStatusLabel,
+                    })
+                  }
+                  className="h-12 w-full appearance-none rounded-xl border border-[#2a2a35] bg-[#0d0d12] px-4 pr-10 text-base text-white shadow-xs outline-none transition-[color,box-shadow] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40 md:text-sm"
+                >
                   {STATUS_OPTIONS.map(status => (
-                    <SelectItem key={status} value={status}>
+                    <option key={status} value={status} className="bg-[#1a1a24] text-white">
                       {status}
-                    </SelectItem>
+                    </option>
                   ))}
-                </SelectContent>
-              </Select>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -282,7 +277,7 @@ export default function AddCustomJobModal({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal bg-[#0d0d12] border-[#2a2a35] rounded-xl text-white hover:bg-[#0d0d12] hover:text-white focus:ring-2 focus:ring-indigo-500",
+                      "h-12 w-full justify-start text-left font-normal bg-[#0d0d12] border-[#2a2a35] rounded-xl text-white hover:bg-[#0d0d12] hover:text-white focus:ring-2 focus:ring-indigo-500 aria-expanded:bg-[#0d0d12] aria-expanded:text-white",
                       !formData.dateApplied && "text-gray-400"
                     )}
                   >
@@ -294,7 +289,11 @@ export default function AddCustomJobModal({
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-[#1a1a24] border-[#2a2a35]">
+                <PopoverContent
+                  align="start"
+                  sideOffset={8}
+                  className="w-auto p-3 bg-[#1a1a24] border-[#2a2a35]"
+                >
                   <Calendar
                     mode="single"
                     selected={formData.dateApplied}
