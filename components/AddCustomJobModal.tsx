@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Calendar as CalendarIcon, Plus, X } from "lucide-react";
 import { toast } from "sonner";
@@ -121,7 +121,21 @@ export default function AddCustomJobModal({
 }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
   const [formData, setFormData] = useState<JobFormData>(getInitialFormData);
+
+  useEffect(() => {
+    function updateViewportMode() {
+      setIsCompactViewport(window.innerHeight < 900);
+    }
+
+    updateViewportMode();
+    window.addEventListener("resize", updateViewportMode);
+
+    return () => {
+      window.removeEventListener("resize", updateViewportMode);
+    };
+  }, []);
 
   function resetForm() {
     setFormData(getInitialFormData());
@@ -186,10 +200,15 @@ export default function AddCustomJobModal({
           Add Custom Job
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <div className="p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold text-white mb-2">
+      <DialogContent
+        className={cn(
+          "w-[calc(100vw-2rem)] max-w-[30rem]",
+          isCompactViewport && "scale-[0.9]"
+        )}
+      >
+        <div className={cn("p-5 sm:p-6", isCompactViewport && "p-4")}>
+          <div className={cn("mb-5", isCompactViewport && "mb-4")}>
+            <h2 className="mb-2 text-[1.9rem] leading-none font-semibold text-white sm:text-2xl">
               Add Custom Job
             </h2>
             <p className="text-sm text-gray-400">
@@ -197,9 +216,12 @@ export default function AddCustomJobModal({
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form
+            onSubmit={handleSubmit}
+            className={cn("space-y-4", isCompactViewport && "space-y-3.5")}
+          >
             <div className="space-y-2">
-              <Label className="text-sm text-gray-400 uppercase tracking-wider">
+              <Label className="text-xs text-gray-400 uppercase tracking-wider sm:text-sm">
                 Job Title <span className="text-indigo-500">*</span>
               </Label>
               <Input
@@ -214,7 +236,7 @@ export default function AddCustomJobModal({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-gray-400 uppercase tracking-wider">
+              <Label className="text-xs text-gray-400 uppercase tracking-wider sm:text-sm">
                 Company <span className="text-indigo-500">*</span>
               </Label>
               <Input
@@ -229,7 +251,7 @@ export default function AddCustomJobModal({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-gray-400 uppercase tracking-wider">
+              <Label className="text-xs text-gray-400 uppercase tracking-wider sm:text-sm">
                 Status <span className="text-indigo-500">*</span>
               </Label>
               <Select
@@ -252,7 +274,7 @@ export default function AddCustomJobModal({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-gray-400 uppercase tracking-wider">
+              <Label className="text-xs text-gray-400 uppercase tracking-wider sm:text-sm">
                 Date Applied
               </Label>
               <Popover>
@@ -287,7 +309,7 @@ export default function AddCustomJobModal({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-gray-400 uppercase tracking-wider">
+              <Label className="text-xs text-gray-400 uppercase tracking-wider sm:text-sm">
                 Job URL
               </Label>
               <Input
@@ -302,7 +324,7 @@ export default function AddCustomJobModal({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-gray-400 uppercase tracking-wider">
+              <Label className="text-xs text-gray-400 uppercase tracking-wider sm:text-sm">
                 Notes
               </Label>
               <Textarea
@@ -310,13 +332,13 @@ export default function AddCustomJobModal({
                 onChange={event =>
                   setFormData({ ...formData, notes: event.target.value })
                 }
-                rows={3}
-                className="bg-[#0d0d12] border-[#2a2a35] rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                rows={2}
+                className="min-h-20 bg-[#0d0d12] border-[#2a2a35] rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
                 placeholder="Add any additional notes..."
               />
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className={cn("flex gap-3 pt-3", isCompactViewport && "pt-2")}>
               <Button
                 type="button"
                 variant="ghost"
