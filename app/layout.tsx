@@ -44,7 +44,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
-      <body className="flex h-dvh flex-col overflow-hidden bg-background text-foreground overscroll-none">
+      <body className="flex min-h-dvh flex-col overflow-x-hidden bg-background text-foreground md:h-dvh md:overflow-hidden md:overscroll-none">
         <ConditionalNavbar
           initialUser={
             user
@@ -57,7 +57,7 @@ export default async function RootLayout({
           }
           initialIsPro={initialIsPro}
         />
-        <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
+        <main className="flex flex-1 flex-col md:h-full md:min-h-0 md:overflow-hidden">{children}</main>
         <Toaster richColors position="bottom-right" />
         <Analytics />
       </body>

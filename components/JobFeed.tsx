@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Job, JobFilters } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { getTrackedIds, addTrackedId, removeTrackedId, writeTrackedIds } from '@/lib/trackedStorage';
-import { Loader2, Lock, Search, X } from 'lucide-react';
+import { Loader2, Lock, Search, SlidersHorizontal, X } from 'lucide-react';
 
 const GRADE_ORDER: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, F: 4 };
 const FEED_SNAPSHOT_KEY = 'nextrole.jobs.feed-snapshot';
@@ -198,6 +198,7 @@ export default function JobFeed() {
   const [resumePromptDismissed, setResumePromptDismissed] = useState(initialSnapshot?.resumePromptDismissed ?? false);
   const [sortBy, setSortBy] = useState<'default' | 'best_match'>(initialSnapshot?.sortBy ?? 'default');
   const [showGrades, setShowGrades] = useState<boolean>(initialSnapshot?.showGrades ?? true);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const requestIdRef = useRef(0);
   const jobsRef = useRef<Job[]>(initialSnapshot?.jobs ?? []);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -309,6 +310,18 @@ export default function JobFeed() {
     window.addEventListener('pagehide', persistFeedState);
     return () => window.removeEventListener('pagehide', persistFeedState);
   }, [persistFeedState]);
+
+  // Body scroll lock when mobile filter sheet open
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (mobileFiltersOpen) {
+      const previous = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = previous;
+      };
+    }
+  }, [mobileFiltersOpen]);
 
   // Pre-populate tracked IDs and tier from Supabase
   useEffect(() => {
@@ -581,11 +594,76 @@ export default function JobFeed() {
   const isSearching = loading && (searchInput.trim().length > 0 || filters.search.length > 0);
   const showBlockingLoader = loading && jobs.length === 0;
 
+  const activeFilterCount =
+    (filters.roles.length > 0 ? 1 : 0) +
+    (filters.level !== '' ? 1 : 0) +
+    (filters.remote ? 1 : 0) +
+    (filters.location !== 'usa' ? 1 : 0) +
+    (filters.postedWithin !== '' ? 1 : 0) +
+    (filters.sources.length > 0 ? 1 : 0);
+
+  function handleClearAllFilters() {
+    setSearchInput('');
+    setFilters({ ...DEFAULT_FILTERS });
+  }
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0d0d12]">
+    <div className="flex flex-1 flex-col bg-[#0d0d12] md:min-h-0 md:overflow-hidden">
       <UpgradeModal open={showUpgrade} reason={upgradeReason} onClose={() => setShowUpgrade(false)} />
 
-      <div className="mx-auto flex h-[calc(100vh-57px)] min-h-0 w-full max-w-7xl overflow-hidden bg-[#0d0d12]">
+      {/* Mobile filter bottom sheet */}
+      {mobileFiltersOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <button
+            type="button"
+            aria-label="Close filters"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filters"
+            className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-[#0f0f12] shadow-2xl"
+          >
+            <div className="mx-auto mt-3 mb-4 h-1 w-10 rounded-full bg-[#2a2a35]" />
+            <div className="flex items-center justify-between px-5 pb-3">
+              <h2 className="text-base font-semibold text-white">Filters</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleClearAllFilters}
+                  className="rounded-md px-3 py-1.5 text-sm text-[#aaaacc] transition-colors hover:bg-[#1a1a24] hover:text-white"
+                >
+                  Clear all
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#aaaacc] transition-colors hover:bg-[#1a1a24] hover:text-white"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <div className="px-5 pb-4">
+              <FilterSidebar filters={filters} onChange={handleFilterChange} isPro={isPro} />
+            </div>
+            <div className="sticky bottom-0 border-t border-[#1e1e28] bg-[#0f0f12] px-5 py-4">
+              <Button
+                onClick={() => setMobileFiltersOpen(false)}
+                disabled={loading || isRefetching}
+                className="h-12 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 text-base font-semibold text-white hover:from-indigo-400 hover:to-violet-400"
+              >
+                {isRefetching || loading ? 'Loading…' : `Show ${total.toLocaleString()} job${total === 1 ? '' : 's'}`}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto flex w-full max-w-7xl flex-col bg-[#0d0d12] md:h-[calc(100vh-57px)] md:min-h-0 md:flex-row md:overflow-hidden">
         {/* Sidebar — independent scroll */}
         <div
           ref={sidebarContainerRef}
@@ -603,10 +681,10 @@ export default function JobFeed() {
           />
         </div>
 
-        {/* Feed — independent scroll */}
+        {/* Feed — independent scroll on desktop, natural page scroll on mobile */}
         <div
           ref={feedContainerRef}
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#0d0d12] px-6 py-6 sm:px-8"
+          className="flex min-w-0 flex-1 flex-col bg-[#0d0d12] px-4 py-4 sm:px-8 sm:py-6 md:min-h-0 md:overflow-y-auto"
           onScroll={e => {
             feedScrollTopRef.current = e.currentTarget.scrollTop;
           }}
@@ -642,12 +720,28 @@ export default function JobFeed() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2">
+            {/* Mobile-only Filters trigger */}
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(true)}
+              className="md:hidden flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#2a2a35] bg-[#1a1a24] px-4 text-sm font-medium text-white transition-colors hover:bg-[#22222e]"
+              aria-label="Open filters"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-500 px-1.5 text-[11px] font-semibold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-white">
                 {isSearching ? 'Searching...' : (loading || isRefetching) ? 'Loading…' : `${total.toLocaleString()} jobs found`}
               </p>
               {Object.keys(matchScores).length > 0 && (
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <label
                     className="group flex cursor-pointer items-center gap-2 rounded-md border border-[#2a2a35] bg-[#1a1a24] px-2.5 py-1 text-xs text-[#d8d9e6] transition-colors hover:border-[#3a3a45]"
                     title={showGrades ? 'Hide match grades' : 'Show match grades'}
@@ -728,7 +822,7 @@ export default function JobFeed() {
                 variant="outline"
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="min-w-32"
+                className="w-full sm:w-auto sm:min-w-32"
               >
                 {loadingMore ? (
                   <><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading…</>

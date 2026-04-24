@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs' },
@@ -53,6 +54,7 @@ export default function Navbar({
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<NavbarUser | null>(initialUser);
   const [isPro, setIsPro] = useState(initialIsPro);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,6 +101,23 @@ export default function Navbar({
     };
   }, [supabase]);
 
+  // Close drawer on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll when drawer open
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (mobileMenuOpen) {
+      const previous = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = previous;
+      };
+    }
+  }, [mobileMenuOpen]);
+
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -107,6 +126,7 @@ export default function Navbar({
   }
 
   async function handleLogout() {
+    setMobileMenuOpen(false);
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
@@ -118,14 +138,18 @@ export default function Navbar({
     ? fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
     : user?.email?.[0]?.toUpperCase() ?? 'U';
 
+  const mobileLinkClass = (href: string) =>
+    `flex min-h-[56px] items-center justify-between border-b border-[#1e1e28] px-5 text-lg text-white transition-colors active:bg-[#1a1a24] ${
+      pathname.startsWith(href) ? 'font-semibold text-white' : 'font-medium text-[#e0e0f0]'
+    }`;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#2a2a35] bg-[#1a1a24]">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
         {/* Logo — left */}
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2"
-          style={{ minWidth: '200px' }}
+          className="flex shrink-0 items-center gap-2 md:min-w-[200px]"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -149,8 +173,8 @@ export default function Navbar({
           </span>
         </Link>
 
-        {/* Nav links — centered */}
-        <div className="flex-1 flex justify-center">
+        {/* Nav links — centered (desktop only) */}
+        <div className="hidden flex-1 justify-center md:flex">
           <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
             {NAV_LINKS.map(({ href, label }) => (
               <Link
@@ -185,14 +209,14 @@ export default function Navbar({
           </nav>
         </div>
 
+        {/* Spacer on mobile (pushes auth + hamburger to right) */}
+        <div className="flex-1 md:hidden" />
+
         {/* Auth — right */}
-        <div
-          className="flex shrink-0 items-center justify-end gap-3"
-          style={{ minWidth: '200px' }}
-        >
+        <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3 md:min-w-[200px]">
           <>
             {user && isPro && (
-              <Badge className="hidden sm:inline-flex bg-emerald-500 hover:bg-emerald-500 text-white text-xs px-2 py-0.5">
+              <Badge className="inline-flex bg-emerald-500 hover:bg-emerald-500 text-white text-xs px-2 py-0.5">
                 Pro
               </Badge>
             )}
@@ -238,13 +262,102 @@ export default function Navbar({
             ) : (
               <button
                 onClick={handleLogin}
-                className="rounded-full bg-[#f0f0fa] px-4 py-1.5 text-sm font-semibold text-[#0d0d12] transition-colors hover:bg-white"
+                className="hidden sm:inline-flex rounded-full bg-[#f0f0fa] px-4 py-1.5 text-sm font-semibold text-[#0d0d12] transition-colors hover:bg-white"
               >
                 Sign in
               </button>
             )}
+
+            {/* Hamburger (mobile only) */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(open => !open)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav-drawer"
+              className="md:hidden inline-flex h-11 w-11 items-center justify-center rounded-md text-[#f0f0fa] hover:bg-[#2a2a35] transition-colors"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </>
         </div>
+      </div>
+
+      {/* Mobile drawer (below md only) */}
+      <div
+        id="mobile-nav-drawer"
+        className={`md:hidden fixed left-0 right-0 top-14 z-40 overflow-hidden bg-[#0d0d12] transition-[max-height] duration-300 ease-in-out ${
+          mobileMenuOpen ? 'max-h-screen border-t border-[#1e1e28]' : 'max-h-0'
+        }`}
+        style={{ height: mobileMenuOpen ? 'calc(100vh - 56px)' : 0 }}
+        aria-hidden={!mobileMenuOpen}
+      >
+        <nav className="flex h-full flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <Link href="/jobs" onClick={() => setMobileMenuOpen(false)} className={mobileLinkClass('/jobs')}>
+              Jobs
+            </Link>
+            <Link href="/tracker" onClick={() => setMobileMenuOpen(false)} className={mobileLinkClass('/tracker')}>
+              Tracker
+            </Link>
+            {user && (
+              <Link
+                href={CHAT_HREF}
+                onClick={() => setMobileMenuOpen(false)}
+                className={mobileLinkClass(CHAT_HREF)}
+              >
+                <span className="flex items-center gap-2">
+                  Chat
+                  {!isPro && (
+                    <Badge className="bg-indigo-500 text-white text-[10px] px-1.5 py-0 h-4 hover:bg-indigo-500">
+                      Pro
+                    </Badge>
+                  )}
+                </span>
+              </Link>
+            )}
+            <Link
+              href="/pricing"
+              onClick={() => setMobileMenuOpen(false)}
+              className={mobileLinkClass('/pricing')}
+            >
+              Pricing
+            </Link>
+            {user && (
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className={mobileLinkClass('/profile')}
+              >
+                Profile
+              </Link>
+            )}
+          </div>
+
+          <div className="border-t border-[#1e1e28] bg-[#0d0d12] p-5">
+            {user ? (
+              <div className="flex flex-col gap-3">
+                <p className="truncate text-sm text-[#8888aa]">{user.email}</p>
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-lg border border-[#2a2a35] bg-transparent text-base font-medium text-red-400 transition-colors hover:bg-[#1a1a24]"
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  void handleLogin();
+                }}
+                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#f0f0fa] px-4 text-base font-semibold text-[#0d0d12] transition-colors hover:bg-white"
+              >
+                Sign in
+              </button>
+            )}
+          </div>
+        </nav>
       </div>
     </header>
   );

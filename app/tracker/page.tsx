@@ -7,8 +7,8 @@ export const metadata = {
 
 export default function TrackerPage() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0d0d12] w-full">
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-6 sm:py-8">
+    <div className="flex flex-1 flex-col bg-[#0d0d12] w-full md:min-h-0 md:overflow-hidden">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-x-hidden px-4 py-6 sm:px-6 sm:py-8 md:min-h-0 md:overflow-y-auto">
         <ApplicationTracker />
       </div>
     </div>

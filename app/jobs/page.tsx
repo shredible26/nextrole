@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function JobsPage() {
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-[#0d0d12] min-h-0" data-page="jobs">
+    <div className="flex flex-1 flex-col bg-[#0d0d12] md:min-h-0 md:overflow-hidden" data-page="jobs">
       <Suspense fallback={null}>
         <UpgradedBanner />
       </Suspense>

@@ -3,15 +3,13 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Calendar as CalendarIcon, ChevronDown, Plus, X } from "lucide-react";
+import { ChevronDown, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 
 interface JobFormData {
@@ -61,6 +59,14 @@ function getInitialFormData(): JobFormData {
     jobUrl: "",
     notes: "",
   };
+}
+
+function formatDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 const Dialog = DialogPrimitive.Root;
@@ -139,14 +145,6 @@ export default function AddCustomJobModal({
     resetForm();
   }
 
-  function formatDate(date: Date) {
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
-
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setSubmitting(true);
@@ -195,7 +193,7 @@ export default function AddCustomJobModal({
       </DialogTrigger>
       <DialogContent
         className={cn(
-          "w-[calc(100vw-2rem)] max-w-[30rem]",
+          "w-[calc(100vw-1rem)] max-w-[95vw] sm:w-[calc(100vw-2rem)] sm:max-w-[30rem]",
           isCompactViewport && "scale-[0.9]"
         )}
       >
@@ -272,39 +270,18 @@ export default function AddCustomJobModal({
               <Label className="text-xs text-gray-400 uppercase tracking-wider sm:text-sm">
                 Date Applied
               </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "h-12 w-full justify-start text-left font-normal bg-[#0d0d12] border-[#2a2a35] rounded-xl text-white hover:bg-[#0d0d12] hover:text-white focus:ring-2 focus:ring-indigo-500 aria-expanded:bg-[#0d0d12] aria-expanded:text-white",
-                      !formData.dateApplied && "text-gray-400"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.dateApplied ? (
-                      formatDate(formData.dateApplied)
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="start"
-                  sideOffset={8}
-                  className="w-auto p-3 bg-[#1a1a24] border-[#2a2a35]"
-                >
-                  <Calendar
-                    mode="single"
-                    selected={formData.dateApplied}
-                    onSelect={date =>
-                      date && setFormData({ ...formData, dateApplied: date })
-                    }
-                    initialFocus
-                    className="text-white"
-                  />
-                </PopoverContent>
-              </Popover>
+              <Input
+                type="date"
+                value={formatDateInputValue(formData.dateApplied)}
+                onChange={event => {
+                  const nextDate = event.target.value
+                    ? new Date(`${event.target.value}T12:00:00`)
+                    : new Date();
+
+                  setFormData({ ...formData, dateApplied: nextDate });
+                }}
+                className="h-12 rounded-xl border-[#2a2a35] bg-[#0d0d12] text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 [color-scheme:dark]"
+              />
             </div>
 
             <div className="space-y-2">

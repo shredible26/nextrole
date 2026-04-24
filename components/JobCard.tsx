@@ -37,14 +37,14 @@ function CompanyLogo({ company }: { company: string }) {
 
   if (failed) {
     return (
-      <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white text-sm font-bold', colorClass)}>
+      <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white text-xs font-bold md:h-10 md:w-10 md:text-sm', colorClass)}>
         {initial}
       </div>
     );
   }
 
   return (
-    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border/50">
+    <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-lg border border-border/50 md:h-10 md:w-10">
       <Image
         src={`https://logo.clearbit.com/${domain}`}
         alt={company}
@@ -153,13 +153,13 @@ export default function JobCard({ job, tracked, onTrack, onOpen, fromUrl, matchS
       )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between mt-auto pt-1">
-          <div className="flex items-center gap-3 text-[13px] font-medium text-[#e0e0f0]">
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-auto pt-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-medium text-[#e0e0f0] min-w-0">
             {salary && <span className="font-medium text-[#f0f0fa]">{salary}</span>}
-            {postedAgoFormatted && <span>{postedAgoFormatted}</span>}
+            {postedAgoFormatted && <span className="truncate">{postedAgoFormatted}</span>}
           </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {/* Apply: opens the job URL, no tracking */}
           <Button
             size="sm"

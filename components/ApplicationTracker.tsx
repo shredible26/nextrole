@@ -322,7 +322,7 @@ export default function ApplicationTracker() {
     <>
       {/* Detail slide-over */}
       <Sheet open={!!selected} onOpenChange={open => !open && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-md bg-[#1a1a24] border-[#2a2a35]">
+        <SheetContent className="data-[side=right]:w-full data-[side=right]:max-w-full overflow-y-auto sm:data-[side=right]:max-w-md bg-[#1a1a24] border-[#2a2a35]">
           {selected && (
             <>
               <SheetHeader>
@@ -451,7 +451,7 @@ export default function ApplicationTracker() {
           <>
             {/* Filter bar */}
             <div className="flex justify-center py-1">
-              <div className="flex flex-wrap items-end justify-center gap-4 sm:gap-6 lg:gap-8">
+              <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-end sm:justify-center sm:gap-6 lg:gap-8">
                 {/* Role filter */}
                 <div className="flex flex-col gap-2">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Role</span>
@@ -531,7 +531,7 @@ export default function ApplicationTracker() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-[#2a2a35] text-left text-xs text-[#888899] uppercase tracking-wider">
-                      <th className="pb-3 pr-4 font-medium">Company</th>
+                      <th className="pb-3 pr-4 font-medium sticky left-0 z-10 bg-[#0d0d12] md:static md:bg-transparent">Company</th>
                       <th className="pb-3 pr-4 font-medium">Role</th>
                       <th className="pb-3 pr-4 font-medium">Status</th>
                       <th className="pb-3 pr-4 font-medium">Applied</th>
@@ -543,7 +543,7 @@ export default function ApplicationTracker() {
                   <tbody className="divide-y divide-[#2a2a35]/60">
                     {filteredApps.map(app => (
                       <tr key={app.id} className="hover:bg-[#1a1a24]/50 transition-colors">
-                        <td className="py-3 pr-4 font-medium whitespace-nowrap text-[#f0f0fa]">{app.job?.company ?? '—'}</td>
+                        <td className="py-3 pr-4 font-medium whitespace-nowrap text-[#f0f0fa] sticky left-0 z-10 bg-[#0d0d12] md:static md:bg-transparent">{app.job?.company ?? '—'}</td>
                         <td className="py-3 pr-4 text-[#c0c0d8] max-w-[240px]">
                           {app.job?.title ?? '—'}
                         </td>
@@ -616,11 +616,11 @@ export default function ApplicationTracker() {
               </div>
             ) : (
               /* ── KANBAN ── */
-              <div className="flex gap-4 overflow-x-auto pb-4">
+              <div className="flex flex-col gap-4 pb-4 md:flex-row md:overflow-x-auto">
                 {KANBAN_COLUMNS.map(col => {
                   const colApps = filteredApps.filter(a => a.status === col);
                   return (
-                    <div key={col} className="flex flex-col gap-3 min-w-[200px] w-[200px]">
+                    <div key={col} className="flex flex-col gap-3 w-full md:min-w-[200px] md:w-[200px]">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold uppercase tracking-wider text-[#888899]">
                           {STATUS_LABELS[col]}
@@ -644,7 +644,7 @@ export default function ApplicationTracker() {
                 })}
 
                 {/* Rejected / Withdrawn combined column */}
-                <div className="flex flex-col gap-3 min-w-[200px] w-[200px]">
+                <div className="flex flex-col gap-3 w-full md:min-w-[200px] md:w-[200px]">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#888899]">
                       Closed

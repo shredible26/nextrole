@@ -413,12 +413,12 @@ export default function PricingClient() {
                   )}
                 </Button>
               ) : (
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-col gap-3 mt-4 md:flex-row md:gap-2">
                   <Button
                     onClick={() => { setBillingPeriod('monthly'); handleUpgrade('monthly'); }}
                     disabled={!!loading}
                     className={cn(
-                      'flex-1 rounded-lg',
+                      'min-h-11 md:min-h-0 w-full rounded-lg md:flex-1 md:w-auto',
                       billingPeriod === 'monthly'
                         ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
                         : 'bg-transparent border border-gray-700 text-gray-300 hover:bg-gray-800'
@@ -431,7 +431,7 @@ export default function PricingClient() {
                     )}
                   </Button>
 
-                  <div className="relative flex-1">
+                  <div className="relative w-full md:flex-1">
                     <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-green-400 whitespace-nowrap">
                       Best value
                     </span>
@@ -439,7 +439,7 @@ export default function PricingClient() {
                       onClick={() => { setBillingPeriod('yearly'); handleUpgrade('yearly'); }}
                       disabled={!!loading}
                       className={cn(
-                        'w-full rounded-lg',
+                        'min-h-11 md:min-h-0 w-full rounded-lg',
                         billingPeriod === 'yearly'
                           ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
                           : 'bg-transparent border border-gray-700 text-gray-300 hover:bg-gray-800'
