@@ -600,10 +600,10 @@ export async function GET(req: NextRequest) {
   const sourcesParam = params.get('source');
   const sources = sourcesParam ? sourcesParam.split(',').filter(Boolean) : [];
   const postedWithin = params.get('postedWithin');
-  const locationFilter = params.get('location') ?? 'usa';
+  const rawLocationFilter = params.get('location');
+  const locationFilter = rawLocationFilter ?? '';
+  const searchLocationFilter = rawLocationFilter ?? 'usa';
   const shouldPostFilterRoles = roles.length > 0;
-  const shouldPostFilterLocation =
-    locationFilter === 'usa' || locationFilter === 'other';
   const page = Math.max(1, Number(params.get('page') ?? 1));
   const perPage = isPro ? PRO_PER_PAGE : FREE_PER_PAGE;
   const offset = (page - 1) * perPage;
@@ -667,9 +667,9 @@ export async function GET(req: NextRequest) {
       jobs = jobs.filter(job => job.posted_at && job.posted_at >= cutoffIso);
     }
 
-    if (locationFilter === 'usa') {
+    if (searchLocationFilter === 'usa') {
       jobs = jobs.filter(isUsaJob);
-    } else if (locationFilter === 'other') {
+    } else if (searchLocationFilter === 'other') {
       jobs = jobs.filter(job => !isUsaJob(job));
     }
 
@@ -704,6 +704,12 @@ export async function GET(req: NextRequest) {
       .select('*', { count: countMode })
       .eq('is_active', true);
 
+    if (locationFilter === 'usa') {
+      query = query.eq('is_usa', true);
+    } else if (locationFilter === 'other') {
+      query = query.eq('is_usa', false);
+    }
+
     if (roles.length > 0) {
       for (const role of roles) {
         query = query.contains('roles', [role]);
@@ -726,49 +732,41 @@ export async function GET(req: NextRequest) {
   };
 
   if (shouldPostFilterRoles) {
-    const allJobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
+    const jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
       'jobs query (role post-filter)',
-      () => runJobsQuery('planned', false)
+      () => runJobsQuery('planned', true, perPage * 2)
     );
 
-    if (allJobsResult.error) {
-      logSupabaseError('jobs query failed', allJobsResult.error);
+    if (jobsResult.error) {
+      logSupabaseError('jobs query failed', jobsResult.error);
       return NextResponse.json(
         {
-          error: toPublicSupabaseError(allJobsResult.error),
-          retryable: isRetryableSupabaseError(allJobsResult.error),
+          error: toPublicSupabaseError(jobsResult.error),
+          retryable: isRetryableSupabaseError(jobsResult.error),
         },
-        { status: isRetryableSupabaseError(allJobsResult.error) ? 503 : 500 }
+        { status: isRetryableSupabaseError(jobsResult.error) ? 503 : 500 }
       );
     }
 
-    let filteredJobs = applyRoleTitlePostFilter(
-      (allJobsResult.data ?? []) as RankedJob[],
+    const pageJobs = applyRoleTitlePostFilter(
+      (jobsResult.data ?? []) as RankedJob[],
       roles
-    );
-
-    if (locationFilter === 'usa') {
-      filteredJobs = filteredJobs.filter(isUsaJob);
-    } else if (locationFilter === 'other') {
-      filteredJobs = filteredJobs.filter(job => !isUsaJob(job));
-    }
+    ).slice(0, perPage);
 
     return NextResponse.json({
-      jobs: filteredJobs
-        .slice(offset, offset + perPage)
-        .map(job => ({
-          ...job,
-          description: toCardSnippet(job.description),
-        })),
-      total: filteredJobs.length,
+      jobs: pageJobs.map(job => ({
+        ...job,
+        description: toCardSnippet(job.description),
+      })),
+      total: pageJobs.length,
       page,
       perPage,
     });
   }
 
-  let jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
+  const jobsResult = await withSupabaseRetry<SupabaseResult<Record<string, unknown>[]>>(
     'jobs query (planned count)',
-    () => runJobsQuery('planned', true, shouldPostFilterLocation ? perPage * 3 : perPage)
+    () => runJobsQuery('planned', true, perPage)
   );
 
   if (jobsResult.error) {
@@ -782,13 +780,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  let jobs = (jobsResult.data ?? []) as RankedJob[];
-
-  if (locationFilter === 'usa') {
-    jobs = jobs.filter(isUsaJob).slice(0, perPage);
-  } else if (locationFilter === 'other') {
-    jobs = jobs.filter(job => !isUsaJob(job)).slice(0, perPage);
-  }
+  const jobs = (jobsResult.data ?? []) as RankedJob[];
 
   return NextResponse.json({
     jobs: jobs.map(job => ({
