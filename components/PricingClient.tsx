@@ -149,9 +149,20 @@ interface GlowCardProps {
 
 function GlowCard({ children, className = '', glowColor = 'purple' }: GlowCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
+    const syncViewport = () => setIsDesktop(window.innerWidth >= 768);
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    return () => window.removeEventListener('resize', syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktop) {
+      return;
+    }
+
     const syncPointer = (e: PointerEvent) => {
       if (cardRef.current) {
         cardRef.current.style.setProperty('--x', e.clientX.toFixed(2));
@@ -162,7 +173,7 @@ function GlowCard({ children, className = '', glowColor = 'purple' }: GlowCardPr
     };
     document.addEventListener('pointermove', syncPointer);
     return () => document.removeEventListener('pointermove', syncPointer);
-  }, []);
+  }, [isDesktop]);
 
   const { base, spread } = glowColorMap[glowColor];
 
@@ -178,18 +189,20 @@ function GlowCard({ children, className = '', glowColor = 'purple' }: GlowCardPr
     '--border-size': 'calc(var(--border, 2) * 1px)',
     '--spotlight-size': 'calc(var(--size, 150) * 1px)',
     '--hue': 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
-    backgroundImage: `radial-gradient(
-      var(--spotlight-size) var(--spotlight-size) at
-      calc(var(--x, 0) * 1px) calc(var(--y, 0) * 1px),
-      hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.1)), transparent
-    )`,
+    backgroundImage: isDesktop
+      ? `radial-gradient(
+          var(--spotlight-size) var(--spotlight-size) at
+          calc(var(--x, 0) * 1px) calc(var(--y, 0) * 1px),
+          hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.1)), transparent
+        )`
+      : 'none',
     backgroundColor: 'var(--backdrop, transparent)',
     backgroundSize: 'calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))',
     backgroundPosition: '50% 50%',
-    backgroundAttachment: 'fixed',
+    backgroundAttachment: isDesktop ? 'fixed' : 'scroll',
     border: 'var(--border-size) solid var(--backup-border)',
     position: 'relative' as const,
-    touchAction: 'none' as const,
+    touchAction: isDesktop ? ('none' as const) : ('pan-y' as const),
   } as CSSProperties;
 
   return (
@@ -197,11 +210,11 @@ function GlowCard({ children, className = '', glowColor = 'purple' }: GlowCardPr
       <style dangerouslySetInnerHTML={{ __html: GLOW_CSS }} />
       <div
         ref={cardRef}
-        data-glow
+        data-glow={isDesktop ? '' : undefined}
         style={inlineStyles}
         className={cn('rounded-3xl relative grid shadow-2xl backdrop-blur-[5px]', className)}
       >
-        <div ref={innerRef} data-glow />
+        {isDesktop ? <div data-glow /> : null}
         {children}
       </div>
     </>
@@ -229,6 +242,9 @@ const PRO_FEATURES = [
   'NextRole AI Chat (RAG-powered)',
 ];
 
+const BILLING_PORTAL_SUPPORT_EMAIL = 'shreyvarma26@gmail.com';
+const BILLING_PORTAL_ERROR_MESSAGE = 'Unable to open billing portal. Please contact support.';
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PricingClient() {
@@ -236,6 +252,7 @@ export default function PricingClient() {
   const [tier, setTier] = useState<'free' | 'pro' | null>(null);
   const [loading, setLoading] = useState<'monthly' | 'yearly' | 'portal' | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get('upgraded') === 'true') {
@@ -279,16 +296,25 @@ export default function PricingClient() {
 
   async function handleManageSubscription() {
     setLoading('portal');
+    setPortalError(null);
+
     try {
       const res = await fetch('/api/stripe/portal', { method: 'POST' });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error(data.error ?? 'Something went wrong');
+      const data = (await res.json().catch(() => null)) as { error?: string; url?: string } | null;
+
+      if (!res.ok || !data?.url) {
+        console.error('Billing portal request failed', {
+          error: data?.error,
+          status: res.status,
+        });
+        setPortalError(BILLING_PORTAL_ERROR_MESSAGE);
+        return;
       }
-    } catch {
-      toast.error('Failed to open billing portal. Please try again.');
+
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Billing portal request failed', error);
+      setPortalError(BILLING_PORTAL_ERROR_MESSAGE);
     } finally {
       setLoading(null);
     }
@@ -400,18 +426,32 @@ export default function PricingClient() {
               </div>
 
               {isPro ? (
-                <Button
-                  className="w-full rounded-lg font-semibold bg-[#1a1a24] hover:bg-[#25252f] text-white border border-gray-700"
-                  variant="outline"
-                  onClick={handleManageSubscription}
-                  disabled={loading === 'portal'}
-                >
-                  {loading === 'portal' ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading…</>
-                  ) : (
-                    <><ExternalLink className="h-4 w-4 mr-2" />Manage Subscription</>
-                  )}
-                </Button>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    className="w-full rounded-lg font-semibold bg-[#1a1a24] hover:bg-[#25252f] text-white border border-gray-700"
+                    variant="outline"
+                    onClick={handleManageSubscription}
+                    disabled={loading === 'portal'}
+                  >
+                    {loading === 'portal' ? (
+                      <><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading…</>
+                    ) : (
+                      <><ExternalLink className="h-4 w-4 mr-2" />Manage Subscription</>
+                    )}
+                  </Button>
+
+                  {portalError ? (
+                    <p className="text-sm text-rose-300">
+                      {BILLING_PORTAL_ERROR_MESSAGE}{' '}
+                      <a
+                        href={`mailto:${BILLING_PORTAL_SUPPORT_EMAIL}`}
+                        className="underline underline-offset-2 hover:text-rose-200"
+                      >
+                        {BILLING_PORTAL_SUPPORT_EMAIL}
+                      </a>
+                    </p>
+                  ) : null}
+                </div>
               ) : (
                 <div className="flex flex-col gap-3 mt-4 md:flex-row md:gap-2">
                   <Button

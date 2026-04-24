@@ -445,7 +445,7 @@ export default function ChatClient({ hasResume }: Props) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about jobs, your resume, or career advice..."
+              placeholder="Ask me anything..."
               rows={1}
               disabled={isStreaming}
               className="min-w-0 flex-1 resize-none rounded-xl border border-[#2a2a35] bg-[#0d0d12] px-4 py-2.5 text-[15px] text-[#f0f0fa] placeholder:text-[15px] placeholder:text-[#555566] focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
