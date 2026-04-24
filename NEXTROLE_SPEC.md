@@ -1,4 +1,4 @@
-# NextRole — Project Spec & State (as of April 10, 2026)
+# NextRole — Project Spec & State (as of April 23, 2026)
 
 ## SECTION 1: Overview
 
@@ -61,9 +61,13 @@
 
 ### Scraping
 - Product docs assume a separate private scraper repo, but this public repo still contains a working `scrapers/` tree and `pnpm scrape` / `pnpm cleanup` scripts
-- Current orchestrator behavior in `scrapers/index.ts`:
-  - imports all scraper modules directly
+- Current scraper/orchestrator behavior:
+  - imports scraper modules directly
+  - active scrapers currently include `pittcsc`, `simplify_internships`, `vanshb03_newgrad`, `vanshb03_internships`, `ambicuity`, `speedyapply_ai_newgrad`, `speedyapply_swe_newgrad`, `jobright_swe`, `jobright_data`, `zapplyjobs`, `hackernews`, `adzuna`, `remoteok`, `arbeitnow`, `themuse`, `jobspy`, `greenhouse`, `ashby`, `lever`, `workday`, `workable`, `smartrecruiters`, `recruitee`, `personio`, `breezy`, `icims`, `jazzhr`, `jobvite`, `oraclecloud`, `careerjet`, `workatastartup`, `builtin`, `dice`, `simplyhired`, and `usajobs`
+  - new scraper modules added this cycle are `breezy.ts`, `icims.ts`, `jazzhr.ts`, `jobvite.ts`, `oracle-cloud.ts` (stored source `oraclecloud`), and `personio.ts`
   - runs them with `Promise.allSettled(...)`
+  - `dice.ts` was fixed to use the Dice GET API instead of POST and no longer applies the old 3-day filter
+  - `workable.ts` was rewritten to use HTML pagination instead of the rate-limited `jobs.workable.com/api/v1/jobs` endpoint
   - dedupes GitHub curated sources by normalized URL
   - uploads into Supabase
   - deactivates stale jobs per source after upload
@@ -97,6 +101,7 @@ No additional relational app tables beyond `profiles`, `jobs`, and `applications
 | `subscription_status` | `text` | Added in `002_stripe_fields.sql`; default `'inactive'`; no DB-level enum/check |
 | `cancel_at_period_end` | `boolean` | Added in `002_stripe_fields.sql`; default `false` |
 | `display_name` | `text` | Added in `004_profile_display_name.sql`; used by `/profile` and the callback upsert logic |
+| `job_alerts_enabled` | `boolean` | `NOT NULL`, default `false`; controls whether daily alert emails are sent |
 
 ### `jobs`
 
@@ -119,13 +124,13 @@ No additional relational app tables beyond `profiles`, `jobs`, and `applications
 | `scraped_at` | `timestamptz` | Default `now()` |
 | `is_active` | `boolean` | Default `true` |
 | `dedup_hash` | `text` | `NOT NULL`, unique |
-| `fts` | `tsvector` | Added in `002_add_fts.sql`; generated stored column over `title`, `company`, and `description` |
+| `fts` | `tsvector` | Reworked in `008_weighted_fts.sql`; non-generated weighted search vector maintained by `jobs_fts_update()` / `jobs_fts_trigger` |
 
 **Important notes:**
 - There is **no** `created_at` column on `jobs`
 - There is **no** `updated_at` column on `jobs`
-- Full-text search is backed by `fts` plus the `search_jobs_ranked(search_query text, is_active_filter boolean default true)` SQL function in `003_search_rank_fn.sql`
-- The current FTS implementation is **unweighted**; it uses a single generated `to_tsvector(...)`, not `setweight(...)`
+- Full-text search is backed by `fts` plus the `search_jobs_ranked(search_query text, is_active_filter boolean default true)` SQL function; migration `008_weighted_fts.sql` replaced the earlier generated-column implementation
+- `fts` is populated with `setweight(...)`: `title=A`, `company=B`, `description=C`, and kept in sync by `jobs_fts_update()` via a `BEFORE INSERT OR UPDATE OF title, company, description` trigger
 
 ### `applications`
 
@@ -139,8 +144,13 @@ No additional relational app tables beyond `profiles`, `jobs`, and `applications
 | `notes` | `text` | Nullable |
 | `auto_tracked` | `boolean` | Default `true` |
 | `updated_at` | `timestamptz` | Default `now()` |
+| `interview_count` | `int` | Added in `007_application_interview_counts.sql`; `NOT NULL`, default `0`, check constraint `interview_count >= 0` |
 
 **Constraint:** `UNIQUE(user_id, job_id)`
+
+**Migration notes:**
+- Migration `007_application_interview_counts.sql` adds `applications.interview_count`
+- Migration `008_weighted_fts.sql` replaces the generated `jobs.fts` column with a weighted trigger-backed column
 
 ### RLS and storage policies
 
@@ -167,6 +177,8 @@ No additional relational app tables beyond `profiles`, `jobs`, and `applications
 | `POST` | `/api/auth/webhook` | Bearer secret via `SUPABASE_WEBHOOK_SECRET` | Legacy auth webhook that inserts a `profiles` row when an auth user is created | Expects payload `{ type: 'INSERT', table: 'users', record: ... }`; inserts `id`, `email`, `full_name`, `avatar_url`; appears to be legacy/redundant with the auth callback |
 | `GET` | `/api/jobs` | Supabase user session | Returns filtered jobs for the feed | Reads `profiles.tier`; creates a profile row if missing; supports `roles`, `search`, `level`, `remote`, `source`, `postedWithin`, `location`, `page`; free users get `402` with `{ upgrade: true }` when requesting `page > 1` |
 | `PATCH` | `/api/profile/display-name` | Supabase user session | Updates `profiles.display_name` | Validates JSON, trims input, enforces 1-50 chars, rejects HTML tags; special-cases missing migration errors |
+| `PATCH` | `/api/profile/alerts` | Supabase user session | Toggles `profiles.job_alerts_enabled` | Validates JSON body `{ enabled: boolean }` and updates the authenticated user's row |
+| `GET` | `/api/unsubscribe` | None; stateless token in query string | Disables `job_alerts_enabled` without a session | Verifies an HMAC-SHA256 token, updates the user row with `job_alerts_enabled=false`, and redirects to `/?unsubscribed=true` |
 | `POST` | `/api/stripe/checkout` | Supabase user session | Creates a Stripe Checkout Session for `monthly` or `yearly` | Uses service-role profile lookup for existing `stripe_customer_id`; success URL is `/jobs?upgraded=true`; adds `user_id` to checkout and subscription metadata |
 | `POST` | `/api/stripe/portal` | Supabase user session | Opens the Stripe billing portal | Requires an existing `stripe_customer_id`; return URL is `/pricing` |
 | `POST` | `/api/stripe/webhook` | Stripe-signed request, not end-user auth | Syncs Stripe subscription events back into `profiles` | Must read the raw body with `req.text()` and verify `stripe-signature`; handles `checkout.session.completed`, `customer.subscription.updated`, and `customer.subscription.deleted` |
@@ -286,7 +298,7 @@ No additional relational app tables beyond `profiles`, `jobs`, and `applications
 
 ## SECTION 7: Active Job Sources
 
-Counts below are the most recent known scrape totals provided for April 2026. The repo itself does not store per-run scrape metrics, so these numbers are operational reference rather than values computed from this checkout.
+Counts below are the most recent known scrape totals from the latest scrape run as of April 23, 2026. The repo itself does not store per-run scrape metrics, so these numbers are operational reference rather than values computed from this checkout.
 
 | Source | File | Method | ~Jobs |
 |--------|------|--------|-------|
@@ -306,19 +318,27 @@ Counts below are the most recent known scrape totals provided for April 2026. Th
 | `arbeitnow` | `arbeitnow.ts` | Arbeitnow public job board API | 285 |
 | `themuse` | `themuse.ts` | The Muse public jobs API | 10 |
 | `jobspy` | `jobspy.ts` | `ts-jobspy` (currently Indeed-only; stored source values become `jobspy_indeed`) | 496 |
-| `greenhouse` | `greenhouse.ts` | Greenhouse Boards API | 4,730 |
-| `lever` | `lever.ts` | Lever public postings API | 1,372 |
-| `workday` | `workday.ts` | Workday public `wday/cxs/.../jobs` POST endpoints | 3,341 |
-| `workable` | `workable.ts` | Workable global search API `jobs.workable.com/api/v1/jobs` | 10 |
-| `smartrecruiters` | `smartrecruiters.ts` | SmartRecruiters public postings APIs | 157 |
+| `greenhouse` | `greenhouse.ts` | Greenhouse Boards API | 6,984 |
+| `lever` | `lever.ts` | Lever public postings API | 1,992 |
+| `workday` | `workday.ts` | Workday public `wday/cxs/.../jobs` POST endpoints | 2,364 |
+| `workable` | `workable.ts` | Workable per-company HTML pagination | 1,454 |
+| `smartrecruiters` | `smartrecruiters.ts` | SmartRecruiters public postings APIs | 1,355 |
+| `recruitee` | `recruitee.ts` | Recruitee per-company public API | 968 |
+| `personio` | `personio.ts` | Personio XML feed | 182 |
+| `breezy` | `breezy.ts` | Breezy HR public JSON feed | 58 |
+| `icims` | `icims.ts` | iCIMS per-company HTML + JSON-LD | 263 |
+| `jazzhr` | `jazzhr.ts` | JazzHR per-company HTML + JSON-LD | 80 |
+| `jobvite` | `jobvite.ts` | Jobvite per-company HTML + JSON-LD | 54 |
+| `oraclecloud` | `oracle-cloud.ts` | Oracle Cloud Recruiting REST API | 94 |
 | `workatastartup` | `workatastartup.ts` | Work at a Startup site + Algolia-backed search | 37 |
 | `builtin` | `builtin.ts` | Built In jobs API with HTML fallback logic | 503 |
-| `dice` | `dice.ts` | Dice API / web endpoint scraping | 2,394 |
-| `simplyhired` | `simplyhired.ts` | HTML/JSON-LD parsing with Playwright fallback | 99 |
-| `ashby` | `ashby.ts` | Ashby posting API | 3,954 |
+| `careerjet` | `careerjet.ts` | Careerjet partner API | 110 |
+| `dice` | `dice.ts` | Dice GET API / web endpoint scraping | 4,942 |
+| `simplyhired` | `simplyhired.ts` | HTML/JSON-LD parsing with Playwright fallback | 205 |
+| `ashby` | `ashby.ts` | Ashby posting API | 7,095 |
 | `usajobs` | `usajobs.ts` | USAJobs official API | 210 |
 
-Other scrapers are also wired into `scrapers/index.ts` (`speedyapply_swe`, `speedyapply_ai`, `ziprecruiter`, `glassdoor`, `careerjet`, `wellfound`, `handshake`, `bamboohr`, `rippling`, `dice_rss`), but the current spec does not have reliable April 2026 counts for them and several are called out as fragile or effectively stubbed in the TODO/discrepancy notes.
+Other scrapers are also referenced in scraper orchestration (`speedyapply_swe`, `speedyapply_ai`, `ziprecruiter`, `glassdoor`, `wellfound`, `handshake`, `bamboohr`, `rippling`, `dice_rss`), but the current spec does not have reliable April 2026 counts for them and several are called out as fragile or effectively stubbed in the TODO/discrepancy notes.
 
 ---
 
@@ -331,17 +351,19 @@ This section is included as operational reference. In this checkout, scraper cod
     - `pnpm scrape` -> `dotenv -e .env.local -- tsx scrapers/index.ts`
     - `pnpm cleanup` -> `dotenv -e .env.local -- tsx scrapers/cleanup-senior-roles.ts`
 - **Deduplication:** `dedup_hash` is `md5(lowercase(company) + '|' + lowercase(title) + '|' + lowercase(location))` from `scrapers/utils/dedup.ts`
-- **Pipeline:** current `scrapers/index.ts` runs all imported scrapers with `Promise.allSettled(...)`
+- **Pipeline:** current scraper orchestration runs all imported scrapers with `Promise.allSettled(...)`
+- **Global scrape timeout:** a hard `25 minute` timeout wraps the entire `Promise.allSettled(...)` scrape run; if it fires, unresolved scrapers are logged and the process exits via `process.exit(0)`
 - **Priority scrapers first:** **not implemented in this checkout**
   - the TODO explicitly proposes running heavy sources like `lever`, `workday`, and `workable` sequentially before the concurrent batch
   - current orchestrator still launches every scraper together
-- **Stale job deactivation:** `deactivateStaleJobs(sourceName, activeDedupHashes)` runs after upload for every source except orchestrator-level `jobspy`
+- **Stale job deactivation:** `deactivateStaleJobs(sourceName, activeDedupHashes)` runs after upload for every source except orchestrator-level `jobspy`; each call has a `60 second` per-source timeout
 - **Caching:**
   - `scrapers/cache/ashby-valid-slugs.json`
   - `scrapers/cache/workday-dead.json`
-- **GitHub Actions cron:** not present in this repo (`.github/workflows/` is empty), but the intended/private scraper ops are documented as a daily `7:00 AM UTC` cron with a `120 minute` timeout
+- **GitHub Actions cron:** the private `nextrole-scrapers` repo runs the scrape workflow in GitHub Actions; after the embed step it now runs a `Send job alerts` step via `npx dotenv-cli`
+- **Job alerts:** `scrapers/scripts/send-job-alerts.ts` sends daily job alert emails via Resend to users with `job_alerts_enabled = true`
 - **Local cron:** also not present in this repo; the TODO recommends `caffeinate -i pnpm scrape` for Cloudflare-blocked sources
-- **Upload behavior:** `scrapers/utils/upload.ts` upserts in chunks of `100` and deactivates stale IDs in chunks of `500`
+- **Upload behavior:** `scrapers/utils/upload.ts` upserts in chunks of `50` and deactivates stale IDs in chunks of `500`
 - **Curated GitHub repo dedupe:** after fetching, GitHub repo sources are additionally deduped against earlier curated sources by normalized URL
 
 ---
@@ -367,7 +389,9 @@ This section is included as operational reference. In this checkout, scraper cod
 - Search is Pro-only in the UI but not fully enforced server-side. Free users cannot use the search input in `JobFeed`, but `/api/jobs?search=...` does not currently reject them based on tier.
 - Source filtering is currently available to all users even though pricing copy presents it as a Pro feature.
 - `/jobs/[id]` uses `sanitize-html` before rendering descriptions and relies on Tailwind Typography prose classes. Descriptions are truncated to `5,000` characters on the detail page.
-- Current full-text search uses the generated `jobs.fts` column plus the `search_jobs_ranked()` RPC, but it is not a weighted `setweight(...)` index. The older weighted-FTS description from previous specs is stale.
+- Never run embeddings and the FTS batch `UPDATE` at the same time on nano compute; it will OOM the instance and take the project unhealthy.
+- `jobs.fts` is no longer a generated column. The `jobs_fts_trigger` / `jobs_fts_update()` pair must exist or new rows will have `NULL` `fts` values and disappear from search results.
+- Weighted FTS intentionally uses `ts_rank_cd(...)` (cover density) instead of `ts_rank(...)` inside `search_jobs_ranked()` because it behaves better for multi-word queries.
 - USA filtering in `/api/jobs` is heuristic-heavy:
   - remote jobs and null/empty locations are treated as US-safe
   - state names, state abbreviations, and many city names are regex-matched
@@ -382,11 +406,12 @@ This section is included as operational reference. In this checkout, scraper cod
   - companies are cached in `workday-dead.json`
   - a company can be marked "dead" after a successful raw response that later filters down to zero kept jobs
   - the safer "only mark dead on zero raw postings" behavior is **not** fully implemented here
-- Workable uses the global endpoint `https://jobs.workable.com/api/v1/jobs`, not the per-company account API.
+- `workable.ts` no longer uses the global `jobs.workable.com/api/v1/jobs` endpoint; it now paginates per-company HTML results because the API path was rate-limited.
 - SimplyHired detects `403` / Cloudflare challenge pages and falls back to Playwright. The repo TODO references a local `caffeinate` cron for this, but no such automation exists in this checkout.
 - `jobspy` is special-cased in the orchestrator because it emits per-site source names like `jobspy_indeed`; stale cleanup is skipped for the top-level `jobspy` orchestrator name.
+- Scraper upserts now use chunks of `50`. Do not increase this unless compute is upgraded beyond nano.
 - `app/api/upload-resume` is still a `501` stub, but the real resume UX is already implemented client-side in `ProfileClient` via direct Supabase Storage operations.
-- `.github/workflows/` is empty in this repo. Any cron automation described in historical docs or TODO items refers to external/private scraper ops, not the files currently checked into `nextrole`.
+- The `send-job-alerts.ts` GitHub Actions step requires `NEXT_PUBLIC_URL`, `RESEND_API_KEY`, `ANTHROPIC_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_KEY` in repo secrets.
 
 ---
 
@@ -479,7 +504,7 @@ This section is included as operational reference. In this checkout, scraper cod
 
 ---
 
-## NextRole — Master TODO (April 2026)
+## NextRole — Master TODO (Not fully updated)
 
 ---
 
