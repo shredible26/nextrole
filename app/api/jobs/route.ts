@@ -18,6 +18,7 @@ const US_STATE_AND_DC_CODES = [
   'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX',
   'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
 ];
+const US_STATE_CODES = US_STATE_AND_DC_CODES.filter(code => code !== 'DC');
 const US_STATE_AND_DC_CODE_LOOKUP = new Set(US_STATE_AND_DC_CODES);
 const US_TERRITORY_CODES = ['PR', 'GU', 'VI', 'AS', 'MP'];
 const US_LOCATION_SUFFIX_CODES = [...US_STATE_AND_DC_CODES, ...US_TERRITORY_CODES];
@@ -162,51 +163,13 @@ const USA_REMOTE_EXACT_PATTERNS = [
 ];
 const WORKDAY_MULTI_LOCATION_REGEX = /^\d+ Locations?$/i;
 const WORKDAY_US_PREFIX_REGEX = /^US[,\s]/i;
-const USA_LOCATION_ILIKE_PATTERNS = [
-  '% Locations',
-  '1 Location',
-  'US,_%',
-  'US %',
-  '%Remote%US%',
-  '%Teleworker US%',
-  '%USA - Remote%',
-  '%Remote - USA%',
-  '%100% Remote%',
-  '%Work From Home%',
-  '%Telework%',
-  '%Nationwide%',
-  '%Remote (Any State)%',
-  '%WFH%',
-  '%Virtual - US%',
-  '%Virtual US%',
-  '%Anywhere in US%',
-  '%CONUS%',
-  '%Continental United States%',
-  '%Remote in US%',
-  '%Remote within US%',
-  '%US-based%',
-  '%Virtual - United States%',
-  '%Telecommute%',
-  '%Hybrid - US%',
-  '%Hybrid (US)%',
-  '%United States \u2013 Remote%',
-  '%United States - Remote%',
-  '%Remote, United States%',
-  '%Remote United States%',
-  '%Remote - United States%',
-  '%United States Remote%',
-  '%United States, Remote%',
-  '%Remote in the US%',
-  '%Anywhere in the US%',
-  '%Anywhere in the USA%',
-  '%Anywhere in the United States%',
-  '%Remote anywhere in the US%',
-  '%Any location in US%',
-  '%Remote, Anywhere US%',
-  '%Anywhere US%',
-  '%Must be located in the US%',
-  '%Must be based in the US%',
-  '%US candidates only%',
+const POSTGREST_USA_LOCATION_ILIKE_PATTERNS = [
+  '%United States%',
+  '%USA%',
+  '%U.S.%',
+  '% AL',
+  ...US_STATE_CODES.map(code => `%, ${code}`),
+  '%Locations%',
 ];
 const USA_BARE_LOCATION_ILIKE_PATTERNS = Array.from(new Set([
   'US',
@@ -241,15 +204,6 @@ const US_GOV_LOCATION_REGEX_SOURCE =
   `(^|[^A-Za-z])(Fort\\s+[A-Za-z]+)($|[^A-Za-z])`;
 const WORKDAY_US_STATE_CODE_REGEX_SOURCE =
   `^(${US_STATE_AND_DC_CODES.map(escapeRegExp).join('|')})-[A-Za-z0-9 '&./()_-]+-\\d+$`;
-const USA_LOCATION_IMATCH_REGEX_SOURCES = [
-  '^\\d+ Locations?$',
-  '^US[,\\s]',
-  USA_REMOTE_EXACT_REGEX_SOURCE,
-  USA_SUBSTRING_REGEX_SOURCE,
-  US_STATE_ABBREV_REGEX_SOURCE,
-  US_GOV_LOCATION_REGEX_SOURCE,
-  WORKDAY_US_STATE_CODE_REGEX_SOURCE,
-];
 const USA_SUBSTRING_REGEX = new RegExp(USA_SUBSTRING_REGEX_SOURCE, 'i');
 const US_STATE_ABBREV_REGEX = new RegExp(US_STATE_ABBREV_REGEX_SOURCE, 'i');
 const USA_REMOTE_EXACT_REGEX = new RegExp(USA_REMOTE_EXACT_REGEX_SOURCE, 'i');
@@ -544,15 +498,8 @@ function buildUsaLocationOrFilter() {
   return [
     'remote.eq.true',
     'location.is.null',
-    buildPostgrestCondition('location', 'eq', ''),
-    ...USA_LOCATION_ILIKE_PATTERNS.map(pattern =>
+    ...POSTGREST_USA_LOCATION_ILIKE_PATTERNS.map(pattern =>
       buildPostgrestCondition('location', 'ilike', pattern)
-    ),
-    ...USA_BARE_LOCATION_ILIKE_PATTERNS.map(pattern =>
-      buildPostgrestCondition('location', 'ilike', pattern)
-    ),
-    ...USA_LOCATION_IMATCH_REGEX_SOURCES.map(source =>
-      buildPostgrestCondition('location', 'imatch', source)
     ),
   ].join(',');
 }
@@ -787,12 +734,8 @@ export async function GET(req: NextRequest) {
         .not('location', 'is', null)
         .not('location', 'eq', '');
 
-      for (const pattern of USA_LOCATION_ILIKE_PATTERNS) {
+      for (const pattern of POSTGREST_USA_LOCATION_ILIKE_PATTERNS) {
         query = query.not('location', 'ilike', pattern);
-      }
-
-      for (const source of USA_LOCATION_IMATCH_REGEX_SOURCES) {
-        query = query.not('location', 'imatch', source);
       }
     }
 
