@@ -284,7 +284,7 @@ export default function FilterSidebar({
 
       {/* Remote */}
       <div className="flex items-center justify-between py-2">
-        <span className="text-sm font-medium text-[#c8cde8]">Remote only</span>
+        <span className="text-sm font-medium text-white">Remote only</span>
         <button
           id="remote-toggle"
           type="button"
@@ -293,7 +293,7 @@ export default function FilterSidebar({
           aria-label="Toggle remote only filter"
           onClick={() => onChange({ ...filters, remote: !remoteOnlyEnabled, page: 1 })}
           className={cn(
-            'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101119]',
+            'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101119]',
             remoteOnlyEnabled
               ? 'bg-indigo-600'
               : 'border border-white/15 bg-white/10'
@@ -301,8 +301,8 @@ export default function FilterSidebar({
         >
           <span
             className={cn(
-              'h-4 w-4 rounded-full bg-white transition-transform duration-200',
-              remoteOnlyEnabled ? 'translate-x-5' : 'translate-x-0.5'
+              'absolute h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200',
+              remoteOnlyEnabled ? 'translate-x-[23px]' : 'translate-x-[3px]'
             )}
           />
         </button>
