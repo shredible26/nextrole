@@ -5325,3 +5325,21 @@ html:has([data-page="jobs"]), html:has([data-page="jobs"]) body, html:has([data-
   }
 }
 
+
+/* Job description — force light text over any inline dark colors from external HTML */
+.job-description * {
+  color: #e4e8ff !important;
+}
+.job-description h1,
+.job-description h2,
+.job-description h3,
+.job-description h4 {
+  color: #ffffff !important;
+}
+.job-description a {
+  color: #818cf8 !important;
+}
+.job-description strong,
+.job-description b {
+  color: #ffffff !important;
+}
