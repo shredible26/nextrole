@@ -256,7 +256,7 @@ export default function FilterSidebar({
             const checked = !showOnlyForYouSelection && filters.level === value;
 
             return (
-              <label key={label} className={optionLabelClassName}>
+              <label key={label} className={optionLabelClassName} onMouseDown={e => e.preventDefault()}>
                 <input
                   type="radio"
                   name="level"
@@ -320,7 +320,7 @@ export default function FilterSidebar({
             const checked = !showOnlyForYouSelection && (filters.location || 'usa') === value;
 
             return (
-              <label key={value} className={optionLabelClassName}>
+              <label key={value} className={optionLabelClassName} onMouseDown={e => e.preventDefault()}>
                 <input
                   type="radio"
                   name="location"
@@ -356,7 +356,7 @@ export default function FilterSidebar({
             const checked = !showOnlyForYouSelection && filters.postedWithin === value;
 
             return (
-              <label key={label} className={optionLabelClassName}>
+              <label key={label} className={optionLabelClassName} onMouseDown={e => e.preventDefault()}>
                 <input
                   type="radio"
                   name="posted"
