@@ -245,6 +245,7 @@ export default function JobFeed() {
   const [resumePromptDismissed, setResumePromptDismissed] = useState(initialSnapshot?.resumePromptDismissed ?? false);
   const [sortBy, setSortBy] = useState<'default' | 'best_match'>(initialSnapshot?.sortBy ?? 'default');
   const [showGrades, setShowGrades] = useState<boolean>(initialSnapshot?.showGrades ?? true);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(initialSnapshot?.hasLoadedPrefs ?? false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const requestIdRef = useRef(0);
   const jobsRef = useRef<Job[]>(initialSnapshot?.jobs ?? []);
@@ -397,6 +398,7 @@ export default function JobFeed() {
         const nextPreferences = normalizeUserPreferences(profile);
         setUserPreferences(nextPreferences);
         hasLoadedPrefsRef.current = true;
+        setPreferencesLoaded(true);
       }
 
       const { data } = await supabase
@@ -491,6 +493,7 @@ export default function JobFeed() {
         if (!hasLoadedPrefsRef.current && data.userMeta) {
           setUserPreferences(normalizeUserPreferences(data.userMeta));
           hasLoadedPrefsRef.current = true;
+          setPreferencesLoaded(true);
         }
 
         const newJobs = data.jobs ?? [];
@@ -762,6 +765,7 @@ export default function JobFeed() {
                 forYou={forYou}
                 onForYouChange={handleForYouChange}
                 userPreferences={userPreferences}
+                preferencesLoaded={preferencesLoaded}
               />
             </div>
             <div className="sticky bottom-0 border-t border-[#1e1e28] bg-[#0f0f12] px-5 py-4">
@@ -795,6 +799,7 @@ export default function JobFeed() {
             forYou={forYou}
             onForYouChange={handleForYouChange}
             userPreferences={userPreferences}
+            preferencesLoaded={preferencesLoaded}
           />
         </div>
 
@@ -864,26 +869,16 @@ export default function JobFeed() {
                     type="button"
                     aria-pressed={showGrades}
                     onClick={() => setShowGrades(current => !current)}
-                    className={`group flex min-h-9 items-center gap-3 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-[background-color,border-color,box-shadow,color] duration-300 ease-out sm:text-sm ${
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium text-white transition-colors ${
                       showGrades
-                        ? 'border-indigo-400/40 bg-indigo-500/10 text-white shadow-[0_10px_24px_rgba(99,102,241,0.14)]'
-                        : 'border-[#2a2a35] bg-[#1a1a24] text-[#d8d9e6] hover:border-[#3a3a45] hover:text-white'
+                        ? 'border-indigo-500 bg-indigo-600/90'
+                        : 'border-white/12 bg-white/8'
                     }`}
-                    title={showGrades ? 'Hide match grades' : 'Show match grades'}
                   >
-                    <span className="select-none">{showGrades ? 'Hide grades' : 'Show grades'}</span>
-                    <span
-                      className={`relative h-5 w-9 rounded-full transition-colors duration-300 ease-out ${
-                        showGrades ? 'bg-indigo-500' : 'bg-[#2a2a35]'
-                      }`}
-                      aria-hidden="true"
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ease-out ${
-                          showGrades ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </span>
+                    {showGrades && (
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-white" aria-hidden="true" />
+                    )}
+                    <span>{showGrades ? 'Hide grades' : 'Show grades'}</span>
                   </button>
                   <select
                     value={sortBy}

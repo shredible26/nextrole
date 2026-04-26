@@ -95,6 +95,7 @@ interface FilterSidebarProps {
   forYou: boolean;
   onForYouChange: (v: boolean) => void;
   userPreferences: { target_roles: string[]; target_levels: string[] };
+  preferencesLoaded?: boolean;
 }
 
 function getFreeSourceSelection(sources: string[]): FreeSourceOption | null {
@@ -112,6 +113,7 @@ export default function FilterSidebar({
   forYou,
   onForYouChange,
   userPreferences,
+  preferencesLoaded = false,
 }: FilterSidebarProps) {
   const sectionLabelClassName =
     'mb-3 text-xs font-semibold uppercase tracking-wider text-[#9999bb]';
@@ -170,9 +172,10 @@ export default function FilterSidebar({
     userPreferences.target_roles.length > 0 ||
     userPreferences.target_levels.length > 0;
   const showOnlyForYouSelection = forYou;
-  const disabledForYouTitle = hasPreferences
-    ? undefined
-    : 'Set your job preferences in Profile to use this filter';
+  const forYouDisabled = preferencesLoaded && !hasPreferences;
+  const disabledForYouTitle = forYouDisabled
+    ? 'Set your job preferences in Profile to use this filter'
+    : undefined;
   const remoteOnlyEnabled = !showOnlyForYouSelection && filters.remote;
 
   return (
@@ -182,9 +185,9 @@ export default function FilterSidebar({
           type="button"
           title={disabledForYouTitle}
           aria-pressed={forYou}
-          aria-disabled={!hasPreferences}
+          aria-disabled={forYouDisabled}
           onClick={() => {
-            if (!hasPreferences) return;
+            if (forYouDisabled) return;
             onForYouChange(!forYou);
           }}
           className={cn(
@@ -192,18 +195,18 @@ export default function FilterSidebar({
             forYou
               ? 'border-indigo-400/50 bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20'
               : 'border-[#2a2a35] bg-[#171720] text-[#f0f0fa] hover:border-[#3a3a45] hover:bg-[#1d1d28]',
-            !hasPreferences && 'cursor-not-allowed border-[#34384a] bg-[#1a1b24] text-[#b8bdd4] hover:border-[#41465c] hover:bg-[#1d1f29] hover:text-[#c8cee7]'
+            forYouDisabled && 'cursor-not-allowed border-[#34384a] bg-[#1a1b24] text-[#b8bdd4] hover:border-[#41465c] hover:bg-[#1d1f29] hover:text-[#c8cee7]'
           )}
         >
           <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : 'text-[#c7cbff]')} />
           <div className="min-w-0">
             <div className="text-sm font-semibold">For You</div>
-            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#a9adca]', !hasPreferences && 'text-[#adb3cd]')}>
+            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#a9adca]', forYouDisabled && 'text-[#adb3cd]')}>
               Uses your saved job preferences
             </div>
           </div>
         </button>
-        {!hasPreferences && (
+        {forYouDisabled && (
           <div className="pointer-events-none absolute inset-x-3 top-full z-10 mt-2 -translate-y-1 rounded-xl border border-[#313548] bg-[#11131b]/95 px-3 py-2 text-xs leading-relaxed text-[#dde1f6] opacity-0 shadow-lg shadow-black/25 backdrop-blur-sm transition-all duration-200 group-hover/for-you:translate-y-0 group-hover/for-you:opacity-100 group-focus-within/for-you:translate-y-0 group-focus-within/for-you:opacity-100">
             Update your job preferences in Profile to unlock the For You feed.
           </div>
@@ -298,16 +301,16 @@ export default function FilterSidebar({
             aria-label="Toggle remote only filter"
             onClick={() => onChange({ ...filters, remote: !remoteOnlyEnabled, page: 1 })}
             className={cn(
-              'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border p-0.5 shadow-sm transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101119]',
+              'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101119]',
               remoteOnlyEnabled
-                ? 'border-indigo-400/60 bg-indigo-500 shadow-indigo-500/20'
-                : 'border-[#4a4e66] bg-[#232533] hover:border-[#6d7392]'
+                ? 'bg-indigo-600'
+                : 'border border-white/15 bg-white/10'
             )}
           >
             <span
               className={cn(
-                'h-4.5 w-4.5 rounded-full bg-[#f8f8ff] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-transform duration-300 ease-out',
-                remoteOnlyEnabled ? 'translate-x-5' : 'translate-x-0'
+                'h-4 w-4 rounded-full bg-white transition-transform duration-200',
+                remoteOnlyEnabled ? 'translate-x-5' : 'translate-x-0.5'
               )}
             />
           </button>

@@ -835,10 +835,15 @@ export async function GET(req: NextRequest) {
       jobs = jobs.filter(job => !isUsaJob(job));
     }
 
+    const searchLower = search.toLowerCase().trim();
     jobs = jobs.sort((a, b) => {
-      const rankDelta = (b.rank ?? 0) - (a.rank ?? 0);
-      if (rankDelta !== 0) return rankDelta;
-      return new Date(b.posted_at ?? 0).getTime() - new Date(a.posted_at ?? 0).getTime();
+      const aCompanyMatch = a.company?.toLowerCase() === searchLower ? 1 : 0;
+      const bCompanyMatch = b.company?.toLowerCase() === searchLower ? 1 : 0;
+      if (bCompanyMatch !== aCompanyMatch) return bCompanyMatch - aCompanyMatch;
+      const aCompanyContains = a.company?.toLowerCase().includes(searchLower) ? 1 : 0;
+      const bCompanyContains = b.company?.toLowerCase().includes(searchLower) ? 1 : 0;
+      if (bCompanyContains !== aCompanyContains) return bCompanyContains - aCompanyContains;
+      return (b.rank ?? 0) - (a.rank ?? 0);
     });
 
     const pagedJobs = jobs
