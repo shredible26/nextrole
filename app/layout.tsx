@@ -3,12 +3,13 @@ import './globals.css';
 import ConditionalNavbar from '@/components/ConditionalNavbar';
 import { Toaster } from '@/components/ui/sonner';
 import { Analytics } from '@vercel/analytics/react';
+import { SITE_STATS } from '@/lib/site-stats';
 import { createServerClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'NextRole — Internship & New Grad Tech Jobs',
   description:
-    '55,000+ internship, new grad, and entry-level tech jobs from 25+ sources. SWE, Data Science, ML, AI, Analyst, and PM roles. Updated daily. Built for CS and DS students graduating 2025–2026.',
+    `${SITE_STATS.activeJobsLabel} internship, new grad, and entry-level tech jobs from ${SITE_STATS.sourcesDescription}. SWE, Data Science, ML, AI, Analyst, and PM roles. ${SITE_STATS.updatesDescription}. Built for CS and DS students graduating 2025–2026.`,
   verification: {
     google: '0M_4OBAoQA3Yqn7RbywjU4HyT-49ubU3MkCEcR_qtrI',
   },

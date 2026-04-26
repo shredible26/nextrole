@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import { ArrowLeft, CalendarDays, Globe, MapPin, Wallet } from 'lucide-react'
 import sanitizeHtml from 'sanitize-html'
 import { Role, ROLE_LABELS } from '@/lib/types'
 import { parseDescription } from '@/lib/parse-description'
@@ -235,39 +236,62 @@ export default async function JobPage({ params, searchParams }: Props) {
   const description = parseDescription(job.description)
   const formattedDescription = description ? cleanDescription(description) : ''
   const validThrough = getValidThroughDate(job.posted_at, job.scraped_at)
+  const detailPillClassName =
+    'inline-flex items-center gap-2 rounded-full border border-[#313447] bg-[#11131a] px-3 py-1.5 text-sm font-medium text-[#dfe4ff] shadow-[0_8px_20px_rgba(0,0,0,0.16)]'
 
   return (
-    <main className="flex-1 min-h-0 overflow-y-auto" data-page="jobs">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <main className="flex-1 min-h-0 overflow-y-auto bg-[#0d0d12]" data-page="jobs">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         <Link
           href={backUrl}
           scroll={false}
-          className="inline-flex items-center gap-2 text-sm text-[#a0a0b0] hover:text-white mb-6 transition-colors"
+          className="mb-6 inline-flex items-center gap-3 rounded-full border border-white/10 bg-[#050507] px-3.5 py-2 text-sm font-medium text-[#f5f7ff] shadow-lg shadow-black/25 transition-all duration-200 hover:border-indigo-400/40 hover:text-white hover:shadow-indigo-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60"
         >
-          ← Back to jobs
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
+            <ArrowLeft className="h-4 w-4" />
+          </span>
+          <span>Back to jobs</span>
         </Link>
 
-        <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-xl p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="mb-6 rounded-2xl border border-[#2a2f42] bg-gradient-to-br from-[#191a25] via-[#171821] to-[#12131a] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+          <div className="mb-5 flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold mb-1 text-white">{job.title}</h1>
-              <p className="text-lg text-[#e0e0f0] font-medium">{job.company}</p>
+              <h1 className="mb-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{job.title}</h1>
+              <p className="text-lg font-medium text-[#dbe0f7]">{job.company}</p>
             </div>
-            <div className="w-12 h-12 rounded-lg bg-indigo-500/20 flex items-center justify-center text-lg font-bold text-indigo-300 shrink-0">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-indigo-400/20 bg-indigo-500/15 text-lg font-bold text-indigo-300">
               {job.company?.[0]?.toUpperCase()}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 text-sm text-[#a0a0b0] mb-6">
-            {job.location && <span>📍 {job.location}</span>}
-            {job.remote && <span>🌐 Remote</span>}
-            {postedDate && <span>📅 {postedDate}</span>}
+          <div className="mb-6 flex flex-wrap gap-2.5">
+            {job.location && (
+              <span className={detailPillClassName}>
+                <MapPin className="h-4 w-4 text-indigo-300" />
+                <span>{job.location}</span>
+              </span>
+            )}
+            {job.remote && (
+              <span className={detailPillClassName}>
+                <Globe className="h-4 w-4 text-indigo-300" />
+                <span>Remote</span>
+              </span>
+            )}
+            {postedDate && (
+              <span className={detailPillClassName}>
+                <CalendarDays className="h-4 w-4 text-indigo-300" />
+                <span>{postedDate}</span>
+              </span>
+            )}
             {job.salary_min && job.salary_max && (
-              <span>💰 ${Math.round(job.salary_min / 1000)}K – ${Math.round(job.salary_max / 1000)}K</span>
+              <span className={detailPillClassName}>
+                <Wallet className="h-4 w-4 text-indigo-300" />
+                <span>${Math.round(job.salary_min / 1000)}K – ${Math.round(job.salary_max / 1000)}K</span>
+              </span>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="mb-6 flex flex-wrap gap-2">
             <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-full">
               {experienceBadge}
             </span>
@@ -276,7 +300,7 @@ export default async function JobPage({ params, searchParams }: Props) {
                 {ROLE_LABELS[role as Role] ?? role}
               </span>
             ))}
-            <span className="px-3 py-1 bg-[#2a2a35] text-[#a0a0b0] border border-[#444455] text-xs rounded-full capitalize">
+            <span className="rounded-full border border-[#3a3d50] bg-[#161821] px-3 py-1 text-xs capitalize text-[#cad0e8]">
               {job.source?.replace(/_/g, ' ')}
             </span>
           </div>
@@ -285,17 +309,17 @@ export default async function JobPage({ params, searchParams }: Props) {
             href={job.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-500 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-indigo-500"
           >
             {applyLabel}
           </a>
         </div>
 
         {description && (
-          <div className="bg-[#1a1a24] border border-[#2a2a35] rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4 text-white">About this role</h2>
+          <div className="rounded-2xl border border-[#2a2f42] bg-[#171821] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+            <h2 className="mb-4 text-xl font-semibold tracking-tight text-white">About this role</h2>
             <div
-              className="prose prose-invert max-w-none text-[15px] leading-7 text-[#d7d7e6] sm:text-[16px] prose-p:my-4 prose-p:leading-7 prose-p:text-[#d7d7e6] prose-headings:mt-8 prose-headings:mb-3 prose-headings:text-white prose-headings:font-semibold prose-headings:tracking-[-0.01em] prose-strong:text-white prose-a:text-indigo-300 prose-a:no-underline prose-a:transition-colors prose-ul:my-4 prose-ul:pl-6 prose-ol:my-4 prose-ol:pl-6 prose-li:my-1.5 prose-li:leading-7 prose-li:text-[#d7d7e6] prose-blockquote:border-l-indigo-400/50 prose-blockquote:text-[#c8c8da]"
+              className="max-w-none text-[15px] leading-8 text-[#e4e8ff] sm:text-[16px] [&>*:first-child]:mt-0 [&_a]:text-indigo-300 [&_a]:underline-offset-4 hover:[&_a]:text-indigo-200 hover:[&_a]:underline [&_b]:text-white [&_blockquote]:my-5 [&_blockquote]:border-l-2 [&_blockquote]:border-indigo-400/50 [&_blockquote]:pl-4 [&_blockquote]:text-[#cdd3f3] [&_div]:text-inherit [&_h1]:mt-8 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:tracking-[-0.01em] [&_h1]:text-white [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_h2]:text-white [&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:tracking-[-0.01em] [&_h3]:text-white [&_h4]:mt-7 [&_h4]:mb-3 [&_h4]:font-semibold [&_h4]:text-white [&_li]:my-1.5 [&_li]:text-[#e4e8ff] [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-4 [&_p]:text-[#e4e8ff] [&_span]:text-inherit [&_strong]:text-white [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6"
               dangerouslySetInnerHTML={{
                 __html: formattedDescription,
               }}

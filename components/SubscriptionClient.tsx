@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SITE_STATS } from '@/lib/site-stats';
 import { Check, Loader2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -236,7 +237,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   'Everything in Free',
   'Unlimited job browsing',
-  'Full-text search across 76,000+ jobs',
+  `Full-text search across ${SITE_STATS.activeJobsLabel} jobs`,
   'Filter by specific job source',
   'Unlimited application tracking',
   'NextRole AI Chat (RAG-powered)',

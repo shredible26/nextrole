@@ -1,6 +1,5 @@
 'use client';
 
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -174,10 +173,11 @@ export default function FilterSidebar({
   const disabledForYouTitle = hasPreferences
     ? undefined
     : 'Set your job preferences in Profile to use this filter';
+  const remoteOnlyEnabled = !showOnlyForYouSelection && filters.remote;
 
   return (
     <aside className="w-full overflow-x-hidden space-y-6 bg-[#0f0f12]">
-      <div>
+      <div className="group/for-you relative">
         <button
           type="button"
           title={disabledForYouTitle}
@@ -192,17 +192,22 @@ export default function FilterSidebar({
             forYou
               ? 'border-indigo-400/50 bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20'
               : 'border-[#2a2a35] bg-[#171720] text-[#f0f0fa] hover:border-[#3a3a45] hover:bg-[#1d1d28]',
-            !hasPreferences && 'cursor-not-allowed border-[#2a2a35] bg-[#12121a] text-[#9da1ba] hover:border-[#2a2a35] hover:bg-[#12121a] hover:text-[#9da1ba]'
+            !hasPreferences && 'cursor-not-allowed border-[#34384a] bg-[#1a1b24] text-[#b8bdd4] hover:border-[#41465c] hover:bg-[#1d1f29] hover:text-[#c8cee7]'
           )}
         >
           <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : 'text-[#c7cbff]')} />
           <div className="min-w-0">
             <div className="text-sm font-semibold">For You</div>
-            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#a9adca]')}>
+            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#a9adca]', !hasPreferences && 'text-[#adb3cd]')}>
               Uses your saved job preferences
             </div>
           </div>
         </button>
+        {!hasPreferences && (
+          <div className="pointer-events-none absolute inset-x-3 top-full z-10 mt-2 -translate-y-1 rounded-xl border border-[#313548] bg-[#11131b]/95 px-3 py-2 text-xs leading-relaxed text-[#dde1f6] opacity-0 shadow-lg shadow-black/25 backdrop-blur-sm transition-all duration-200 group-hover/for-you:translate-y-0 group-hover/for-you:opacity-100 group-focus-within/for-you:translate-y-0 group-focus-within/for-you:opacity-100">
+            Update your job preferences in Profile to unlock the For You feed.
+          </div>
+        )}
         <Separator className="mt-5 bg-[#1e1e28]" />
       </div>
 
@@ -275,16 +280,38 @@ export default function FilterSidebar({
       <Separator className="bg-[#1e1e28]" />
 
       {/* Remote */}
-      <div className="flex items-center justify-between">
-        <Label htmlFor="remote-toggle" className="text-sm text-[#f0f0fa]">
-          Remote only
-        </Label>
-        <Switch
-          id="remote-toggle"
-          checked={showOnlyForYouSelection ? false : filters.remote}
-          onCheckedChange={checked => onChange({ ...filters, remote: checked, page: 1 })}
-          className="border border-[#444455] data-checked:border-indigo-400/60 data-checked:bg-indigo-500 data-unchecked:border-[#444455] data-unchecked:bg-[#1a1a24] [&_[data-slot=switch-thumb]]:bg-[#f5f5ff] dark:[&_[data-slot=switch-thumb]]:bg-[#f5f5ff]"
-        />
+      <div className="rounded-2xl border border-[#292c3d] bg-gradient-to-r from-[#14151d] to-[#101119] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <Label className="text-sm font-semibold text-[#f5f6ff]">
+              Remote only
+            </Label>
+            <p className="mt-1 text-xs text-[#99a1c4]">
+              Show only roles explicitly marked remote.
+            </p>
+          </div>
+          <button
+            id="remote-toggle"
+            type="button"
+            role="switch"
+            aria-checked={remoteOnlyEnabled}
+            aria-label="Toggle remote only filter"
+            onClick={() => onChange({ ...filters, remote: !remoteOnlyEnabled, page: 1 })}
+            className={cn(
+              'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border p-0.5 shadow-sm transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101119]',
+              remoteOnlyEnabled
+                ? 'border-indigo-400/60 bg-indigo-500 shadow-indigo-500/20'
+                : 'border-[#4a4e66] bg-[#232533] hover:border-[#6d7392]'
+            )}
+          >
+            <span
+              className={cn(
+                'h-4.5 w-4.5 rounded-full bg-[#f8f8ff] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-transform duration-300 ease-out',
+                remoteOnlyEnabled ? 'translate-x-5' : 'translate-x-0'
+              )}
+            />
+          </button>
+        </div>
       </div>
 
       <Separator className="bg-[#1e1e28]" />

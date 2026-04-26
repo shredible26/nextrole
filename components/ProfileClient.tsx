@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { BellRing, Briefcase, CheckCircle2, Crown, Loader2, Mail, Pencil, Trash2, TrendingUp, Upload } from 'lucide-react';
+import { BellRing, Briefcase, CheckCircle2, Crown, Loader2, Mail, Pencil, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -561,11 +561,10 @@ export default function ProfileClient(props: ProfileClientProps) {
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10 p-5 md:p-8 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 <div className="p-3 bg-indigo-500/10 rounded-2xl">
                   <Briefcase className="w-6 h-6 text-indigo-400" />
                 </div>
-                <TrendingUp className="w-5 h-5 text-green-400" />
               </div>
               <div>
                 <p className="text-sm text-[#888899] mb-1">Applications</p>

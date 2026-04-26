@@ -8,7 +8,6 @@ import JobCard from './JobCard';
 import UpgradeModal from './UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Job, JobFilters } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { getTrackedIds, addTrackedId, removeTrackedId, writeTrackedIds } from '@/lib/trackedStorage';
@@ -655,9 +654,15 @@ export default function JobFeed() {
   }
 
   function handleClearSearch() {
-    if (inputRef.current) {
-      inputRef.current.blur();
-    }
+    setSearchInput('');
+    setFilters(prev => (
+      prev.search === ''
+        ? prev
+        : { ...prev, search: '', page: 1 }
+    ));
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
   }
 
   function openUpgradeModal(reason: 'search' | 'pagination' | 'tracker' = 'pagination') {
@@ -815,13 +820,14 @@ export default function JobFeed() {
                   value={searchInput}
                   onFocus={handleSearchFocus}
                   onChange={e => handleSearchChange(e.target.value)}
-                  placeholder={isPro ? 'Search jobs, companies, or keywords...' : 'Search jobs, companies, or keywords... (Pro)'}
+                  placeholder="Search jobs, companies, or keywords..."
                   className="h-11 border-[#2a2a35] bg-[#1a1a24] pl-9 pr-9 text-[#f5f5ff] placeholder:text-white/60 focus-visible:border-indigo-500/50 focus-visible:ring-0"
                   aria-label="Search jobs, companies, or keywords"
                 />
                 {searchInput && (
                   <button
                     type="button"
+                    onMouseDown={e => e.preventDefault()}
                     onClick={handleClearSearch}
                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#555566] transition-colors hover:bg-[#1e1e28] hover:text-[#aaaacc]"
                     aria-label="Clear search"
@@ -854,19 +860,31 @@ export default function JobFeed() {
               </p>
               {Object.keys(matchScores).length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <label
-                    className="group flex cursor-pointer items-center gap-2 rounded-md border border-[#2a2a35] bg-[#1a1a24] px-2.5 py-1 text-xs text-[#d8d9e6] transition-colors hover:border-[#3a3a45]"
+                  <button
+                    type="button"
+                    aria-pressed={showGrades}
+                    onClick={() => setShowGrades(current => !current)}
+                    className={`group flex min-h-9 items-center gap-3 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-[background-color,border-color,box-shadow,color] duration-300 ease-out sm:text-sm ${
+                      showGrades
+                        ? 'border-indigo-400/40 bg-indigo-500/10 text-white shadow-[0_10px_24px_rgba(99,102,241,0.14)]'
+                        : 'border-[#2a2a35] bg-[#1a1a24] text-[#d8d9e6] hover:border-[#3a3a45] hover:text-white'
+                    }`}
                     title={showGrades ? 'Hide match grades' : 'Show match grades'}
                   >
-                    <span className="select-none font-medium">Show grades</span>
-                    <Switch
-                      size="sm"
-                      checked={showGrades}
-                      onCheckedChange={setShowGrades}
-                      className="data-checked:bg-indigo-500"
-                      aria-label="Toggle match grades"
-                    />
-                  </label>
+                    <span className="select-none">{showGrades ? 'Hide grades' : 'Show grades'}</span>
+                    <span
+                      className={`relative h-5 w-9 rounded-full transition-colors duration-300 ease-out ${
+                        showGrades ? 'bg-indigo-500' : 'bg-[#2a2a35]'
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ease-out ${
+                          showGrades ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </span>
+                  </button>
                   <select
                     value={sortBy}
                     onChange={e => setSortBy(e.target.value as 'default' | 'best_match')}

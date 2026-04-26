@@ -8,8 +8,10 @@ export const metadata = {
 
 export default function SubscriptionPage() {
   return (
-    <Suspense fallback={<div className="flex-1" />}>
-      <SubscriptionClient />
-    </Suspense>
+    <div className="flex flex-1 flex-col bg-[#0d0d12]" data-page="subscription">
+      <Suspense fallback={<div className="flex flex-1 bg-[#0d0d12]" data-page="subscription" aria-hidden="true" />}>
+        <SubscriptionClient />
+      </Suspense>
+    </div>
   );
 }

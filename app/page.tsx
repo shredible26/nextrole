@@ -23,6 +23,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { useRouter, usePathname } from 'next/navigation';
+import { SITE_STATS } from '@/lib/site-stats';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -57,7 +58,7 @@ const HOW_IT_WORKS: Array<{
   {
     step: '02',
     icon: <Search className="h-5 w-5 text-indigo-300" />,
-    title: 'Browse 76,000+ jobs',
+    title: `Browse ${SITE_STATS.activeJobsLabel} jobs`,
     desc: 'Filtered by role, level, location, and recency.',
   },
   {
@@ -129,8 +130,8 @@ function Reveal({
     const node = ref.current;
     if (!node) return;
     if (typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
-      return;
+      const frame = window.requestAnimationFrame(() => setVisible(true));
+      return () => window.cancelAnimationFrame(frame);
     }
     const obs = new IntersectionObserver(
       entries => {
@@ -514,7 +515,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const target = 76000;
+    const target = SITE_STATS.activeJobsCount;
     const steps = 60;
     const increment = Math.ceil(target / steps);
     let current = 0;
@@ -767,7 +768,7 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.08]"
           >
             <Zap className="h-4 w-4 fill-blue-500 text-blue-500" />
-            <span className="text-sm text-white/60">Daily Updates • 40+ Sources • v1.0.0</span>
+            <span className="text-sm text-white/60">{SITE_STATS.updatesBadgeLabel} • {SITE_STATS.sourcesDescription} • v1.0.0</span>
           </motion.div>
 
           <motion.h1
@@ -817,11 +818,11 @@ export default function HomePage() {
               <p className="mt-1 text-xs md:text-sm text-white/50">Active jobs</p>
             </div>
             <div>
-              <p className="text-3xl md:text-4xl font-bold text-white">40+</p>
+              <p className="text-3xl md:text-4xl font-bold text-white">{SITE_STATS.sourcesLabel}</p>
               <p className="mt-1 text-xs md:text-sm text-white/50">Sources</p>
             </div>
             <div>
-              <p className="text-3xl md:text-4xl font-bold text-white">Daily</p>
+              <p className="text-2xl font-bold leading-tight text-white sm:text-3xl md:text-4xl">{SITE_STATS.updatesLabel}</p>
               <p className="mt-1 text-xs md:text-sm text-white/50">Updates</p>
             </div>
           </motion.div>
