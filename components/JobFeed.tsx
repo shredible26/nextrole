@@ -395,7 +395,7 @@ export default function JobFeed() {
         .single();
       setIsPro(profile?.tier === 'pro');
       if (profile) {
-        const nextPreferences = normalizeUserPreferences(profile);
+        const nextPreferences = normalizeUserPreferences(profile ?? {});
         setUserPreferences(nextPreferences);
         hasLoadedPrefsRef.current = true;
         setPreferencesLoaded(true);
@@ -490,8 +490,8 @@ export default function JobFeed() {
           return;
         }
 
-        if (!hasLoadedPrefsRef.current && data.userMeta) {
-          setUserPreferences(normalizeUserPreferences(data.userMeta));
+        if (!hasLoadedPrefsRef.current) {
+          setUserPreferences(normalizeUserPreferences(data.userMeta ?? {}));
           hasLoadedPrefsRef.current = true;
           setPreferencesLoaded(true);
         }
