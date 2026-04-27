@@ -236,10 +236,10 @@ export default async function JobPage({ params, searchParams }: Props) {
   const description = parseDescription(job.description)
   const formattedDescription = description ? cleanDescription(description) : ''
   const validThrough = getValidThroughDate(job.posted_at, job.scraped_at)
-  const locationLabel = job.location?.trim()
+  const locationLabel = job.location ?? null
   const sourceLabel = job.source?.replace(/_/g, ' ').trim()
   const detailPillClassName =
-    'inline-flex items-center gap-2 rounded-full border border-[#313447] bg-[#11131a] px-3 py-1.5 text-sm font-medium text-[#dfe4ff] shadow-[0_8px_20px_rgba(0,0,0,0.16)]'
+    'inline-flex items-center gap-2 rounded-full border border-[#313447] bg-[#1a1c2a] px-3 py-1.5 text-sm font-medium text-[#dfe4ff] shadow-[0_8px_20px_rgba(0,0,0,0.16)]'
 
   return (
     <main className="flex-1 min-h-0 overflow-y-auto bg-[#0d0d12]" data-page="jobs">
@@ -259,7 +259,7 @@ export default async function JobPage({ params, searchParams }: Props) {
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <h1 className="mb-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{job.title}</h1>
-              <p className="text-lg font-medium text-[#dbe0f7]">{job.company}</p>
+              <p className="text-lg font-medium text-white">{job.company}</p>
             </div>
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-indigo-400/20 bg-indigo-500/15 text-lg font-bold text-indigo-300">
               {job.company?.[0]?.toUpperCase()}

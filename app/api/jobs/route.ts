@@ -926,7 +926,7 @@ export async function GET(req: NextRequest) {
       ...job,
       description: toCardSnippet(job.description as string | null | undefined),
     })),
-    total: jobsResult.count ?? 0,
+    total: jobs.length,
     page,
     perPage,
     userMeta,
