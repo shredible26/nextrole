@@ -97,6 +97,10 @@ const US_CITY_NAMES = Array.from(new Set([
   'Dublin, Ohio', 'Paris, TX', 'Paris, Texas',
 ]));
 const US_EXPLICIT_SUBSTRING_PATTERNS = [
+  ' US',
+  'US ',
+  ' US ',
+  ' USA ',
   'United States',
   'United States of America',
   'USA',
@@ -926,7 +930,7 @@ export async function GET(req: NextRequest) {
       ...job,
       description: toCardSnippet(job.description as string | null | undefined),
     })),
-    total: jobs.length,
+    total: jobsResult.count ?? 0,
     page,
     perPage,
     userMeta,
