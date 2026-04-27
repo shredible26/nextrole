@@ -10,6 +10,7 @@ import { JobFilters, Role, ExperienceLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Sparkles } from 'lucide-react';
 import { type MouseEvent } from 'react';
+import { toast } from 'sonner';
 
 export const ROLE_OPTIONS: { value: Role | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -198,7 +199,10 @@ export default function FilterSidebar({
           aria-pressed={forYou}
           aria-disabled={forYouDisabled}
           onClick={() => {
-            if (forYouDisabled) return;
+            if (forYouDisabled) {
+              toast('Set your job preferences in Profile to use For You');
+              return;
+            }
             onForYouChange(!forYou);
           }}
           className={cn(
@@ -206,20 +210,20 @@ export default function FilterSidebar({
             forYou
               ? 'border-indigo-400/50 bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20'
               : 'border-[#2a2a35] bg-[#171720] text-[#f0f0fa] hover:border-[#3a3a45] hover:bg-[#1d1d28]',
-            forYouDisabled && 'cursor-not-allowed border-[#34384a] bg-[#1a1b24] text-[#b8bdd4] hover:border-[#41465c] hover:bg-[#1d1f29] hover:text-[#c8cee7]'
+            forYouDisabled && 'cursor-not-allowed border-[#3a3d52] bg-[#1e1f2a] text-[#9095b0] hover:border-[#3a3d52] hover:bg-[#1e1f2a] hover:text-[#9095b0]'
           )}
         >
-          <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : 'text-[#c7cbff]')} />
+          <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : 'text-[#c7cbff]', forYouDisabled && 'text-[#6b7094]')} />
           <div className="min-w-0">
-            <div className="text-sm font-semibold">For You</div>
-            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#a9adca]', forYouDisabled && 'text-[#adb3cd]')}>
+            <div className={cn('text-sm font-semibold', forYouDisabled && 'text-[#9095b0]')}>For You</div>
+            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : 'text-[#a9adca]', forYouDisabled && 'text-[#6b7094]')}>
               Uses your saved job preferences
             </div>
           </div>
         </button>
         {forYouDisabled && (
-          <div className="pointer-events-none absolute inset-x-3 top-full z-10 mt-2 -translate-y-1 rounded-xl border border-[#313548] bg-[#11131b]/95 px-3 py-2 text-xs leading-relaxed text-[#dde1f6] opacity-0 shadow-lg shadow-black/25 backdrop-blur-sm transition-all duration-200 group-hover/for-you:translate-y-0 group-hover/for-you:opacity-100 group-focus-within/for-you:translate-y-0 group-focus-within/for-you:opacity-100">
-            Update your job preferences in Profile to unlock the For You feed.
+          <div className="pointer-events-none absolute inset-x-0 top-full z-50 mt-2 -translate-y-1 rounded-xl border border-[#3a3d52] bg-[#1a1b28] px-3 py-2 text-xs leading-relaxed text-[#dde1f6] opacity-0 shadow-lg shadow-black/25 transition-all duration-200 group-hover/for-you:pointer-events-auto group-hover/for-you:translate-y-0 group-hover/for-you:opacity-100 group-focus-within/for-you:pointer-events-auto group-focus-within/for-you:translate-y-0 group-focus-within/for-you:opacity-100">
+            Update your job preferences in <a href="/profile" className="text-indigo-400 underline">Profile</a> to enable For You
           </div>
         )}
         <Separator className="mt-5 bg-[#1e1e28]" />
@@ -313,7 +317,7 @@ export default function FilterSidebar({
           <span
             className={cn(
               'absolute h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200',
-              remoteOnlyEnabled ? 'translate-x-[23px]' : 'translate-x-[3px]'
+              remoteOnlyEnabled ? 'translate-x-[20px]' : 'translate-x-[2px]'
             )}
           />
         </button>

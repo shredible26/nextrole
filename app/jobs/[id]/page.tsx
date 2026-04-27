@@ -236,6 +236,8 @@ export default async function JobPage({ params, searchParams }: Props) {
   const description = parseDescription(job.description)
   const formattedDescription = description ? cleanDescription(description) : ''
   const validThrough = getValidThroughDate(job.posted_at, job.scraped_at)
+  const locationLabel = job.location?.trim()
+  const sourceLabel = job.source?.replace(/_/g, ' ').trim()
   const detailPillClassName =
     'inline-flex items-center gap-2 rounded-full border border-[#313447] bg-[#11131a] px-3 py-1.5 text-sm font-medium text-[#dfe4ff] shadow-[0_8px_20px_rgba(0,0,0,0.16)]'
 
@@ -265,10 +267,10 @@ export default async function JobPage({ params, searchParams }: Props) {
           </div>
 
           <div className="mb-6 flex flex-wrap gap-2.5">
-            {job.location && (
+            {locationLabel && (
               <span className={detailPillClassName}>
                 <MapPin className="h-4 w-4 text-indigo-300" />
-                <span>{job.location}</span>
+                <span>{locationLabel}</span>
               </span>
             )}
             {job.remote && (
@@ -300,9 +302,11 @@ export default async function JobPage({ params, searchParams }: Props) {
                 {ROLE_LABELS[role as Role] ?? role}
               </span>
             ))}
-            <span className="rounded-full border border-[#3a3d50] bg-[#161821] px-3 py-1 text-xs capitalize text-[#cad0e8]">
-              {job.source?.replace(/_/g, ' ')}
-            </span>
+            {sourceLabel && (
+              <span className="rounded-full border border-[#3a3d50] bg-[#161821] px-3 py-1 text-xs capitalize text-[#dfe4ff]">
+                {sourceLabel}
+              </span>
+            )}
           </div>
 
           <a
