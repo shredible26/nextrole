@@ -393,14 +393,13 @@ export default function JobFeed() {
         .select('tier, target_roles, target_levels')
         .eq('id', user.id)
         .single();
+    
       setIsPro(profile?.tier === 'pro');
-      if (profile) {
-        const nextPreferences = normalizeUserPreferences(profile ?? {});
-        setUserPreferences(nextPreferences);
-        hasLoadedPrefsRef.current = true;
-        setPreferencesLoaded(true);
-      }
-
+      const nextPreferences = normalizeUserPreferences(profile ?? {});
+      setUserPreferences(nextPreferences);
+      hasLoadedPrefsRef.current = true;
+      setPreferencesLoaded(true);
+      
       const { data } = await supabase
         .from('applications')
         .select('job_id')
