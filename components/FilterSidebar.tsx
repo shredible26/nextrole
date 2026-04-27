@@ -1,6 +1,5 @@
 'use client';
 
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
   GITHUB_REPO_SOURCE_SET,
@@ -10,6 +9,7 @@ import {
 import { JobFilters, Role, ExperienceLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Sparkles } from 'lucide-react';
+import { type MouseEvent } from 'react';
 
 export const ROLE_OPTIONS: { value: Role | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -137,6 +137,17 @@ export default function FilterSidebar({
     // Single-select: selecting '' means no filter; selecting the active source deselects it
     const sources = source === '' || filters.sources[0] === source ? [] : [source];
     onChange({ ...filters, sources, page: 1 });
+  }
+
+  function handleRadioLabelClick(
+    event: MouseEvent<HTMLLabelElement>,
+    checked: boolean,
+    updateFilter: () => void
+  ) {
+    event.preventDefault();
+    if (!checked) {
+      updateFilter();
+    }
   }
 
   function renderSourceOption({
@@ -320,7 +331,16 @@ export default function FilterSidebar({
             const checked = !showOnlyForYouSelection && (filters.location || 'usa') === value;
 
             return (
-              <label key={value} className={optionLabelClassName} onMouseDown={e => e.preventDefault()}>
+              <label
+                key={value}
+                className={optionLabelClassName}
+                onMouseDown={e => e.preventDefault()}
+                onClick={e => handleRadioLabelClick(
+                  e,
+                  checked,
+                  () => onChange({ ...filters, location: value, page: 1 })
+                )}
+              >
                 <input
                   type="radio"
                   name="location"
@@ -356,7 +376,16 @@ export default function FilterSidebar({
             const checked = !showOnlyForYouSelection && filters.postedWithin === value;
 
             return (
-              <label key={label} className={optionLabelClassName} onMouseDown={e => e.preventDefault()}>
+              <label
+                key={label}
+                className={optionLabelClassName}
+                onMouseDown={e => e.preventDefault()}
+                onClick={e => handleRadioLabelClick(
+                  e,
+                  checked,
+                  () => onChange({ ...filters, postedWithin: value, page: 1 })
+                )}
+              >
                 <input
                   type="radio"
                   name="posted"
