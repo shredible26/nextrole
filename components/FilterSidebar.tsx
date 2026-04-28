@@ -184,7 +184,7 @@ export default function FilterSidebar({
     userPreferences.target_roles.length > 0 ||
     userPreferences.target_levels.length > 0;
   const showOnlyForYouSelection = forYou;
-  const forYouDisabled = preferencesLoaded && !hasPreferences;
+  const forYouDisabled = !preferencesLoaded || !hasPreferences;
   const disabledForYouTitle = forYouDisabled
     ? 'Set your job preferences in Profile to use this filter'
     : undefined;
