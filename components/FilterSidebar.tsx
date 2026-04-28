@@ -210,7 +210,7 @@ export default function FilterSidebar({
             forYou
               ? 'border-indigo-400/50 bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20'
               : forYouDisabled
-              ? 'cursor-not-allowed border-[#4a4f6a] bg-[#252838] text-[#c0c4e0] hover:border-[#4a4f6a] hover:bg-[#252838]'
+              ? 'cursor-not-allowed border-[#4a4f6a] bg-[#252838] text-[#c0c4e0] opacity-50 hover:border-[#4a4f6a] hover:bg-[#252838]'
               : 'border-[#2a2a35] bg-[#171720] text-[#f0f0fa] hover:border-[#3a3a45] hover:bg-[#1d1d28]'
           )}
         >
