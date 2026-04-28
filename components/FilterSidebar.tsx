@@ -210,14 +210,14 @@ export default function FilterSidebar({
             forYou
               ? 'border-indigo-400/50 bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20'
               : forYouDisabled
-              ? 'cursor-not-allowed border-[#4a4f6a] bg-[#252838] text-[#c0c4e0] opacity-50 hover:border-[#4a4f6a] hover:bg-[#252838]'
+              ? 'cursor-not-allowed border-[#4f5468] bg-[#252832] text-[#d0d4e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] hover:border-[#4f5468] hover:bg-[#252832]'
               : 'border-[#2a2a35] bg-[#171720] text-[#f0f0fa] hover:border-[#3a3a45] hover:bg-[#1d1d28]'
           )}
         >
-          <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : forYouDisabled ? 'text-[#8890b5]' : 'text-[#c7cbff]')} />
+          <Sparkles className={cn('h-5 w-5 shrink-0', forYou ? 'text-white' : forYouDisabled ? 'text-[#9ba1bd]' : 'text-[#c7cbff]')} />
           <div className="min-w-0">
-            <div className={cn('text-sm font-semibold', forYouDisabled ? 'text-[#c0c4e0]' : '')}>For You</div>
-            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : forYouDisabled ? 'text-[#8890b5]' : 'text-[#a9adca]')}>
+            <div className={cn('text-sm font-semibold', forYouDisabled ? 'text-[#d0d4e8]' : '')}>For You</div>
+            <div className={cn('mt-0.5 text-xs', forYou ? 'text-white/80' : forYouDisabled ? 'text-[#9ba1bd]' : 'text-[#a9adca]')}>
               Uses your saved job preferences
             </div>
           </div>
